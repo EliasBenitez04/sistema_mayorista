@@ -88,7 +88,7 @@
     </a>
 
     <ul class="nav nav-treeview">
-        {{-- @can('departamentos index') --}}
+        @can('pedido_compras index')
             <li class="nav-item">
                 <a href="{{ route('pedido_compras.index') }}"
                     class="nav-link {{ request()->routeIs('pedido_compras.*') ? 'active' : '' }}">
@@ -96,7 +96,7 @@
                     <p>Realizar Pedido</p>
                 </a>
             </li>
-        {{-- @endcan --}}
+        @endcan
     </ul>
 </li>
 <br>
@@ -111,7 +111,7 @@
     </a>
 
     <ul class="nav nav-treeview">
-        {{-- @can('departamentos index') --}}
+        @can('carga_fotos index')
             <li class="nav-item">
                 <a href="{{ route('carga_fotos.index') }}"
                     class="nav-link {{ request()->routeIs('carga_fotos.*') ? 'active' : '' }}">
@@ -119,7 +119,7 @@
                     <p>- Carga De Fotos</p>
                 </a>
             </li>
-        {{-- @endcan --}}
+        @endcan
     </ul>
 </li>
 <br>
@@ -156,13 +156,6 @@
             <a href="{{ route('roles.index') }}" class="nav-link {{ Request::is('roles*') ? 'active' : '' }}">
                 <i class="nav-icon fas fa-user-shield"></i>
                 <p>- Roles</p>
-            </a>
-        </li>
-
-        <li class="nav-item">
-            <a href="{{ route('auditoria.index') }}" class="nav-link {{ Request::is('auditoria*') ? 'active' : '' }}">
-                <i class="nav-icon fas fa-clipboard-list"></i>
-                <p>- Auditorías</p>
             </a>
         </li>
     </ul>

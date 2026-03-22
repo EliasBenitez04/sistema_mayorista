@@ -74,6 +74,7 @@ class PedidoComprasController extends Controller
                 'articulos.id_articulo',
                 'articulos.art_codigo',
                 'articulos.art_descripcion',
+                'articulos.prec_vent',
                 'stock.cantidad'
             )
             ->orderBy('articulos.art_codigo', 'asc')
@@ -224,23 +225,31 @@ class PedidoComprasController extends Controller
         $query = $request->get('query');
         $cod_suc = $request->get('cod_suc');
 
-        $productosQuery = DB::table('articulos')
-            ->select('articulos.art_codigo', 'articulos.art_descripcion', 'stock.cantidad', 'stock.cod_suc')
-            ->join('stock', 'articulos.id_articulo', '=', 'stock.id_articulo')
+        $productosQuery = DB::table('articulos as a')
+            ->join('stock as s', 'a.id_articulo', '=', 's.id_articulo')
+            ->select(
+                'a.art_codigo',
+                'a.art_descripcion',
+                'a.prec_vent',
+                's.cantidad',
+                's.cod_suc'
+            )
             ->when($cod_suc, function ($q) use ($cod_suc) {
-                return $q->where('stock.cod_suc', $cod_suc);
+                return $q->where('s.cod_suc', $cod_suc);
             })
             ->when($query, function ($q) use ($query) {
                 return $q->where(function ($q2) use ($query) {
-                    $q2->where('articulos.art_codigo', 'ILIKE', "%{$query}%")
-                        ->orWhere('articulos.art_descripcion', 'ILIKE', "%{$query}%");
+                    $q2->where('a.art_codigo', 'ILIKE', "%{$query}%")
+                        ->orWhere('a.art_descripcion', 'ILIKE', "%{$query}%");
                 });
             })
-            ->orderBy('articulos.art_codigo', 'asc')
+            ->orderBy('a.art_codigo', 'asc')
             ->take(20)
             ->get();
 
-        return view('pedido_compras.buscar_producto', ['productos' => $productosQuery]);
+        return view('pedido_compras.buscar_producto', [
+            'productos' => $productosQuery
+        ]);
     }
 
     public function show($id)

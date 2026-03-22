@@ -1,9 +1,9 @@
-<aside class="main-sidebar sidebar-dark-primary elevation-4">
+<aside class="main-sidebar sidebar-dark-darkest elevation-4">
     <a href="{{ route('home') }}" class="brand-link text-center">
         <img src="{{ asset('storage/logos/gts_logo.jpg') }}" alt="Gotitas" class="brand-image img-circle elevation-3"
             style="opacity: .9">
 
-        <span class="brand-text font-weight-light ml-2">
+        <span class="brand-text font-weight-bold text">
             {{ config('app.name') }}
         </span>
     </a>
@@ -16,4 +16,22 @@
             </ul>
         </nav>
     </div>
+    <style>
+        .sidebar-dark-darkest {
+            background-color: #202020;
+            /* casi negro */
+            color: #c2c7d0;
+        }
+
+        .sidebar-dark-darkest .nav-sidebar .nav-link.active {
+            background-color: #007bff;
+            /* mantiene azul para activo */
+            color: #fff;
+        }
+
+        .sidebar-dark-darkest .nav-sidebar .nav-link:hover {
+            background-color: #313131;
+            color: #fff;
+        }
+    </style>
 </aside>

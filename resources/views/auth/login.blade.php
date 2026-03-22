@@ -4,7 +4,6 @@
 <head>
     <meta charset="utf-8">
     <title>{{ config('app.name') }}</title>
-
     <meta name="viewport" content="width=device-width, initial-scale=1">
 
     <!-- Font Awesome -->
@@ -19,79 +18,104 @@
     <style>
         body {
             font-family: 'Inter', sans-serif;
-            background: linear-gradient(135deg, #0c0c05, #184a5a, #38a0cc);
+            background: linear-gradient(135deg, #323be2, #666bc9, #2d9bca);
             height: 100vh;
             display: flex;
             align-items: center;
             justify-content: center;
-        }
-
-        .login-box {
-            width: 380px;
-        }
-
-        .login-card {
-            border-radius: 12px;
-            box-shadow: 0 20px 40px rgba(0, 0, 0, .25);
             overflow: hidden;
         }
 
+        .login-box {
+            width: 400px;
+            animation: fadeIn 1s ease;
+        }
+
+        .login-card {
+            border-radius: 15px;
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.35);
+            overflow: hidden;
+            background: #ffffff;
+        }
+
         .login-header {
-            background: #1f2937;
+            background: linear-gradient(135deg, #2563eb, #1e40af);
             color: #fff;
-            padding: 25px;
+            padding: 30px 20px;
             text-align: center;
         }
 
         .login-header h1 {
-            font-size: 22px;
-            font-weight: 600;
+            font-size: 26px;
+            font-weight: 700;
             margin: 0;
         }
 
         .login-header p {
-            font-size: 13px;
-            opacity: .8;
+            font-size: 14px;
+            opacity: 0.85;
             margin-top: 5px;
         }
 
         .login-body {
-            padding: 30px;
-            background: #fff;
+            padding: 35px 30px;
         }
 
         .form-control {
-            height: 45px;
-            border-radius: 8px;
+            height: 50px;
+            border-radius: 10px;
+            border: 1px solid #d1d5db;
+            transition: all 0.3s ease;
+        }
+
+        .form-control:focus {
+            box-shadow: 0 0 10px rgba(37, 99, 235, 0.5);
+            border-color: #2563eb;
         }
 
         .btn-login {
-            height: 45px;
-            border-radius: 8px;
-            font-weight: 500;
+            height: 50px;
+            border-radius: 12px;
+            font-weight: 600;
             background: #2563eb;
             border: none;
+            transition: background 0.3s ease, transform 0.2s ease;
         }
 
         .btn-login:hover {
             background: #1e40af;
+            transform: translateY(-2px);
         }
 
         .input-group-text {
             background: transparent;
             border-left: 0;
-        }
-
-        .form-control:focus {
-            box-shadow: none;
-            border-color: #2563eb;
+            cursor: pointer;
         }
 
         .footer-text {
             font-size: 12px;
             color: #6b7280;
             text-align: center;
-            margin-top: 20px;
+            margin-top: 25px;
+        }
+
+        /* Animación fade in */
+        @keyframes fadeIn {
+            0% {
+                opacity: 0;
+                transform: translateY(-20px);
+            }
+
+            100% {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* Icono en input */
+        .input-group .fas {
+            color: #2563eb;
         }
     </style>
 </head>
@@ -103,7 +127,7 @@
 
             <div class="login-header">
                 <h1>{{ config('app.name') }}</h1>
-                <p>Acceso al Sistema</p>
+                <p>Acceso seguro al sistema</p>
             </div>
 
             <div class="login-body">
@@ -111,8 +135,8 @@
                 <form method="POST" action="{{ url('/login') }}">
                     @csrf
 
-                    <div class="form-group mb-3">
-                        <label class="mb-1">Usuario</label>
+                    <div class="form-group mb-4">
+                        <label class="mb-2 font-weight-bold">Usuario</label>
                         <div class="input-group">
                             <input type="text" name="name" value="{{ old('name') }}"
                                 class="form-control text-uppercase @error('name') is-invalid @enderror"
@@ -129,13 +153,13 @@
                     </div>
 
                     <div class="form-group mb-4">
-                        <label class="mb-1">Contraseña</label>
+                        <label class="mb-2 font-weight-bold">Contraseña</label>
                         <div class="input-group">
                             <input type="password" id="password" name="password"
                                 class="form-control @error('password') is-invalid @enderror" placeholder="••••••••"
                                 required>
                             <div class="input-group-append">
-                                <span class="input-group-text" style="cursor: pointer;" onclick="togglePassword()">
+                                <span class="input-group-text" onclick="togglePassword()">
                                     <i class="fas fa-eye" id="toggleIcon"></i>
                                 </span>
                             </div>
@@ -153,12 +177,14 @@
                 <div class="footer-text">
                     © {{ date('Y') }} {{ config('app.name') }} · Todos los derechos reservados
                 </div>
+
             </div>
         </div>
     </div>
 
     <script src="{{ mix('js/app.js') }}"></script>
     @include('sweetalert::alert')
+
     <script>
         function togglePassword() {
             const password = document.getElementById('password');
@@ -174,6 +200,7 @@
             }
         }
     </script>
+
 </body>
 
 </html>

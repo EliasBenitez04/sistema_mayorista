@@ -6,7 +6,7 @@
             <div class="row mb-2 align-items-center">
                 <div class="col-sm-6">
                     <h1 class="text-primary font-weight-bold">
-                        <i class="fas fa-shopping-cart"></i> Nro Pedido: {{ $pedido->id_pedido }}
+                        <i class="fas fa-shopping-cart"></i> Nro Pedido: {{ $pedido->nro_pedido }}
                     </h1>
                 </div>
                 <div class="col-sm-6 text-right">
@@ -27,9 +27,6 @@
                 </div>
             </div>
             <div class="card-footer text-right">
-                <a href="{{ route('pedido_compras.edit', $pedido->id_pedido) }}" class="btn btn-primary">
-                    <i class="fa fa-edit"></i> Editar
-                </a>
                 <a href="{{ route('pedido_compras.index') }}" class="btn btn-secondary">
                     <i class="fa fa-list"></i> Ver Todos Los Pedidos
                 </a>
