@@ -8,12 +8,16 @@ class Usuario extends Model
 {
     public $table = 'usuarios';
 
-    public $fillable = [
-        'usu_nick',
-        'usu_clave',
+    protected $fillable = [
+        'name',
+        'email',
+        'password',
+        'direccion',
+        'estado',
+        'ci',
+        'telefono',
         'role_id',
-        'usu_nombres',
-        'usu_estado'
+        'cod_suc'
     ];
 
     protected $casts = [

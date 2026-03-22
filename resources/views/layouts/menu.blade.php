@@ -17,7 +17,7 @@
     </a>
 
     <ul class="nav nav-treeview">
-        @can('departamentos index')
+        {{-- @can('departamentos index')
             <li class="nav-item">
                 <a href="{{ route('lineas.index') }}"
                     class="nav-link {{ request()->routeIs('lineas.*') ? 'active' : '' }}">
@@ -25,7 +25,7 @@
                     <p>- Lineas</p>
                 </a>
             </li>
-        @endcan
+        @endcan --}}
         @can('articulos index')
             <li class="nav-item">
                 <a href="{{ route('articulos.index') }}"
@@ -99,7 +99,7 @@
         @endcan
     </ul>
 </li>
-<br>
+{{-- <br>
 
 <li class="nav-item {{ request()->routeIs('carga_fotos.*') ? 'menu-open' : '' }}">
     <a href="#" class="nav-link {{ request()->routeIs('carga_fotos.*') ? 'active' : '' }}">
@@ -121,7 +121,7 @@
             </li>
         @endcan
     </ul>
-</li>
+</li> --}}
 <br>
 {{-- @hasrole('ADMIN') --}}
 <!-- Configuraciones -->

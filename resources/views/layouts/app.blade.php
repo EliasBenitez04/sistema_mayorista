@@ -207,6 +207,28 @@
             });
         });
     </script>
+    <script>
+        $('.alert-confirm').click(function(event) {
+            event.preventDefault();
+
+            let form = $(this).closest("form");
+            let valor = $(this).data("mensaje") || "este pedido";
+            let accion = $(this).data("accion") || "confirmar";
+
+            Swal.fire({
+                title: "Atención",
+                text: `¿Desea ${accion} ${valor}?`,
+                icon: 'question',
+                showCancelButton: true,
+                confirmButtonText: "Confirmar",
+                cancelButtonText: "Cancelar",
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    form.submit();
+                }
+            });
+        });
+    </script>
 
     {{-- BUSCADOR AJAX --}}
     <script>

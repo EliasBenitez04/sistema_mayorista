@@ -19,6 +19,7 @@
     </section>
 
     <section class="content">
+        @include('sweetalert::alert')
         <div class="container-fluid">
             <div class="row">
                 <!-- Profile Sidebar -->
@@ -28,7 +29,7 @@
                             <img class="profile-user-img img-fluid img-circle mb-3"
                                 src="https://png.pngtree.com/png-vector/20210706/ourlarge/pngtree-blank-whatsapp-bussiness-man-photo-profile-png-image_3562846.jpg"
                                 alt="User profile picture">
-                            <h4 class="profile-username">{{ (auth()->user()->name) }}</h4>
+                            <h4 class="profile-username">{{ auth()->user()->name }}</h4>
                             <p class="text-muted mb-1">Software Engineer</p>
                             <p class="text-muted"><i class="fas fa-envelope mr-2"></i>{{ auth()->user()->email }}</p>
                             <a href="#" class="btn btn-primary btn-block">

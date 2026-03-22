@@ -14,8 +14,7 @@ use App\Notifications\ResetPasswordNotification;
 
 class User extends Authenticatable implements CanResetPassword
 {
-    use HasApiTokens, HasFactory, Notifiable, CanResetPasswordTrait;
-    use HasRoles;
+    use HasApiTokens, HasFactory, Notifiable, CanResetPasswordTrait, HasRoles;
 
     protected $fillable = [
         'name',
@@ -26,6 +25,7 @@ class User extends Authenticatable implements CanResetPassword
         'telefono',
         'estado',
         'role_id',
+        'cod_suc',
     ];
 
     protected $hidden = [
@@ -42,9 +42,20 @@ class User extends Authenticatable implements CanResetPassword
         return $this->belongsTo(Sucursal::class, 'cod_suc', 'cod_suc');
     }
 
-    // Notificación personalizada
+    public function role(): \Illuminate\Database\Eloquent\Relations\BelongsTo
+    {
+        return $this->belongsTo(\App\Models\Role::class, 'role_id');
+    }
+
     public function sendPasswordResetNotification($token)
     {
         $this->notify(new ResetPasswordNotification($token));
+    }
+
+    // Método opcional para cambiar contraseña
+    public function cambiarPassword(string $nuevaPassword)
+    {
+        $this->password = \Illuminate\Support\Facades\Hash::make($nuevaPassword);
+        $this->save();
     }
 }

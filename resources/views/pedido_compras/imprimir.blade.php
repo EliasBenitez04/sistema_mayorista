@@ -133,13 +133,13 @@
     <table class="table table-bordered table-hover">
         <thead class="text-center">
             <tr>
-                <th style="width: 80px;">Código</th>
+                <th style="width: 100px;">Código</th>
                 <th>Descripción</th>
-                <th style="width: 90px;">Cantidad</th>
-                <th style="width: 120px;">Precio Unit.</th>
-                <th style="width: 120px;">Subtotal</th>
+                <th style="width: 50px;">Cant.</th>
+                <th style="width: 100px;">Precio Unit.</th>
+                <th style="width: 100px;">Subtotal</th>
                 @if ($hayDescuento)
-                    <th style="width: 120px;">Subtotal c/ Descuento</th>
+                    <th style="width: 100px;">Subtotal C/ Descuento</th>
                 @endif
             </tr>
         </thead>
@@ -168,18 +168,20 @@
     <!-- TOTAL -->
     <table class="table table-bordered totales-table w-50 ml-auto">
         <tbody>
-            <tr>
-                <th>Total Sin Descuento</th>
-                <td class="text-right">
-                    <strong>{{ number_format($detalle->sum(function ($d) use ($hayDescuento) {return $d->det_subtotal / ($hayDescuento ? 1 - $d->det_descuento / 100 : 1);}),0,',','.') }}
-                        Gs.</strong></td>
-            </tr>
             @if ($hayDescuento)
+                <tr>
+                    <th>Total Sin Descuento</th>
+                    <td class="text-right">
+                        <strong>{{ number_format($detalle->sum(function ($d) use ($hayDescuento) {return $d->det_subtotal / ($hayDescuento ? 1 - $d->det_descuento / 100 : 1);}),0,',','.') }}
+                            Gs.</strong>
+                    </td>
+                </tr>
                 <tr>
                     <th>Total Descuento {{ $d->det_descuento }}%</th>
                     <td class="text-right">
                         <strong>{{ number_format($detalle->sum(function ($d) {return $d->det_subtotal / (1 - $d->det_descuento / 100) - $d->det_subtotal;}),0,',','.') }}
-                            Gs.</strong></td>
+                            Gs.</strong>
+                    </td>
                 </tr>
             @endif
             <tr>

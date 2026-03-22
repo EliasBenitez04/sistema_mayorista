@@ -179,15 +179,15 @@ class UsuarioController extends Controller
         }
 
         $dataUpdate = [
-            'name' => strtoupper($input['name']),
-            'email' => $input['email'],
-            'ci' => $input['ci'],
-            'password' => $input['password'] ?? $usuario->password,
-            'direccion' => array_key_exists('direccion', $input) ? strtoupper($input['direccion']) : $usuario->direccion,
-            'telefono' => array_key_exists('telefono', $input) ? $input['telefono'] : $usuario->telefono,
-            'estado' => array_key_exists('estado', $input) ? $input['estado'] : $usuario->estado,
-            'role_id' => array_key_exists('role_id', $input) ? $input['role_id'] : $usuario->role_id,
-            'cod_suc' => array_key_exists('cod_suc', $input) ? $input['cod_suc'] : $usuario->cod_suc,
+            'name'       => strtoupper($input['name']),
+            'email'      => $input['email'],
+            'ci'         => $input['ci'],
+            'password'   => !empty($input['password']) ? Hash::make($input['password']) : $usuario->password,
+            'direccion'  => array_key_exists('direccion', $input) ? strtoupper($input['direccion']) : $usuario->direccion,
+            'telefono'   => array_key_exists('telefono', $input) ? $input['telefono'] : $usuario->telefono,
+            'estado'     => array_key_exists('estado', $input) ? $input['estado'] : $usuario->estado,
+            'role_id'    => array_key_exists('role_id', $input) ? $input['role_id'] : $usuario->role_id,
+            'cod_suc'    => array_key_exists('cod_suc', $input) ? $input['cod_suc'] : $usuario->cod_suc,
         ];
 
         $usuario->update($dataUpdate);
@@ -215,24 +215,36 @@ class UsuarioController extends Controller
 
     public function cambiarPassword(Request $request)
     {
+        $input = $request->all();
+
+        ##validar datos de contraseña utilizando validate de laravel
         $validator = Validator::make(
             $request->all(),
             [
                 'password' => 'required|min:6',
                 'confirm-password' => 'required|same:password',
+            ],
+            [
+                'password.required'         => 'La contraseña es requerida',
+                'password.min'              => 'Debe tener al menos 6 digítos la contraseña',
+                'confirm-password.required' => 'La confirmación de contraseña es requerida',
+                'confirm-password.same'     => 'Las contraseñas no coinciden',
             ]
         );
 
         if ($validator->fails()) {
-            alert()->error('Error', 'Las contraseñas no coinciden');
-            return redirect()->back()->withErrors($validator)->withInput();
+
+            return redirect()->back()
+                ->withErrors($validator)
+                ->withInput();
         }
 
-        DB::table('users')
-            ->where('id', auth()->user()->id)
-            ->update(['password' => Hash::make($request->password)]);
+        #Actualizar la contraseña del usuario en session
+        DB::table('users')->where('id', auth()->user()->id)
+            ->update(['password' =>  Hash::make($input['password'])]);
 
-        alert()->success('Éxito', 'Contraseña actualizada correctamente');
+        alert()->success('Exíto', 'Contraseña actualizada correctamente.!');
+
         return redirect()->back();
     }
 

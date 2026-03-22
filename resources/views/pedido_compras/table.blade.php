@@ -4,10 +4,10 @@
             <thead class="thead-dark">
                 <tr class="text-center">
                     <th>Nro Pedido</th>
-                    <th>Sucursal</th>
-                    <th>Cliente</th>
                     <th>Fecha Pedido</th>
+                    <th>Cliente</th>
                     <th>Cant. Artículos</th>
+                    <th>Total Pedido</th>
                     <th>Realizado Por</th>
                     <th>Estado</th>
                     <th>Confirmado Por</th>
@@ -18,10 +18,10 @@
                 @foreach ($pedido_compras as $pedido)
                     <tr class="text-center">
                         <td>{{ $pedido->nro_pedido }}</td>
-                        <td>{{ $pedido->suc_descri }}</td>
-                        <td>{{ $pedido->cliente }}</td>
                         <td>{{ \Carbon\Carbon::parse($pedido->ped_fecha)->format('d/m/Y') }}</td>
+                        <td>{{ $pedido->cliente }}</td>
                         <td>{{ $pedido->total_cantidad }}</td>
+                        <td>GS. {{ number_format($pedido->ped_total, 0, ',', '.') }}</td>
                         <td>{{ $pedido->usuario }}</td>
                         <td>
                             <span
@@ -39,19 +39,23 @@
                                         'id' => 'confirm-form-' . $pedido->id_pedido,
                                         'class' => 'd-inline',
                                     ]) !!}
+
                                     {!! Form::button('<i class="far fa-check-circle"></i>', [
                                         'type' => 'button',
                                         'class' => 'btn btn-success btn-sg alert-confirm',
-                                        'onclick' => "confirmPedido({$pedido->id_pedido})",
+                                        'data-id' => $pedido->id_pedido,
                                         'title' => 'Confirmar Pedido',
                                     ]) !!}
+
                                     {!! Form::close() !!}
                                 @endif
 
-                                <a href="{{ route('pedido_compras.imprimir', [$pedido->id_pedido]) }}"
-                                    class="btn btn-warning btn-sg" title="Imprimir pedido">
-                                    <i class="fas fa-print"></i>
-                                </a>
+                                @if ($pedido->ped_estado === 'CONFIRMADO')
+                                    <a href="{{ route('pedido_compras.imprimir', [$pedido->id_pedido]) }}"
+                                        class="btn btn-warning btn-sg" title="Imprimir pedido">
+                                        <i class="fas fa-print"></i>
+                                    </a>
+                                @endif
 
                                 <a href="{{ route('pedido_compras.show', [$pedido->id_pedido]) }}"
                                     class="btn btn-info btn-sg" title="Ver detalles">

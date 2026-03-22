@@ -189,7 +189,7 @@
 </div>
 
 <!-- Compra Total Field -->
-<div class="form-group col-sm-6">
+<div class="form-group col-sm-2">
     {!! Form::label('ped_total', 'Total:') !!}
     {!! Form::text('ped_total', isset($pedido) ? number_format($pedido->ped_total, 0, ',', '.') : null, [
         'class' => 'form-control',
@@ -210,22 +210,35 @@
                 if (e.which == 13) return false;
             });
 
-            // Abrir modal y cargar productos
+            // Abrir modal y cargar productos según lo que ya está escrito
             $('#productSearchModalPed').on('show.bs.modal', function() {
                 let cod_suc = $("#cod_suc").val();
-                fetch('{{ url('buscar-productos-ped') }}?cod_suc=' + cod_suc)
-                    .then(response => response.text())
-                    .then(html => document.getElementById('modalResultsPed').innerHTML = html);
+                let query = $('#productSearchQueryPed').val(); // lo que ya escribiste
+                fetchProductos(query, cod_suc);
             });
 
-            // Buscar productos
+            // Buscar productos mientras escribís
+            let timeout = null;
             $('#productSearchQueryPed').on('keyup', function() {
+                clearTimeout(timeout);
                 let query = $(this).val();
                 let cod_suc = $("#cod_suc").val();
-                fetch('{{ url('buscar-productos-ped') }}?query=' + query + '&cod_suc=' + cod_suc)
+
+                timeout = setTimeout(() => {
+                    fetchProductos(query, cod_suc);
+                }, 300); // delay 300ms para no saturar el servidor
+            });
+
+            function fetchProductos(query, cod_suc) {
+                fetch('{{ url('buscar-productos-ped') }}?query=' + encodeURIComponent(query) + '&cod_suc=' +
+                        cod_suc, {
+                            headers: {
+                                'X-Requested-With': 'XMLHttpRequest'
+                            }
+                        })
                     .then(response => response.text())
                     .then(html => document.getElementById('modalResultsPed').innerHTML = html);
-            });
+            }
 
             // Detectar cambios en descuento y condición
             $('#descuento_si, #descuento_no').on('change', toggleDescuento);
@@ -250,7 +263,6 @@
             return parseFloat(valor.toString().replace(/\./g, '').replace(',', '.')) || 0;
         }
 
-
         // Seleccionar producto
         function seleccionarProductoPed(codigo, producto, precio) {
             let tabla = document.getElementById('selectedProducts');
@@ -263,7 +275,7 @@
                         icon: 'warning',
                         title: 'Atención',
                         text: 'El producto ya fue agregado.',
-                        timer: 2000,
+                        timer: 1500,
                         showConfirmButton: false
                     });
                     return;

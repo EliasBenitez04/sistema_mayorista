@@ -1,6 +1,8 @@
 <?php
 
 use App\Http\Controllers\auditoriaController;
+use App\Http\Controllers\Auth\ForgotPasswordController;
+use App\Http\Controllers\Auth\ResetPasswordController;
 use App\Http\Controllers\PedidoComprasController;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
@@ -67,3 +69,14 @@ Route::get('/import-progress', function () {
 Route::get('pedido_compras/{id}/imprimir', [App\Http\Controllers\PedidoComprasController::class, 'imprimir'])
     ->name('pedido_compras.imprimir')
     ->middleware('auth');
+
+Route::post('users/perfil/cambiar-password', [App\Http\Controllers\UsuarioController::class, 'cambiarPassword']);
+
+Route::get('password/reset', [ForgotPasswordController::class, 'showLinkRequestForm'])
+    ->name('password.request');
+
+Route::get('password/reset/{token}', [ResetPasswordController::class, 'showResetForm'])
+    ->name('password.reset');
+
+Route::post('password/reset', [ResetPasswordController::class, 'reset'])
+    ->name('password.update');
