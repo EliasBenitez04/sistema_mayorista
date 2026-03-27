@@ -44,15 +44,16 @@
                                     value="{{ $value->art_descripcion }}">
                             </td>
                             <td class="text-center">
-                                <input class="form-control text-center" type="number" min="1"
-                                    name="cantidad[]" value="{{ $value->det_cantidad }}">
+                                <input class="form-control text-center" type="number" min="1" name="cantidad[]"
+                                    value="{{ $value->det_cantidad }}">
                             </td>
                             <td class="text-center">
-                                <input class="form-control text-center" type="text" name="precio[]" value="{{ number_format($value->det_precio,0,',','.') }}">
+                                <input class="form-control text-center" type="text" name="precio[]"
+                                    value="{{ number_format($value->det_precio, 0, ',', '.') }}">
                             </td>
                             <td class="text-center">
                                 <input class="form-control text-center" type="text" name="subtotal[]" readonly
-                                    value="{{ number_format($value->det_subtotal,0,',','.') }}">
+                                    value="{{ number_format($value->det_subtotal, 0, ',', '.') }}">
                             </td>
                             <td class="text-center">
                                 <button type="button" class="btn btn-danger btn-sm" onclick="borrarPed(this)">

@@ -288,6 +288,10 @@ class PedidoComprasController extends Controller
             )
             ->join('articulos', 'articulos.id_articulo', '=', 'detalle_pedido.id_articulo')
             ->where('detalle_pedido.id_pedido_compras', $id)
+            ->orderByRaw("
+            regexp_replace(articulos.art_codigo, '[0-9]+$', '') ASC,
+            CAST(regexp_replace(articulos.art_codigo, '^.*?([0-9]+)$', '\\1') AS INTEGER) ASC
+            ")
             ->get();
 
         // Calcular totales generales
@@ -397,6 +401,10 @@ class PedidoComprasController extends Controller
             ->join('articulos as a', 'a.id_articulo', '=', 'd.id_articulo')
             ->where('d.id_pedido_compras', $id)
             ->select('d.*', 'a.art_codigo', 'a.art_descripcion')
+            ->orderByRaw("
+            regexp_replace(a.art_codigo, '[0-9]+$', '') ASC,
+            regexp_replace(a.art_codigo, '[^0-9]', '', 'g')::BIGINT ASC
+            ")
             ->get();
 
         return view('pedido_compras.imprimir', compact('pedido', 'detalle'));

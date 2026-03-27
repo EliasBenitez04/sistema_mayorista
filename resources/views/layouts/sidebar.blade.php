@@ -18,13 +18,13 @@
     </div>
     <style>
         .sidebar-dark-darkest {
-            background-color: #202020;
+            background-color: #000000;
             /* casi negro */
             color: #c2c7d0;
         }
 
         .sidebar-dark-darkest .nav-sidebar .nav-link.active {
-            background-color: #007bff;
+            background-color: #0a60ff;
             /* mantiene azul para activo */
             color: #fff;
         }

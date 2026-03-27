@@ -187,7 +187,6 @@
 <div class="form-group col-sm-12">
     @include('pedido_compras.detalle')
 </div>
-
 <!-- Compra Total Field -->
 <div class="form-group col-sm-2">
     {!! Form::label('ped_total', 'Total:') !!}
@@ -198,9 +197,71 @@
 </div>
 
 @include('pedido_compras.modal_producto')
-
+<style>
+    .toast-grande {
+        font-size: 20px;
+        padding: 15px 20px;
+        width: 450px !important;
+    }
+</style>
 <!-- Agregar SweetAlert2 -->
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+@include('pedido_compras.modal_producto')
+
+<!-- BOTÓN SUBIR -->
+<button id="btnSubir" type="button" class="btn btn-primary" onclick="scrollToTop()">
+    <i class="fas fa-arrow-up"></i>
+</button>
+
+<style>
+    #btnSubir {
+        position: fixed;
+        bottom: 25px;
+        right: 25px;
+        z-index: 9999;
+
+        width: 55px;
+        height: 55px;
+        border-radius: 50%;
+
+        display: flex;
+        align-items: center;
+        justify-content: center;
+
+        background: linear-gradient(135deg, #007bff, #0056b3);
+        color: #fff;
+
+        font-size: 18px;
+
+        border: none;
+        cursor: pointer;
+
+        box-shadow: 0 8px 20px rgba(0, 0, 0, 0.25);
+
+        opacity: 0;
+        visibility: hidden;
+        transform: translateY(20px);
+
+        transition: all 0.3s ease;
+    }
+
+    #btnSubir:hover {
+        transform: translateY(0) scale(1.1);
+        box-shadow: 0 12px 25px rgba(0, 0, 0, 0.35);
+    }
+
+    #btnSubir.show {
+        opacity: 1;
+        visibility: visible;
+        transform: translateY(0);
+    }
+
+    .toast-grande {
+        font-size: 20px;
+        padding: 15px 20px;
+        width: 450px !important;
+    }
+</style>
 @push('page_scripts')
     <script type="text/javascript">
         $(document).ready(function() {
@@ -314,8 +375,33 @@
     `;
 
             tabla.appendChild(row);
+            row.style.backgroundColor = '#d4edda';
+            setTimeout(() => {
+                row.style.transition = 'background-color 0.5s';
+                row.style.backgroundColor = '';
+            }, 800);
 
-            $('#productSearchModalPed').modal('hide');
+            row.scrollIntoView({
+                behavior: 'smooth',
+                block: 'center'
+            });
+
+            Swal.fire({
+                icon: 'success',
+                title: 'Producto agregado',
+                timer: 1000,
+                showConfirmButton: false,
+                toast: true,
+                position: 'top-end',
+                customClass: {
+                    popup: 'toast-grande'
+                }
+            });
+
+            $('#productSearchModalPed').modal({
+                backdrop: 'static',
+                keyboard: false
+            });
 
             calcularTotal();
         }
@@ -418,5 +504,37 @@
                 $("#intervalo, #cant_cuotas").prop('required', false).val('');
             }
         }
+        // Mostrar botón al hacer scroll
+        document.addEventListener("DOMContentLoaded", function() {
+
+            let btn = document.getElementById("btnSubir");
+
+            window.addEventListener("scroll", function() {
+
+                if (window.scrollY > 200) {
+                    btn.classList.add("show");
+                } else {
+                    btn.classList.remove("show");
+                }
+
+            });
+
+            btn.addEventListener("click", function() {
+                window.scrollTo({
+                    top: 0,
+                    behavior: "smooth"
+                });
+            });
+
+        });
+        document.getElementById("btnSubir").addEventListener("click", function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+
+            window.scrollTo({
+                top: 0,
+                behavior: "smooth"
+            });
+        });
     </script>
 @endpush

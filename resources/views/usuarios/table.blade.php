@@ -3,9 +3,9 @@
         <table class="table table-hover table-striped mb-0" id="usuarios-table">
             <thead class="thead-dark">
                 <tr class="text-center">
-                    <th style="width: 5%">#</th>
-                    <th class="text-left" style="width: 15%">Usuario</th>
-                    <th class="text-left" style="width: 16%">Correo</th>
+                    <th style="width: 2%">#</th>
+                    <th class="text-center" style="width: 10%">Usuario</th>
+                    <th class="text-left" style="width: 20%">Correo</th>
                     <th style="width: 10%">CI</th>
                     <th class="text-left">Dirección</th>
                     <th style="width: 10%">Teléfono</th>
@@ -20,7 +20,7 @@
                     <tr class="align-middle text-center">
                         <td>{{ $usuario->id }}</td>
 
-                        <td class="text-left">
+                        <td class="text-center">
                             <i class="fas fa-user text-secondary mr-1"></i>
                             {{ $usuario->name }}
                         </td>

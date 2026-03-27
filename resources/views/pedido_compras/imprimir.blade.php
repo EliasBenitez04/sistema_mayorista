@@ -5,14 +5,20 @@
     <meta content="width=device-width, initial-scale=1" name="viewport">
     <meta charset="utf-8">
     <link href="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
 
     <style>
         body {
-            font-size: 13px;
+            font-size: 14px;
             background: #fff;
             margin: 0 auto;
             width: 210mm;
             padding: 25px;
+        }
+
+        thead th {
+            text-align: center !important;
+            vertical-align: top !important;
         }
 
         .header {
@@ -21,7 +27,7 @@
         }
 
         .header-logo img {
-            max-height: 130px;
+            max-height: 135px;
         }
 
         .invoice-title {
@@ -57,7 +63,7 @@
         }
 
         .compact-card {
-            font-size: 12px;
+            font-size: 14px;
             padding: 5px 10px;
             border: 1px solid #ccc;
             border-radius: 4px;
@@ -71,6 +77,29 @@
 
         .compact-card strong {
             color: #000000;
+        }
+
+        @media print {
+            thead {
+                color: #000 !important;
+                text-align: center !important;
+                vertical-align: top !important;
+            }
+
+            th,
+            td {
+                color: #000 !important;
+                border-color: #000 !important;
+            }
+
+            .table {
+                border-collapse: collapse !important;
+            }
+
+            .table th,
+            .table td {
+                border: 1px solid #000 !important;
+            }
         }
     </style>
 
@@ -95,12 +124,15 @@
             <p class="mb-1"><strong>SEDAMA S.A.</strong></p>
             <p class="mb-1">Lomas Valentina casi Sargento González</p>
             <p class="mb-1">R.U.C. 80093399-0</p>
-            <p class="mb-0">☎ 021 513 824 | 0984-261-267</p>
+            <p class="mb-0 fs-5 fw-semibold">
+                <i class="bi bi-telephone-fill me-2"></i>
+                021 513 824 | 0984-261-267
+            </p>
         </div>
     </div>
 
     <div class="text-center mb-3">
-        <span class="invoice-title">PEDIDO DE COMPRA</span>
+        <span class="invoice-title">NOTA DE PEDIDO</span>
         <hr style="width: 40%; border: 1px solid #0051a3;">
     </div>
 
