@@ -1,13 +1,6 @@
 <!DOCTYPE html>
 
 <html lang="es">
-<!-- Loader -->
-<div id="loader" style="display:none;">
-    <div class="loader-box">
-        <div class="spinner"></div>
-        <div id="percent">0%</div>
-    </div>
-</div>
 
 <head>
     <meta charset="UTF-8">
@@ -50,20 +43,6 @@
             transform: scale(1.1);
         }
 
-        #loader {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            background: rgba(0, 0, 0, 0.3);
-            /* semitransparente */
-            z-index: 9999;
-        }
-
         .loader-box {
             width: 100px;
             height: 100px;
@@ -74,31 +53,6 @@
             justify-content: center;
             align-items: center;
             box-shadow: 0 0 15px rgba(0, 0, 0, 0.3);
-        }
-
-        .spinner {
-            width: 40px;
-            height: 40px;
-            border: 4px solid #f3f3f3;
-            border-top: 4px solid #4caf50;
-            border-radius: 50%;
-            animation: spin 1s linear infinite;
-            margin-bottom: 10px;
-        }
-
-        #percent {
-            font-size: 16px;
-            font-weight: bold;
-        }
-
-        @keyframes spin {
-            0% {
-                transform: rotate(0deg);
-            }
-
-            100% {
-                transform: rotate(360deg);
-            }
         }
     </style>
 </head>
@@ -130,7 +84,9 @@
                         <form id="import-form" enctype="multipart/form-data" class="d-inline-block">
                             @csrf
                             <input type="file" name="archivo" id="file" class="form-control mb-2" required>
-                            <button type="button" id="btn-import" class="btn btn-success">Importar Excel</button>
+                            <button type="button" id="btn-import" class="btn btn-success">
+                                <i class="fas fa-file-excel"></i> Importar desde Excel
+                            </button>
                         </form>
                     </div>
 
@@ -200,47 +156,155 @@
     </div>
 
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <!-- 🔥 OVERLAY DE CARGA -->
+    <div id="loadingOverlay"
+        style="
+    display:none;
+    position:fixed;
+    top:0;
+    left:0;
+    width:100%;
+    height:100%;
+    backdrop-filter: blur(6px);
+    background: rgba(0,0,0,0.5); /* 🔥 importante */
+    z-index:9999;
+    align-items:center;
+    justify-content:center;
+    flex-direction:column;
+    color:#fff;
+    font-family: 'Segoe UI', sans-serif;
+">
 
+        <div
+            style="
+        background: rgba(20,20,20,0.85); /* 🔥 fondo oscuro */
+        padding:30px 40px;
+        border-radius:16px;
+        text-align:center;
+        box-shadow: 0 10px 40px rgba(0,0,0,0.5);
+        width: 300px;
+    ">
+
+            <!-- Spinner -->
+            <div style="margin-bottom:15px;">
+                <div class="spinner-border text-light" style="width:50px;height:50px;"></div>
+            </div>
+
+            <!-- Texto -->
+            <h5 style="margin-bottom:5px; font-weight:600; color:#fff;">
+                Importando artículos
+            </h5>
+
+            <span style="font-size:13px; opacity:0.8; color:#d1d5db;">
+                Por favor espere...
+            </span>
+
+            <!-- Barra -->
+            <div
+                style="
+            width:100%;
+            height:8px;
+            background:rgba(255,255,255,0.1); /* 🔥 visible */
+            border-radius:10px;
+            margin-top:20px;
+            overflow:hidden;
+        ">
+                <div id="progressBar"
+                    style="
+                height:100%;
+                width:0%;
+                background:linear-gradient(90deg, #22c55e, #4ade80);
+                transition: width 0.5s ease;
+            ">
+                </div>
+            </div>
+
+            <!-- Contador -->
+            <div id="counter"
+                style="
+            margin-top:15px;
+            font-size:15px;
+            font-weight:600;
+            color:#22c55e; /* 🔥 verde visible */
+            letter-spacing:1px;
+        ">
+                0s
+            </div>
+
+        </div>
+    </div>
 </body>
 
 </html>
 <script>
-    const btnImport = document.getElementById('btn-import');
-    const fileInput = document.getElementById('file');
-    const loader = document.getElementById('loader');
-    const percentText = document.getElementById('percent');
+    document.addEventListener("DOMContentLoaded", function() {
 
-    btnImport.addEventListener('click', async () => {
-        if (!fileInput.files.length) {
-            alert('Seleccione un archivo');
-            return;
-        }
+        const btnImport = document.getElementById('btn-import');
+        const fileInput = document.getElementById('file');
 
-        loader.style.display = 'flex';
-        percentText.innerText = '0%';
+        const loader = document.getElementById('loadingOverlay');
+        const counter = document.getElementById('counter');
 
-        let formData = new FormData();
-        formData.append('archivo', fileInput.files[0]);
-        formData.append('_token', '{{ csrf_token() }}');
+        let seconds = 0;
+        let interval;
 
-        await fetch('{{ route('articulos.importar') }}', {
-            method: 'POST',
-            body: formData
+        btnImport.addEventListener('click', async () => {
+
+            if (!fileInput.files.length) {
+                alert('Seleccione un archivo');
+                return;
+            }
+
+            // mostrar overlay
+            loader.style.display = 'flex';
+
+            // desactivar botón
+            btnImport.disabled = true;
+            btnImport.innerHTML = `
+            <span class="spinner-border spinner-border-sm"></span>
+            Importando...
+        `;
+
+            // contador
+            seconds = 0;
+            counter.innerText = "0s";
+
+            interval = setInterval(() => {
+                seconds++;
+                counter.innerText = seconds + "s";
+            }, 1000);
+
+            let formData = new FormData();
+            formData.append('archivo', fileInput.files[0]);
+            formData.append('_token', '{{ csrf_token() }}');
+
+            try {
+                await fetch("{{ route('articulos.importar') }}", {
+                    method: 'POST',
+                    body: formData
+                });
+
+            } catch (error) {
+                alert('Error en la importación');
+            }
+
+            clearInterval(interval);
+
+            setTimeout(() => {
+                loader.style.display = 'none';
+                location.reload();
+            }, 500);
+
         });
 
-        // Consultar progreso cada 500ms
-        const interval = setInterval(async () => {
-            const res = await fetch('{{ route('import.progress') }}');
-            const data = await res.json();
-            percentText.innerText = (data.progress ?? 0) + '%';
-
-            if ((data.progress ?? 0) >= 100) {
-                clearInterval(interval);
-                setTimeout(() => {
-                    loader.style.display = 'none';
-                    location.reload();
-                }, 500);
-            }
-        }, 500);
     });
+    let progressFake = 0;
+
+    setInterval(() => {
+        if (progressFake < 90) {
+            progressFake += Math.random() * 5;
+            document.getElementById("progressBar").style.width = progressFake + "%";
+        }
+    }, 800);
+    document.getElementById("progressBar").style.width = "100%";
 </script>

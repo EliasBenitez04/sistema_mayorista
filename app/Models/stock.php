@@ -31,9 +31,4 @@ class stock extends Model
     {
         return $this->belongsTo(\App\Models\Sucursal::class, 'cod_suc');
     }
-
-    public function detalleInventarios(): \Illuminate\Database\Eloquent\Relations\HasMany
-    {
-        return $this->hasMany(\App\Models\DetalleInventario::class, 'id_stock');
-    }
 }

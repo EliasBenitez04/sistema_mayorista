@@ -18,7 +18,17 @@
     <style>
         body {
             font-family: 'Inter', sans-serif;
-            background: linear-gradient(135deg, #323be2, #666bc9, #2d9bca);
+
+            /* 🔥 Fondo imagen + degradado */
+            background:
+                linear-gradient(135deg, rgba(0, 0, 0, 0.75), rgba(9, 94, 179, 0.877), rgba(0, 0, 0, 0.75)),
+                url("{{ asset('img/articulos/bg_sistema.png') }}");
+                
+
+            background-size: cover;
+            background-position: center;
+            background-repeat: no-repeat;
+
             height: 100vh;
             display: flex;
             align-items: center;
@@ -100,20 +110,17 @@
             margin-top: 25px;
         }
 
-        /* Animación fade in */
         @keyframes fadeIn {
             0% {
                 opacity: 0;
                 transform: translateY(-20px);
             }
-
             100% {
                 opacity: 1;
                 transform: translateY(0);
             }
         }
 
-        /* Icono en input */
         .input-group .fas {
             color: #2563eb;
         }
@@ -156,8 +163,8 @@
                         <label class="mb-2 font-weight-bold">Contraseña</label>
                         <div class="input-group">
                             <input type="password" id="password" name="password"
-                                class="form-control @error('password') is-invalid @enderror" placeholder="••••••••"
-                                required>
+                                class="form-control @error('password') is-invalid @enderror"
+                                placeholder="••••••••" required>
                             <div class="input-group-append">
                                 <span class="input-group-text" onclick="togglePassword()">
                                     <i class="fas fa-eye" id="toggleIcon"></i>
@@ -189,6 +196,7 @@
         function togglePassword() {
             const password = document.getElementById('password');
             const icon = document.getElementById('toggleIcon');
+
             if (password.type === 'password') {
                 password.type = 'text';
                 icon.classList.remove('fa-eye');

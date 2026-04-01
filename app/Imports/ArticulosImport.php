@@ -21,38 +21,40 @@ class ArticulosImport implements ToCollection, WithHeadingRow, WithChunkReading
 
     public function collection(Collection $rows)
     {
+        $data = [];
+
         foreach ($rows as $row) {
 
-            // aumentar contador
+            // progreso
             $processed = Cache::increment('import_progress_count');
 
-            // Saltar filas sin código
+            // saltar vacíos
             if (empty($row['art_codigo'])) {
                 $this->updatePercent($processed);
                 continue;
             }
 
-            $art_descripcion = substr($row['art_descripcion'], 0, 45);
+            $codigo = trim($row['art_codigo']);
 
-            // Evitar duplicados
-            $exists = DB::table('articulos')
-                ->where('art_codigo', $row['art_codigo'])
-                ->exists();
-
-            if ($exists) {
-                $this->updatePercent($processed);
-                continue;
-            }
-
-            DB::table('articulos')->insert([
-                'art_codigo' => $row['art_codigo'],
-                'art_descripcion' => $art_descripcion,
+            // evitar duplicados en memoria (más rápido que exists)
+            $data[$codigo] = [
+                'art_codigo' => $codigo,
+                'art_descripcion' => substr($row['art_descripcion'], 0, 45),
                 'art_precio' => $row['art_precio'],
                 'art_iva' => $row['art_iva'],
                 'prec_vent' => $row['prec_vent'],
-            ]);
+            ];
 
             $this->updatePercent($processed);
+        }
+
+        // 🔥 UPSERT MASIVO (PRO)
+        if (!empty($data)) {
+            DB::table('articulos')->upsert(
+                array_values($data),
+                ['art_codigo'],
+                ['art_descripcion', 'art_precio', 'art_iva', 'prec_vent']
+            );
         }
     }
 

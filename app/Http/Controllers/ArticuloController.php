@@ -5,11 +5,10 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Cache as FacadesCache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
-use App\Models\Articulo;
-use Maatwebsite\Excel\Facades\Excel;
-use App\Imports\ArticulosImport;
+use Symfony\Component\HttpKernel\Attribute\Cache;
 
 class ArticuloController extends Controller
 {
@@ -33,37 +32,60 @@ class ArticuloController extends Controller
             'archivo' => 'required|file|mimes:xlsx,csv,xls',
         ]);
 
-        set_time_limit(0); // permitir tiempo largo
-        ini_set('memory_limit', '2048M'); // memoria suficiente
+        set_time_limit(0);
+        ini_set('memory_limit', '2048M');
 
         $file = $request->file('archivo');
 
-        // Reiniciar progreso
+        // 🔄 reiniciar progreso
         \Illuminate\Support\Facades\Cache::put('import_progress', 0, 600);
         \Illuminate\Support\Facades\Cache::put('import_progress_count', 0, 600);
 
         try {
-            // Contar total de filas para calcular porcentaje real
-            $collection = \Maatwebsite\Excel\Facades\Excel::toCollection(new \App\Imports\ArticulosImport, $file);
+
+            // 📊 contar filas
+            $collection = \Maatwebsite\Excel\Facades\Excel::toCollection(
+                new \App\Imports\ArticulosImport,
+                $file
+            );
+
             $totalRows = $collection->sum(fn($sheet) => $sheet->count());
+
             \Illuminate\Support\Facades\Cache::put('import_total', $totalRows, 600);
 
-            // Import usando chunk para actualizar progreso
-            \Maatwebsite\Excel\Facades\Excel::import(new \App\Imports\ArticulosImport, $file);
+            // 🚀 importar
+            \Maatwebsite\Excel\Facades\Excel::import(
+                new \App\Imports\ArticulosImport,
+                $file
+            );
 
-            alert()->success('Éxito', 'Archivo importado correctamente!');
+            // ✅ marcar final 100%
+            \Illuminate\Support\Facades\Cache::put('import_progress', 100, 600);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Artículos importados correctamente!'
+            ]);
         } catch (\Maatwebsite\Excel\Validators\ValidationException $e) {
+
             $failures = $e->failures();
             $msg = '';
+
             foreach ($failures as $failure) {
                 $msg .= 'Fila ' . $failure->row() . ': ' . implode(', ', $failure->errors()) . '<br>';
             }
-            alert()->error('Error al importar', $msg);
-        } catch (\Exception $e) {
-            alert()->error('Error', $e->getMessage());
-        }
 
-        return redirect()->route('articulos.index');
+            return response()->json([
+                'success' => false,
+                'message' => $msg
+            ], 422);
+        } catch (\Exception $e) {
+
+            return response()->json([
+                'success' => false,
+                'message' => $e->getMessage()
+            ], 500);
+        }
     }
 
     public function index(Request $request)

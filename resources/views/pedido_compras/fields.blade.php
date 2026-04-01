@@ -215,46 +215,46 @@
 
 <style>
     #btnSubir {
-        position: fixed;
-        bottom: 25px;
-        right: 25px;
-        z-index: 9999;
+    position: fixed;
+    bottom: 25px;
+    right: 25px;
+    z-index: 9999;
 
-        width: 55px;
-        height: 55px;
-        border-radius: 50%;
+    width: 55px;
+    height: 55px;
+    border-radius: 50%;
 
-        display: flex;
-        align-items: center;
-        justify-content: center;
+    display: flex;
+    align-items: center;
+    justify-content: center;
 
-        background: linear-gradient(135deg, #007bff, #0056b3);
-        color: #fff;
+    background: linear-gradient(135deg, #007bff, #0056b3);
+    color: #fff;
 
-        font-size: 18px;
+    font-size: 18px;
 
-        border: none;
-        cursor: pointer;
+    border: none;
+    cursor: pointer;
 
-        box-shadow: 0 8px 20px rgba(0, 0, 0, 0.25);
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.25);
 
-        opacity: 0;
-        visibility: hidden;
-        transform: translateY(20px);
+    opacity: 0;
+    visibility: hidden;
+    transform: translateY(20px);
 
-        transition: all 0.3s ease;
-    }
+    transition: all 0.3s ease;
+}
 
-    #btnSubir:hover {
-        transform: translateY(0) scale(1.1);
-        box-shadow: 0 12px 25px rgba(0, 0, 0, 0.35);
-    }
+#btnSubir:hover {
+    transform: translateY(0) scale(1.1);
+    box-shadow: 0 12px 25px rgba(0, 0, 0, 0.35);
+}
 
-    #btnSubir.show {
-        opacity: 1;
-        visibility: visible;
-        transform: translateY(0);
-    }
+#btnSubir.show {
+    opacity: 1;
+    visibility: visible;
+    transform: translateY(0);
+}
 
     .toast-grande {
         font-size: 20px;

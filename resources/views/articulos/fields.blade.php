@@ -8,70 +8,105 @@
 
 <div class="form-group col-sm-12">
     {!! Form::label('art_codigo', 'Código Articulo:', ['class' => 'form-label']) !!}
-    {!! Form::text('art_codigo', null, [
-        'class' => 'form-control',
-        'autofocus' => 'autofocus',
-        'required' => 'required',
-        'placeholder' => 'Ingrese el código del producto',
-    ]) !!}
+
+    <div class="input-group">
+        <div class="input-group-prepend">
+            <span class="input-group-text">
+                <i class="fas fa-barcode"></i>
+            </span>
+        </div>
+
+        {!! Form::text('art_codigo', null, [
+            'class' => 'form-control',
+            'autofocus' => 'autofocus',
+            'required' => 'required',
+            'placeholder' => 'Ingrese el código del producto',
+        ]) !!}
+    </div>
 </div>
+
+
 <!-- Art Descripcion Field -->
 <div class="form-group col-sm-12">
     {!! Form::label('art_descripcion', 'Descripción Articulo:', ['class' => 'form-label']) !!}
-    {!! Form::text('art_descripcion', null, [
-        'class' => 'form-control',
-        'autofocus' => 'autofocus',
-        'required' => 'required',
-        'placeholder' => 'Ingrese la descripción del producto',
-    ]) !!}
+
+    <div class="input-group">
+        <div class="input-group-prepend">
+            <span class="input-group-text">
+                <i class="fas fa-box-open"></i>
+            </span>
+        </div>
+
+        {!! Form::text('art_descripcion', null, [
+            'class' => 'form-control',
+            'autofocus' => 'autofocus',
+            'required' => 'required',
+            'placeholder' => 'Ingrese la descripción del producto',
+        ]) !!}
+    </div>
 </div>
+
 
 <!-- Art Precio Field -->
 <div class="form-group col-sm-4">
     {!! Form::label('art_precio', 'Precio Costo:', ['class' => 'form-label']) !!}
-    {!! Form::text('art_precio', null, [
-        'class' => 'form-control',
-        'required' => 'required',
-        'onkeyup' => 'format(this)',
-        'placeholder' => 'Ingrese el precio del artículo',
-    ]) !!}
+
+    <div class="input-group">
+        <div class="input-group-prepend">
+            <span class="input-group-text">
+                <i class="fas fa-coins"></i>
+            </span>
+        </div>
+
+        {!! Form::text('art_precio', null, [
+            'class' => 'form-control',
+            'required' => 'required',
+            'onkeyup' => 'format(this)',
+            'placeholder' => 'Ingrese el precio del artículo',
+        ]) !!}
+    </div>
 </div>
 
-<!-- Art Precio Field -->
+
+<!-- Art Precio Venta Field -->
 <div class="form-group col-sm-4">
     {!! Form::label('prec_vent', 'Precio Venta:', ['class' => 'form-label']) !!}
-    {!! Form::text('prec_vent', null, [
-        'class' => 'form-control',
-        'required' => 'required',
-        'onkeyup' => 'format(this)',
-        'placeholder' => 'Ingrese el precio de venta del ar',
-    ]) !!}
+
+    <div class="input-group">
+        <div class="input-group-prepend">
+            <span class="input-group-text">
+                <i class="fas fa-hand-holding-usd"></i>
+            </span>
+        </div>
+
+        {!! Form::text('prec_vent', null, [
+            'class' => 'form-control',
+            'required' => 'required',
+            'onkeyup' => 'format(this)',
+            'placeholder' => 'Ingrese el precio de venta del artículo',
+        ]) !!}
+    </div>
 </div>
 
-<!-- Art Iva Field -->
+
+<!-- Art IVA Field -->
 <div class="form-group col-sm-4">
     {!! Form::label('art_iva', 'Impuestos:', ['class' => 'form-label']) !!}
-    {!! Form::select('art_iva', $iva, null, [
-        'class' => 'form-control',
-        'placeholder' => 'Seleccione IVA',
-        'required' => 'required',
-    ]) !!}
-</div>
 
-{{-- <!-- Art Imagen Field -->
-<div class="form-group col-sm-6">
-    {!! Form::label('art_imagen', 'Imagen Producto:', ['class' => 'form-label']) !!}
     <div class="input-group">
-        <input type="file" name="art_imagen" accept="image/*" class="form-control-file">
-    </div>
-
-    @if (isset($articulo) and $articulo->art_imagen != '')
-        <div class="mt-2">
-            <img src="{!! asset('img/articulos/' . $articulo->art_imagen) !!}" alt="Imagen del producto" class="img-thumbnail"
-                style="max-height: 100px; object-fit: cover;">
+        <div class="input-group-prepend">
+            <span class="input-group-text">
+                <i class="fas fa-percent"></i>
+            </span>
         </div>
-    @endif
-</div> --}}
+
+        {!! Form::select('art_iva', $iva, null, [
+            'class' => 'form-control',
+            'placeholder' => 'Seleccione IVA',
+            'required' => 'required',
+        ]) !!}
+    </div>
+</div>
 
 <style>
     #loader {

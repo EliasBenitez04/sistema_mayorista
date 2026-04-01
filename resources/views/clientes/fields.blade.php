@@ -12,7 +12,8 @@
             </div>
 
             <input type="text" name="cli_ci" class="form-control" required pattern="\d+(-\d+)?"
-                title="Ingrese solo números o números con guion" value="{{ old('cli_ci', $cliente->cli_ci ?? '') }}">
+                placeholder="Ej: 1234567-8" title="Ingrese solo números o números con guion"
+                value="{{ old('cli_ci', $cliente->cli_ci ?? '') }}">
         </div>
 
     </div>
@@ -20,7 +21,7 @@
 
     <!-- Nombre -->
     <div class="col-md-6 mb-3">
-        <label for="cli_nombre" class="form-label fw-bold">Nombres:</label>
+        <label for="cli_nombre" class="form-label fw-bold">Nombres o Razón Social:</label>
 
         <div class="input-group shadow-sm">
             <div class="input-group-prepend">
@@ -30,7 +31,7 @@
             </div>
 
             <input type="text" name="cli_nombre" id="cli_nombre" class="form-control" required
-                value="{{ old('cli_nombre', $cliente->cli_nombre ?? '') }}">
+                placeholder="Ingrese nombres o razón social" value="{{ old('cli_nombre', $cliente->cli_nombre ?? '') }}">
         </div>
 
     </div>
@@ -47,8 +48,8 @@
                 </span>
             </div>
 
-            <input type="text" name="cli_apellido" id="cli_apellido" class="form-control" required
-                value="{{ old('cli_apellido', $cliente->cli_apellido ?? '') }}">
+            <input type="text" name="cli_apellido" id="cli_apellido" class="form-control"
+                placeholder="Ingrese apellidos" value="{{ old('cli_apellido', $cliente->cli_apellido ?? '') }}">
         </div>
 
     </div>
@@ -66,7 +67,7 @@
             </div>
 
             <input type="text" name="cli_direccion" id="cli_direccion" class="form-control"
-                value="{{ old('cli_direccion', $cliente->cli_direccion ?? '') }}">
+                placeholder="Ingrese dirección" value="{{ old('cli_direccion', $cliente->cli_direccion ?? '') }}">
         </div>
 
     </div>
@@ -84,7 +85,7 @@
             </div>
 
             <input type="text" name="cli_telefono" id="cli_telefono" class="form-control"
-                value="{{ old('cli_telefono', $cliente->cli_telefono ?? '') }}">
+                placeholder="Ej: 0981 123456" value="{{ old('cli_telefono', $cliente->cli_telefono ?? '') }}">
         </div>
 
     </div>
@@ -104,7 +105,7 @@
 
             {!! Form::select('id_departamento', $departamento, null, [
                 'class' => 'form-control select2',
-                'placeholder' => 'Seleccione...',
+                'placeholder' => 'Seleccione un departamento',
                 'id' => 'departamento_id',
             ]) !!}
 
@@ -127,7 +128,7 @@
 
             {!! Form::select('id_ciudad', $ciudad, null, [
                 'class' => 'form-control select2',
-                'placeholder' => 'Seleccione...',
+                'placeholder' => 'Seleccione una ciudad',
                 'id' => 'ciudad_id',
             ]) !!}
 

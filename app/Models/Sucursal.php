@@ -42,14 +42,4 @@ class Sucursal extends Model
     {
         return $this->belongsToMany(\App\Models\Articulo::class, 'stock');
     }
-
-    public function cajas(): \Illuminate\Database\Eloquent\Relations\HasMany
-    {
-        return $this->hasMany(\App\Models\Caja::class, 'cod_suc');
-    }
-
-    public function ventas(): \Illuminate\Database\Eloquent\Relations\HasMany
-    {
-        return $this->hasMany(\App\Models\Venta::class, 'cod_suc');
-    }
 }

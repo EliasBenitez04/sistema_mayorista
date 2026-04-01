@@ -6,13 +6,14 @@
             <div class="row mb-2">
                 <div class="col-sm-6">
                     <h1>
-                        @lang('models/articulos.singular') @lang('crud.detail')
+                    @lang('models/stocks.singular') @lang('crud.detail')
                     </h1>
                 </div>
                 <div class="col-sm-6">
-                    <a class="btn btn-default float-right" href="{{ route('articulos.index') }}">
-                        @lang('crud.back')
-                    </a>
+                    <a class="btn btn-default float-right"
+                       href="{{ route('stocks.index') }}">
+                                                    @lang('crud.back')
+                                            </a>
                 </div>
             </div>
         </div>
@@ -22,7 +23,7 @@
         <div class="card">
             <div class="card-body">
                 <div class="row">
-                    @include('articulos.show_fields')
+                    @include('stocks.show_fields')
                 </div>
             </div>
         </div>

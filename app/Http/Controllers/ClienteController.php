@@ -60,7 +60,6 @@ class ClienteController extends AppBaseController
         $camposObligatorios = [
             'cli_ci' => 'Nro de CI',
             'cli_nombre' => 'Nombres',
-            'cli_apellido' => 'Apellidos',
             'cli_direccion' => 'Dirección',
             'cli_telefono' => 'Teléfono',
             'id_departamento' => 'Departamento',
@@ -143,7 +142,7 @@ class ClienteController extends AppBaseController
             ->first();
 
         if (!empty($validarCi)) {
-            alert()->info('Atención', 'La Cédula Del Cliente Ya Existe!!!');
+            alert()->info('Atención', 'La Cédula / R.U.C. Del Cliente Ya Existe!!!');
             return redirect()->back()->withInput();
         }
 
@@ -175,7 +174,7 @@ class ClienteController extends AppBaseController
 
         DB::delete('DELETE FROM clientes WHERE id_cliente = ?', [$cliente_id]);
 
-        alert()->success('Exito', 'Borrado Con Exito!!!');
+        alert()->success('Exito', 'Cliente Borrado Con Exito!!!');
 
         return redirect(route('clientes.index'));
     }

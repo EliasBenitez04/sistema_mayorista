@@ -6,18 +6,27 @@
 </li>
 
 <br>
-
-<li class="nav-item {{ request()->routeIs('lineas.*', 'Departamentos.*', 'ciudades.*', 'clientes.*', 'sucursal.*', 'articulos.*') ? 'menu-open' : '' }}">
-    <a href="#" class="nav-link {{ request()->routeIs('Departamentos.*', 'ciudades.*', 'clientes.*', 'sucursal.*', 'articulos.*') ? 'active' : '' }}">
+@php
+    $menuCargaDatos = request()->routeIs(
+        'lineas.*',
+        'Departamentos.*',
+        'ciudades.*',
+        'clientes.*',
+        'sucursal.*',
+        'articulos.*',
+        'stocks.*',
+    );
+@endphp
+<li class="nav-item {{ $menuCargaDatos ? 'menu-open' : '' }}">
+    <a href="#" class="nav-link {{ $menuCargaDatos ? 'active' : '' }}">
         <i class="nav-icon fas fa-database"></i>
         <p>
             Carga de Datos
             <i class="right fas fa-angle-left"></i>
         </p>
     </a>
-
     <ul class="nav nav-treeview">
-        {{-- @can('departamentos index')
+        @can('lineas index')
             <li class="nav-item">
                 <a href="{{ route('lineas.index') }}"
                     class="nav-link {{ request()->routeIs('lineas.*') ? 'active' : '' }}">
@@ -25,7 +34,7 @@
                     <p>- Lineas</p>
                 </a>
             </li>
-        @endcan --}}
+        @endcan
         @can('articulos index')
             <li class="nav-item">
                 <a href="{{ route('articulos.index') }}"
@@ -35,6 +44,12 @@
                 </a>
             </li>
         @endcan
+        <li class="nav-item">
+            <a href="{{ route('stocks.index') }}" class="nav-link {{ request()->routeIs('stocks.*') ? 'active' : '' }}">
+                <i class="nav-icon fas fa-sync-alt"></i>
+                <p>- Importar Stock</p>
+            </a>
+        </li>
         @can('sucursal index')
             <li class="nav-item">
                 <a href="{{ route('sucursal.index') }}"
@@ -99,7 +114,7 @@
         @endcan
     </ul>
 </li>
-{{-- <br>
+<br>
 
 <li class="nav-item {{ request()->routeIs('carga_fotos.*') ? 'menu-open' : '' }}">
     <a href="#" class="nav-link {{ request()->routeIs('carga_fotos.*') ? 'active' : '' }}">
@@ -121,9 +136,8 @@
             </li>
         @endcan
     </ul>
-</li> --}}
+</li>
 <br>
-{{-- @hasrole('ADMIN') --}}
 <!-- Configuraciones -->
 <li class="nav-item {{ Request::is('usuarios*', 'roles*', 'permissions*', 'auditoria*') ? 'menu-open' : '' }}">
     <a href="#"
@@ -160,5 +174,3 @@
         </li>
     </ul>
 </li>
-
-{{-- @endhasallroles --}}

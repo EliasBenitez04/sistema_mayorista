@@ -55,6 +55,10 @@
                                         class="btn btn-warning btn-sg" title="Imprimir pedido">
                                         <i class="fas fa-print"></i>
                                     </a>
+                                    <a href="{{ route('pedido.export', [$pedido->id_pedido]) }}"
+                                        class="btn btn-success btn-sg" title="Exportar Excel">
+                                        <i class="fas fa-file-excel"></i>
+                                    </a>
                                 @endif
 
                                 <a href="{{ route('pedido_compras.show', [$pedido->id_pedido]) }}"
@@ -77,6 +81,7 @@
                                     ]) !!}
                                     {!! Form::close() !!}
                                 @endif
+
                             </div>
                         </td>
                     </tr>

@@ -6,6 +6,8 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Carbon\Carbon;
+use App\Exports\PedidoExport;
+use Maatwebsite\Excel\Facades\Excel;
 
 class PedidoComprasController extends Controller
 {
@@ -289,9 +291,23 @@ class PedidoComprasController extends Controller
             ->join('articulos', 'articulos.id_articulo', '=', 'detalle_pedido.id_articulo')
             ->where('detalle_pedido.id_pedido_compras', $id)
             ->orderByRaw("
-            regexp_replace(articulos.art_codigo, '[0-9]+$', '') ASC,
-            CAST(regexp_replace(articulos.art_codigo, '^.*?([0-9]+)$', '\\1') AS INTEGER) ASC
-            ")
+    regexp_replace(articulos.art_codigo, '(TP|TM|RN|TG|GG|RR|[0-9]+)$', '') ASC,
+
+    CASE
+        WHEN articulos.art_codigo ~ 'TP$' THEN 1
+        WHEN articulos.art_codigo ~ 'TM$' THEN 2
+        WHEN articulos.art_codigo ~ 'RN$' THEN 3
+        WHEN articulos.art_codigo ~ 'TG$' THEN 4
+        WHEN articulos.art_codigo ~ 'GG$' THEN 5
+        WHEN articulos.art_codigo ~ 'RR$' THEN 6
+        ELSE 99
+    END ASC,
+
+    COALESCE(
+        NULLIF(regexp_replace(articulos.art_codigo, '\\D', '', 'g'), ''),
+        '0'
+    )::BIGINT ASC
+")
             ->get();
 
         // Calcular totales generales
@@ -402,11 +418,39 @@ class PedidoComprasController extends Controller
             ->where('d.id_pedido_compras', $id)
             ->select('d.*', 'a.art_codigo', 'a.art_descripcion')
             ->orderByRaw("
-            regexp_replace(a.art_codigo, '[0-9]+$', '') ASC,
-            regexp_replace(a.art_codigo, '[^0-9]', '', 'g')::BIGINT ASC
-            ")
+    regexp_replace(a.art_codigo, '(TP|TM|RN|TG|GG|RR|[0-9]+)$', '') ASC,
+
+    CASE
+        WHEN a.art_codigo ~ 'TP$' THEN 1
+        WHEN a.art_codigo ~ 'TM$' THEN 2
+        WHEN a.art_codigo ~ 'RN$' THEN 3
+        WHEN a.art_codigo ~ 'TG$' THEN 4
+        WHEN a.art_codigo ~ 'GG$' THEN 5
+        WHEN a.art_codigo ~ 'RR$' THEN 6
+        ELSE 99
+    END ASC,
+
+    COALESCE(
+        NULLIF(regexp_replace(a.art_codigo, '\\D', '', 'g'), ''),
+        '0'
+    )::BIGINT ASC
+")
             ->get();
 
         return view('pedido_compras.imprimir', compact('pedido', 'detalle'));
+    }
+
+    public function export($id)
+    {
+        $pedido = DB::table('pedido_compras')
+            ->where('id_pedido', $id)
+            ->first();
+
+        $nombreArchivo = 'export_pedido_' . $pedido->nro_pedido . '.xlsx';
+
+        return Excel::download(
+            new PedidoExport($id),
+            $nombreArchivo
+        );
     }
 }
