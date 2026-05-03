@@ -64,7 +64,7 @@
             <thead class="thead-dark text-center">
                 <tr>
                     <th>#</th>
-                    <th>Nro Documento</th>
+                    <th style="width: 10%">Nro. Documento</th>
                     <th>Cliente</th>
                     <th>Dirección</th>
                     <th>Teléfono</th>
@@ -76,13 +76,33 @@
             <tbody>
                 @foreach ($clientes as $cliente)
                     <tr>
-                        <td>{{ $cliente->id_cliente }}</td>
-                        <td class="text-center">{{ $cliente->cli_ci }}</td>
-                        <td class="text-center">{{ $cliente->cli_nombre }} {{ $cliente->cli_apellido }}</td>
-                        <td>{{ $cliente->cli_direccion }}</td>
-                        <td class="text-center">{{ $cliente->cli_telefono }}</td>
-                        <td class="text-center">{{ $cliente->dep_descripcion }}</td>
-                        <td>{{ $cliente->ciu_descripcion }}</td>
+                        <td class="text-center" style="width: 2%;">
+                            {{ $cliente->id_cliente }}
+                        </td>
+
+                        <td class="text-center" style="width: 10%;">
+                            {{ $cliente->cli_ci }}
+                        </td>
+
+                        <td style="width: 24%;">
+                            {{ $cliente->cli_nombre }} {{ $cliente->cli_apellido }}
+                        </td>
+
+                        <td style="width: 27%;">
+                            {{ $cliente->cli_direccion }}
+                        </td>
+
+                        <td class="text-center" style="width: 8%;">
+                            {{ $cliente->cli_telefono }}
+                        </td>
+
+                        <td class="text-center" style="width: 10%;">
+                            {{ $cliente->dep_descripcion }}
+                        </td>
+
+                        <td class="text-center" style="width: 19%;">
+                            {{ $cliente->ciu_descripcion }}
+                        </td>
                         <td style="width: 120px">
                             {!! Form::open(['route' => ['clientes.destroy', $cliente->id_cliente], 'method' => 'delete']) !!}
                             <div class='btn-group'>

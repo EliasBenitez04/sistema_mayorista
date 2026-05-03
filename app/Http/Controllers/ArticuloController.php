@@ -75,11 +75,17 @@ class ArticuloController extends Controller
                 $msg .= 'Fila ' . $failure->row() . ': ' . implode(', ', $failure->errors()) . '<br>';
             }
 
+            // 🔥 ALERTA ERROR
+            alert()->error('Error de Validación', strip_tags($msg));
+
             return response()->json([
                 'success' => false,
                 'message' => $msg
             ], 422);
         } catch (\Exception $e) {
+
+            // 🔥 ALERTA ERROR GENERAL
+            alert()->error('Error', $e->getMessage());
 
             return response()->json([
                 'success' => false,
@@ -90,11 +96,21 @@ class ArticuloController extends Controller
 
     public function index(Request $request)
     {
-        // Inicializamos la consulta base
+        // Consulta base
         $query = DB::table('articulos')
             ->select('articulos.*');
 
-        // Ordenar por Precio
+        // BUSCADOR PRODUCTO
+        if ($request->has('buscar') && !empty($request->buscar)) {
+            $buscar = $request->buscar;
+
+            $query->where(function ($q) use ($buscar) {
+                $q->where('articulos.art_codigo', 'like', "%{$buscar}%")
+                    ->orWhere('articulos.art_descripcion', 'like', "%{$buscar}%");
+            });
+        }
+
+        // ORDENAR PRECIO
         if ($request->has('ordenar') && $request->ordenar == 'asc') {
             $query->orderBy('articulos.prec_vent', 'asc');
         } elseif ($request->has('ordenar') && $request->ordenar == 'desc') {
@@ -103,8 +119,8 @@ class ArticuloController extends Controller
             $query->orderBy('articulos.id_articulo');
         }
 
-        // Obtener los artículos con los filtros aplicados
-        $articulos = $query->paginate(10);  // Asegúrate de usar paginate()
+        // PAGINAR
+        $articulos = $query->paginate(15)->appends($request->all());
 
         return view('articulos.index')
             ->with('articulos', $articulos);
@@ -123,25 +139,15 @@ class ArticuloController extends Controller
     {
         $input = $request->all();
 
-        // Validación de archivo de imagen
+        // VALIDACIÓN
         $validator = Validator::make(
             $input,
             [
-                'art_codigo' => 'required|unique:articulos,art_codigo',
+                'art_codigo' => 'required',
                 'art_descripcion' => 'required',
                 'art_precio' => 'required',
                 'art_iva' => 'required|numeric',
                 'prec_vent' => 'required|numeric'
-            ],
-            [
-                'art_codigo.required' => 'El código del artículo es requerido',
-                'art_codigo.unique' => 'El código del artículo ya existe',
-                'art_descripcion.required' => 'La descripción del articulo es requerida',
-                'art_precio.required' => 'El precio del articulo es requerido',
-                'art_iva.required' => 'El iva del articulo es requerido',
-                'art_iva.numeric' => 'El iva del articulo debe ser un número',
-                'prec_vent.required' => 'El precio de venta es requerido',
-                'prec_vent.numeric' => 'El precio de venta debe ser un número',
             ]
         );
 
@@ -149,58 +155,93 @@ class ArticuloController extends Controller
             if ($request->ajax()) {
                 return response()->json(['errors' => $validator->errors()], 422);
             }
-            alert()->error('Error', 'Error al subir la imagen. Verifica los requisitos.');
+
+            alert()->error('Error', 'Datos inválidos');
             return back()->withErrors($validator)->withInput();
         }
 
         DB::beginTransaction();
-        try {
-            // Insertar artículo
-            $idArticulo = DB::table('articulos')->insertGetId([
-                'art_codigo' => strtoupper($input['art_codigo']),
-                'art_descripcion' => strtoupper($input['art_descripcion']),
-                'art_precio' => $input['art_precio'],
-                'art_iva' => $input['art_iva'],
-                'prec_vent' => $input['prec_vent']
-            ], 'id_articulo');
 
-            // Manejo de stock
-            $exists = DB::table('stock')->where('id_articulo', $idArticulo)->where('cod_suc', 1)->exists();
-            if (!$exists) {
-                $nextId = DB::table('stock')->max('id_stock') + 1;
-                DB::table('stock')->insert([
-                    'id_stock' => $nextId,
-                    'id_articulo' => $idArticulo,
-                    'cod_suc' => 9,
-                    'cantidad' => 0
-                ]);
+        try {
+
+            $codBase = strtoupper($input['art_codigo']);
+            $descripcion = strtoupper($input['art_descripcion']);
+
+            $talles = $request->talles;
+
+            // =========================
+            // 🔥 CON TALLES
+            // =========================
+            if (!empty($talles)) {
+
+                foreach ($talles as $talle) {
+
+                    $codigo = $codBase . $talle;
+
+                    $existe = DB::table('articulos')
+                        ->where('art_codigo', $codigo)
+                        ->exists();
+
+                    if (!$existe) {
+
+                        $idArticulo = DB::table('articulos')->insertGetId([
+                            'art_codigo' => $codigo,
+                            'art_descripcion' => $descripcion,
+                            'art_precio' => $input['art_precio'],
+                            'art_iva' => $input['art_iva'],
+                            'prec_vent' => $input['prec_vent']
+                        ], 'id_articulo');
+
+                        // STOCK AUTOMÁTICO
+                        DB::table('stock')->insert([
+                            'id_articulo' => $idArticulo,
+                            'cod_suc' => 1,
+                            'cantidad' => 1
+                        ]);
+                    }
+                }
+            } else {
+
+                // =========================
+                // 🔥 SIN TALLES
+                // =========================
+
+                $existe = DB::table('articulos')
+                    ->where('art_codigo', $codBase)
+                    ->exists();
+
+                if (!$existe) {
+
+                    $idArticulo = DB::table('articulos')->insertGetId([
+                        'art_codigo' => $codBase,
+                        'art_descripcion' => $descripcion,
+                        'art_precio' => $input['art_precio'],
+                        'art_iva' => $input['art_iva'],
+                        'prec_vent' => $input['prec_vent']
+                    ], 'id_articulo');
+
+                    // STOCK AUTOMÁTICO
+                    DB::table('stock')->insert([
+                        'id_articulo' => $idArticulo,
+                        'cod_suc' => 1,
+                        'cantidad' => 1
+                    ]);
+                }
             }
 
             DB::commit();
 
-            // Si es AJAX, devolver JSON
-            if ($request->ajax()) {
-                return response()->json([
-                    'id_articulo' => $idArticulo,
-                    'art_descripcion' => strtoupper($input['art_descripcion'])
-                ]);
-            }
+            alert()->success('Éxito', 'Artículo guardado correctamente');
 
-            // Si se pasó return_to (viene desde pedido), redirigir de vuelta
-            if ($request->has('return_to') && $request->return_to == 'pedido_compras') {
-                alert()->success('Éxito', 'Artículo creado correctamente.');
-                return redirect()->route('pedido_compras.create'); // vuelve a la vista de pedido
-            }
-
-            alert()->success('Éxito', 'Registro Guardado correctamente.');
             return redirect()->route('articulos.index');
         } catch (\Exception $e) {
+
             DB::rollBack();
-            Log::error("Error al insertar artículo y stock: " . $e->getMessage());
-            if ($request->ajax()) {
-                return response()->json(['errors' => ['error' => 'Hubo un error al guardar el artículo']], 500);
-            }
-            alert()->error('Error', 'Hubo un error al guardar el artículo!');
+
+            Log::error($e->getMessage());
+
+            alert()->error('Error', 'Error al guardar artículo');
+
             return back()->withInput();
         }
     }
@@ -226,11 +267,18 @@ class ArticuloController extends Controller
 
     public function update($id, Request $request)
     {
-        ##valido
+        // Buscar artículo
+        $articulos = DB::table('articulos')
+            ->where('id_articulo', $id)
+            ->first();
+
+        // Validar existencia
         if (empty($articulos)) {
             alert()->error('Error', 'Registro No Encontrado!');
-            return redirect(route('Articulos.index'));
+            return redirect(route('articulos.index'));
         }
+
+        $input = $request->all();
 
         $input = $request->all();
 
@@ -295,29 +343,36 @@ class ArticuloController extends Controller
     {
         $articulo = DB::table('articulos')->where('id_articulo', $id)->first();
 
-        // Validar si el artículo existe
+        // validar existencia
         if (empty($articulo)) {
             alert()->error('Error', 'Registro No Encontrado!');
+            return back();
+        }
+
+        // 🔥 VALIDAR SI ESTÁ EN USO
+        $enUso = DB::table('detalle_pedido')
+            ->where('id_articulo', $id)
+            ->exists();
+
+        if ($enUso) {
+            alert()->error(
+                'No se puede eliminar',
+                'El artículo está siendo utilizado en pedidos...'
+            );
 
             return back();
         }
 
-        // Verificar si el artículo está siendo usado en otras tablas
-        // $isUsed = DB::table('detalle_pedido')->where('id_articulo', $id)->exists();
-        // if ($isUsed) {
-        //     alert()->error('Error', 'El Artículo No Puede Ser Eliminado Porque Está Siendo Utilizado En Otras Tablas.');
+        // eliminar stock primero
+        DB::table('stock')->where('id_articulo', $id)->delete();
 
-        //     return back();
-        // }
-
-        // Eliminar el artículo si no está en uso
+        // eliminar artículo
         DB::delete('DELETE FROM articulos WHERE id_articulo = ?', [$id]);
 
-        alert()->success('Éxito', 'Articulo Borrado Correctamente.');
+        alert()->success('Éxito', 'Artículo borrado correctamente.');
 
         return redirect(route('articulos.index'));
     }
-
     // Método para mostrar productos según la sucursal del usuario
     public function mostrarProductos()
     {

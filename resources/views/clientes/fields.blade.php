@@ -11,7 +11,7 @@
                 </span>
             </div>
 
-            <input type="text" name="cli_ci" class="form-control" required pattern="\d+(-\d+)?"
+            <input type="text" name="cli_ci" class="form-control" required pattern="\d+(-\d+)?" maxlength="10"
                 placeholder="Ej: 1234567-8" title="Ingrese solo números o números con guion"
                 value="{{ old('cli_ci', $cliente->cli_ci ?? '') }}">
         </div>
@@ -31,7 +31,8 @@
             </div>
 
             <input type="text" name="cli_nombre" id="cli_nombre" class="form-control" required
-                placeholder="Ingrese nombres o razón social" value="{{ old('cli_nombre', $cliente->cli_nombre ?? '') }}">
+                placeholder="Ingrese nombres o razón social"
+                value="{{ old('cli_nombre', $cliente->cli_nombre ?? '') }}">
         </div>
 
     </div>
@@ -137,3 +138,11 @@
     </div>
 
 </div>
+
+<script>
+    document.querySelector('[name="cli_ci"]').addEventListener('input', function() {
+        if (this.value.length > 9) {
+            this.value = this.value.slice(0, 9);
+        }
+    });
+</script>

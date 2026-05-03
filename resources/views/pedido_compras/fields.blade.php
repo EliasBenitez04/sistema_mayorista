@@ -121,8 +121,16 @@
             'max' => 100,
             'step' => '0.01',
             'id' => 'descuento_input',
+            'oninput' => '
+        if(this.value > 100) this.value = 100;
+        if(this.value < 0) this.value = 0;
+        ',
         ]) !!}
     </div>
+
+    <small class="text-danger d-none" id="error-descuento">
+        El descuento máximo permitido es 100%
+    </small>
 
 </div>
 
@@ -195,7 +203,6 @@
         'readonly' => 'readonly',
     ]) !!}
 </div>
-
 @include('pedido_compras.modal_producto')
 <style>
     .toast-grande {
@@ -215,46 +222,46 @@
 
 <style>
     #btnSubir {
-    position: fixed;
-    bottom: 25px;
-    right: 25px;
-    z-index: 9999;
+        position: fixed;
+        bottom: 25px;
+        right: 25px;
+        z-index: 9999;
 
-    width: 55px;
-    height: 55px;
-    border-radius: 50%;
+        width: 55px;
+        height: 55px;
+        border-radius: 50%;
 
-    display: flex;
-    align-items: center;
-    justify-content: center;
+        display: flex;
+        align-items: center;
+        justify-content: center;
 
-    background: linear-gradient(135deg, #007bff, #0056b3);
-    color: #fff;
+        background: linear-gradient(135deg, #007bff, #0056b3);
+        color: #fff;
 
-    font-size: 18px;
+        font-size: 18px;
 
-    border: none;
-    cursor: pointer;
+        border: none;
+        cursor: pointer;
 
-    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.25);
+        box-shadow: 0 8px 20px rgba(0, 0, 0, 0.25);
 
-    opacity: 0;
-    visibility: hidden;
-    transform: translateY(20px);
+        opacity: 0;
+        visibility: hidden;
+        transform: translateY(20px);
 
-    transition: all 0.3s ease;
-}
+        transition: all 0.3s ease;
+    }
 
-#btnSubir:hover {
-    transform: translateY(0) scale(1.1);
-    box-shadow: 0 12px 25px rgba(0, 0, 0, 0.35);
-}
+    #btnSubir:hover {
+        transform: translateY(0) scale(1.1);
+        box-shadow: 0 12px 25px rgba(0, 0, 0, 0.35);
+    }
 
-#btnSubir.show {
-    opacity: 1;
-    visibility: visible;
-    transform: translateY(0);
-}
+    #btnSubir.show {
+        opacity: 1;
+        visibility: visible;
+        transform: translateY(0);
+    }
 
     .toast-grande {
         font-size: 20px;
@@ -266,19 +273,16 @@
     <script type="text/javascript">
         $(document).ready(function() {
 
-            // Evitar submit con Enter
             $("form").keypress(function(e) {
                 if (e.which == 13) return false;
             });
 
-            // Abrir modal y cargar productos según lo que ya está escrito
             $('#productSearchModalPed').on('show.bs.modal', function() {
                 let cod_suc = $("#cod_suc").val();
-                let query = $('#productSearchQueryPed').val(); // lo que ya escribiste
+                let query = $('#productSearchQueryPed').val();
                 fetchProductos(query, cod_suc);
             });
 
-            // Buscar productos mientras escribís
             let timeout = null;
             $('#productSearchQueryPed').on('keyup', function() {
                 clearTimeout(timeout);
@@ -287,7 +291,7 @@
 
                 timeout = setTimeout(() => {
                     fetchProductos(query, cod_suc);
-                }, 300); // delay 300ms para no saturar el servidor
+                }, 300);
             });
 
             function fetchProductos(query, cod_suc) {
@@ -301,18 +305,15 @@
                     .then(html => document.getElementById('modalResultsPed').innerHTML = html);
             }
 
-            // Detectar cambios en descuento y condición
             $('#descuento_si, #descuento_no').on('change', toggleDescuento);
             $('#condicion').on('change', toggleCondicion);
             $('#descuento_input').on('keyup change', calcularTotal);
 
-            // Inicializar al cargar
             toggleDescuento();
             toggleCondicion();
         });
 
-        // ================= FUNCIONES =================
-
+        // ================= FORMATO =================
         function formatearMiles(numero) {
             return parseFloat(numero).toLocaleString('es-PY', {
                 minimumFractionDigits: 0,
@@ -324,28 +325,51 @@
             return parseFloat(valor.toString().replace(/\./g, '').replace(',', '.')) || 0;
         }
 
-        // Seleccionar producto
+        // ================= SELECCIONAR PRODUCTO =================
         function seleccionarProductoPed(codigo, producto, precio) {
+
             let tabla = document.getElementById('selectedProducts');
             if (!tabla) return;
 
-            // Evitar duplicados con SweetAlert
-            for (let fila of tabla.getElementsByTagName('tr')) {
-                if (fila.querySelector('input[name="codigo[]"]').value === codigo) {
-                    Swal.fire({
-                        icon: 'warning',
-                        title: 'Atención',
-                        text: 'El producto ya fue agregado.',
-                        timer: 1500,
-                        showConfirmButton: false
-                    });
-                    return;
+            let filas = tabla.getElementsByTagName('tr');
+            let filaExistente = null;
+
+            for (let fila of filas) {
+                let inputCodigo = fila.querySelector('input[name="codigo[]"]');
+
+                if (inputCodigo && inputCodigo.value === codigo) {
+                    filaExistente = fila;
+                    break;
                 }
             }
 
-            let precioFormateado = formatearMiles(precio);
+            // ================= SI YA EXISTE =================
+            if (filaExistente) {
 
+                let inputCantidad = filaExistente.querySelector('.cantidad');
+
+                let nuevaCantidad = (parseInt(inputCantidad.value) || 0) + 1;
+                inputCantidad.value = nuevaCantidad;
+
+                calcularTodo();
+                calcularTotal();
+
+                Swal.fire({
+                    icon: 'info',
+                    title: 'Producto actualizado',
+                    text: `Total unidades de este producto: ${nuevaCantidad}`,
+                    timer: 1200,
+                    showConfirmButton: false,
+                    toast: true,
+                    position: 'top-end'
+                });
+
+                return; // 🔥 IMPORTANTE: cortar aquí para evitar doble suma
+            }
+
+            // ================= NUEVO PRODUCTO =================
             let row = document.createElement('tr');
+
             row.innerHTML = `
         <td class="text-center">
             <input type="text" name="codigo[]" class="form-control text-center" value="${codigo}" readonly>
@@ -360,11 +384,12 @@
         </td>
 
         <td class="text-center">
-            <input type="text" name="precio[]" class="form-control text-center precio" value="${precioFormateado}">
+            <input type="hidden" class="precio_raw" value="${precio}">
+            <input type="text" name="precio[]" class="form-control text-center precio" value="${formatearMiles(precio)}" readonly>
         </td>
 
         <td class="text-center">
-            <input type="text" name="subtotal[]" class="form-control text-center subtotal" value="${precioFormateado}" readonly>
+            <input type="text" name="subtotal[]" class="form-control text-center subtotal" value="${formatearMiles(precio)}" readonly>
         </td>
 
         <td class="text-center">
@@ -375,166 +400,228 @@
     `;
 
             tabla.appendChild(row);
+            row.scrollIntoView({
+                behavior: 'smooth',
+                block: 'center'
+            });
+
+            // 🔥 resaltar visualmente
             row.style.backgroundColor = '#d4edda';
             setTimeout(() => {
                 row.style.transition = 'background-color 0.5s';
                 row.style.backgroundColor = '';
             }, 800);
 
-            row.scrollIntoView({
-                behavior: 'smooth',
-                block: 'center'
-            });
-
+            calcularTodo();
+            calcularTotal();
             Swal.fire({
                 icon: 'success',
                 title: 'Producto agregado',
                 timer: 1000,
                 showConfirmButton: false,
                 toast: true,
-                position: 'top-end',
-                customClass: {
-                    popup: 'toast-grande'
-                }
+                position: 'top-end'
             });
-
-            $('#productSearchModalPed').modal({
-                backdrop: 'static',
-                keyboard: false
-            });
-
-            calcularTotal();
         }
 
-        document.addEventListener('input', function(e) {
+        // ================= FORMATO =================
+        function formatearMiles(numero) {
+            numero = Number(numero) || 0;
 
-            if (e.target.classList.contains('cantidad') || e.target.classList.contains('precio')) {
+            return numero.toLocaleString('es-PY', {
+                minimumFractionDigits: 0,
+                maximumFractionDigits: 0
+            });
+        }
 
-                let fila = e.target.closest('tr');
+        function limpiarMiles(valor) {
+            if (!valor) return 0;
 
-                let cantidadInput = fila.querySelector('.cantidad');
-                let precioInput = fila.querySelector('.precio');
-                let subtotalInput = fila.querySelector('.subtotal');
+            return Number(
+                valor.toString()
+                .replace(/\./g, '')
+                .replace(',', '.')
+            ) || 0;
+        }
 
-                let cantidad = limpiarMiles(cantidadInput.value);
-                let precio = limpiarMiles(precioInput.value);
+        // ================= RECALCULAR UNA FILA =================
+        function recalcularFila(row) {
 
-                if (!cantidad) cantidad = 0;
-                if (!precio) precio = 0;
+            if (!row) return;
 
-                let subtotal = cantidad * precio;
+            const cantidadInput = row.querySelector(".cantidad");
+            const precioInput = row.querySelector(".precio_raw");
+            const subtotalInput = row.querySelector(".subtotal");
 
-                // FORZAR FORMATO
-                subtotalInput.value = formatearMiles(subtotal);
+            if (!cantidadInput || !precioInput || !subtotalInput) return;
 
-                // volver a formatear precio también
-                precioInput.value = formatearMiles(precio);
+            let cantidad = parseInt(cantidadInput.value) || 0;
+            let precio = parseFloat(precioInput.value) || 0;
 
-                calcularTotal();
+            let subtotal = cantidad * precio;
+
+            subtotalInput.value = formatearMiles(subtotal);
+        }
+
+        // ================= RECALCULAR TODO =================
+        function calcularTodo() {
+
+            let totalCantidad = 0;
+
+            document.querySelectorAll("#selectedProducts tr").forEach(row => {
+
+                const cantidadInput = row.querySelector(".cantidad");
+
+                if (!cantidadInput) return;
+
+                let cantidad = parseInt(cantidadInput.value) || 0;
+
+                totalCantidad += cantidad;
+
+                recalcularFila(row);
+            });
+
+            let totalCantidadLabel = document.getElementById("totalCantidad");
+
+            if (totalCantidadLabel) {
+                totalCantidadLabel.innerText = totalCantidad;
             }
 
-        });
-
-        // Borrar fila
-        function borrarFila(btn) {
-            let fila = btn.closest('tr');
-            if (fila) fila.remove();
             calcularTotal();
         }
 
-        // Recalcular subtotal al cambiar cantidad o precio
-        $(document).on("keyup change", ".cantidad, .precio", function() {
-
-            let fila = $(this).closest("tr");
-
-            let cant = limpiarMiles(fila.find(".cantidad").val());
-            let precio = limpiarMiles(fila.find(".precio").val());
-
-            if (!cant) cant = 0;
-            if (!precio) precio = 0;
-
-            let subtotal = cant * precio;
-
-            fila.find(".subtotal").val(formatearMiles(subtotal));
-
-            calcularTotal();
-        });
-        // Calcular total general
+        // ================= TOTAL GENERAL =================
         function calcularTotal() {
 
             let total = 0;
 
-            $(".subtotal").each(function() {
-
-                total += limpiarMiles($(this).val());
-
+            document.querySelectorAll(".subtotal").forEach(input => {
+                total += limpiarMiles(input.value);
             });
 
-            // aplicar descuento
-            if ($('#descuento_si').is(':checked')) {
-                let desc = parseFloat($("#descuento_input").val()) || 0;
-                if (desc > 0) {
-                    total -= total * (desc / 100);
+            if (document.getElementById("descuento_si")?.checked) {
+
+                let descuento = parseFloat(
+                    document.getElementById("descuento_input").value
+                ) || 0;
+
+                if (descuento > 0) {
+                    total = total - (total * descuento / 100);
                 }
             }
 
-            $("#ped_total").val(formatearMiles(total));
-
+            document.getElementById("ped_total").value = formatearMiles(total);
         }
-        // Toggle descuento
+
+        // ================= INPUT MANUAL CANTIDAD =================
+        document.addEventListener("input", function(e) {
+
+            if (!e.target.classList.contains("cantidad")) return;
+
+            const input = e.target;
+
+            // SOLO NUMEROS
+            let valor = input.value.replace(/[^0-9]/g, '');
+
+            if (valor === '') valor = '0';
+
+            input.value = valor;
+
+            const row = input.closest("tr");
+
+            recalcularFila(row);
+            calcularTodo();
+        });
+
+        // ================= SI SALE DEL INPUT =================
+        document.addEventListener("blur", function(e) {
+
+            if (!e.target.classList.contains("cantidad")) return;
+
+            if (e.target.value === '' || e.target.value === '0') {
+                e.target.value = 1;
+            }
+
+            const row = e.target.closest("tr");
+
+            recalcularFila(row);
+            calcularTodo();
+
+        }, true);
+
+        // ================= BORRAR =================
+        function borrarFila(btn) {
+
+            btn.closest("tr").remove();
+
+            calcularTodo();
+        }
+
+        // ================= DESCUENTO =================
         function toggleDescuento() {
+
             if ($('#descuento_si').is(':checked')) {
+
                 $('#div-descuento').show();
                 $('#descuento_input').prop('required', true);
+
             } else {
+
                 $('#div-descuento').hide();
                 $('#descuento_input').prop('required', false).val(0);
             }
+
             calcularTotal();
         }
 
-        // Toggle condición CREDITO
+        // ================= CONDICION =================
         function toggleCondicion() {
+
             let valor = $("#condicion").val();
+
             if (valor === "CREDITO") {
+
                 $("#div-intervalo, #div-cantcuotas").show();
                 $("#intervalo, #cant_cuotas").prop('required', true);
+
             } else {
+
                 $("#div-intervalo, #div-cantcuotas").hide();
                 $("#intervalo, #cant_cuotas").prop('required', false).val('');
             }
         }
-        // Mostrar botón al hacer scroll
+
+        // ================= INIT =================
         document.addEventListener("DOMContentLoaded", function() {
 
-            let btn = document.getElementById("btnSubir");
+            calcularTodo();
 
-            window.addEventListener("scroll", function() {
+            $('#descuento_si, #descuento_no').on('change', toggleDescuento);
+            $('#condicion').on('change', toggleCondicion);
+            $('#descuento_input').on('keyup change', calcularTotal);
+        });
 
-                if (window.scrollY > 200) {
-                    btn.classList.add("show");
+        document.addEventListener("DOMContentLoaded", function() {
+
+            const descuento = document.getElementById("descuento_input");
+            const error = document.getElementById("error-descuento");
+
+            descuento.addEventListener("input", function() {
+
+                let valor = parseFloat(this.value) || 0;
+
+                if (valor > 100) {
+                    this.value = 100;
+                    error.classList.remove("d-none");
                 } else {
-                    btn.classList.remove("show");
+                    error.classList.add("d-none");
                 }
 
+                if (valor < 0) {
+                    this.value = 0;
+                }
             });
 
-            btn.addEventListener("click", function() {
-                window.scrollTo({
-                    top: 0,
-                    behavior: "smooth"
-                });
-            });
-
-        });
-        document.getElementById("btnSubir").addEventListener("click", function(e) {
-            e.preventDefault();
-            e.stopPropagation();
-
-            window.scrollTo({
-                top: 0,
-                behavior: "smooth"
-            });
         });
     </script>
 @endpush

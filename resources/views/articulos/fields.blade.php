@@ -1,4 +1,3 @@
-<!-- Art Descripcion Field -->
 <!-- Pantalla de carga -->
 <div id="loader"
     style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:#00000080; justify-content:center; align-items:center; flex-direction:column; z-index:9999;">
@@ -6,6 +5,7 @@
     <div id="percent" style="color:white; font-size:20px; margin-top:10px;">0%</div>
 </div>
 
+<!-- Código -->
 <div class="form-group col-sm-12">
     {!! Form::label('art_codigo', 'Código Articulo:', ['class' => 'form-label']) !!}
 
@@ -18,15 +18,48 @@
 
         {!! Form::text('art_codigo', null, [
             'class' => 'form-control',
-            'autofocus' => 'autofocus',
             'required' => 'required',
-            'placeholder' => 'Ingrese el código del producto',
+            'placeholder' => 'Ingrese código base',
         ]) !!}
     </div>
 </div>
 
+<!-- 🔥 TALLES -->
+<div class="form-group col-sm-12">
+    <label>Talles (Opcional)</label>
 
-<!-- Art Descripcion Field -->
+    <div class="row">
+
+        <div class="col-md-2"><label><input type="checkbox" name="talles[]" value="01"> 01</label></div>
+        <div class="col-md-2"><label><input type="checkbox" name="talles[]" value="02"> 02</label></div>
+        <div class="col-md-2"><label><input type="checkbox" name="talles[]" value="03"> 03</label></div>
+        <div class="col-md-2"><label><input type="checkbox" name="talles[]" value="04"> 04</label></div>
+        <div class="col-md-2"><label><input type="checkbox" name="talles[]" value="06"> 06</label></div>
+        <div class="col-md-2"><label><input type="checkbox" name="talles[]" value="08"> 08</label></div>
+        <div class="col-md-2"><label><input type="checkbox" name="talles[]" value="10"> 10</label></div>
+        <div class="col-md-2"><label><input type="checkbox" name="talles[]" value="12"> 12</label></div>
+        <div class="col-md-2"><label><input type="checkbox" name="talles[]" value="14"> 14</label></div>
+        <div class="col-md-2"><label><input type="checkbox" name="talles[]" value="16"> 16</label></div>
+        <div class="col-md-2"><label><input type="checkbox" name="talles[]" value="18"> 18</label></div>
+        <div class="col-md-2"><label><input type="checkbox" name="talles[]" value="RN"> RN</label></div>
+        <div class="col-md-2"><label><input type="checkbox" name="talles[]" value="TP"> TP</label></div>
+        <div class="col-md-2"><label><input type="checkbox" name="talles[]" value="TM"> TM</label></div>
+        <div class="col-md-2"><label><input type="checkbox" name="talles[]" value="TG"> TG</label></div>
+        <div class="col-md-2"><label><input type="checkbox" name="talles[]" value="GG"> GG</label></div>
+        <div class="col-md-2"><label><input type="checkbox" name="talles[]" value="XP"> XP</label></div>
+
+        <div class="col-md-2"><label><input type="checkbox" name="talles[]" value="XG"> XG</label></div>
+        <div class="col-md-2"><label><input type="checkbox" name="talles[]" value="2G"> 2G</label></div>
+        <div class="col-md-2"><label><input type="checkbox" name="talles[]" value="3G"> 3G</label></div>
+
+    </div>
+
+    <small class="text-muted">
+        Si selecciona talles, el sistema generará códigos automáticos.
+    </small>
+</div>
+
+<!-- Descripción -->
 <div class="form-group col-sm-12">
     {!! Form::label('art_descripcion', 'Descripción Articulo:', ['class' => 'form-label']) !!}
 
@@ -39,17 +72,15 @@
 
         {!! Form::text('art_descripcion', null, [
             'class' => 'form-control',
-            'autofocus' => 'autofocus',
             'required' => 'required',
-            'placeholder' => 'Ingrese la descripción del producto',
+            'placeholder' => 'Ingrese descripción',
         ]) !!}
     </div>
 </div>
 
-
-<!-- Art Precio Field -->
+<!-- Precio costo -->
 <div class="form-group col-sm-4">
-    {!! Form::label('art_precio', 'Precio Costo:', ['class' => 'form-label']) !!}
+    {!! Form::label('art_precio', 'Precio Costo:') !!}
 
     <div class="input-group">
         <div class="input-group-prepend">
@@ -62,15 +93,13 @@
             'class' => 'form-control',
             'required' => 'required',
             'onkeyup' => 'format(this)',
-            'placeholder' => 'Ingrese el precio del artículo',
         ]) !!}
     </div>
 </div>
 
-
-<!-- Art Precio Venta Field -->
+<!-- Precio venta -->
 <div class="form-group col-sm-4">
-    {!! Form::label('prec_vent', 'Precio Venta:', ['class' => 'form-label']) !!}
+    {!! Form::label('prec_vent', 'Precio Venta:') !!}
 
     <div class="input-group">
         <div class="input-group-prepend">
@@ -83,15 +112,13 @@
             'class' => 'form-control',
             'required' => 'required',
             'onkeyup' => 'format(this)',
-            'placeholder' => 'Ingrese el precio de venta del artículo',
         ]) !!}
     </div>
 </div>
 
-
-<!-- Art IVA Field -->
+<!-- IVA -->
 <div class="form-group col-sm-4">
-    {!! Form::label('art_iva', 'Impuestos:', ['class' => 'form-label']) !!}
+    {!! Form::label('art_iva', 'Impuestos:') !!}
 
     <div class="input-group">
         <div class="input-group-prepend">

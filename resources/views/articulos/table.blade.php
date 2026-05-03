@@ -54,6 +54,30 @@
             align-items: center;
             box-shadow: 0 0 15px rgba(0, 0, 0, 0.3);
         }
+
+        #articulos-table {
+            font-size: 13px;
+            width: 100%;
+        }
+
+        #articulos-table th,
+        #articulos-table td {
+            padding: 4px 6px !important;
+            vertical-align: middle;
+        }
+
+        #articulos-table .btn {
+            padding: 2px 6px;
+            font-size: 18px;
+        }
+
+        #articulos-table th {
+            white-space: nowrap;
+        }
+
+        #articulos-table td {
+            white-space: nowrap;
+        }
     </style>
 </head>
 
@@ -65,29 +89,70 @@
                 <div class="row align-items-center">
 
                     <!-- Formulario de Filtro por Precio -->
-                    <div class="col-md-6 mb-2 mb-md-0">
-                        <form method="GET" action="{{ route('articulos.index') }}" class="form-inline">
-                            <label for="ordenar" class="mr-2">Ordenar por Precio:</label>
-                            <select name="ordenar" id="ordenar" class="form-control mr-2">
-                                <option value="">Seleccionar Orden</option>
-                                <option value="asc" {{ request('ordenar') == 'asc' ? 'selected' : '' }}>Menor a Mayor
-                                </option>
-                                <option value="desc" {{ request('ordenar') == 'desc' ? 'selected' : '' }}>Mayor a
-                                    Menor</option>
-                            </select>
-                            <button type="submit" class="btn btn-primary btn-sm">Filtrar</button>
-                        </form>
-                    </div>
+                    <div class="table-responsive">
+                        <div class="card-header">
+                            <div class="row align-items-center">
 
-                    <!-- Formulario de Importación de Excel -->
-                    <div class="col-md-6 text-md-right">
-                        <form id="import-form" enctype="multipart/form-data" class="d-inline-block">
-                            @csrf
-                            <input type="file" name="archivo" id="file" class="form-control mb-2" required>
-                            <button type="button" id="btn-import" class="btn btn-success">
-                                <i class="fas fa-file-excel"></i> Importar desde Excel
-                            </button>
-                        </form>
+                                <!-- FILTRO ORDEN PRECIO -->
+                                <div class="col-md-4 mb-2">
+                                    <form method="GET" action="{{ route('articulos.index') }}">
+                                        <label>Ordenar por Precio:</label>
+
+                                        <div class="d-flex">
+                                            <select name="ordenar" class="form-control mr-2">
+                                                <option value="">Seleccionar</option>
+
+                                                <option value="asc"
+                                                    {{ request('ordenar') == 'asc' ? 'selected' : '' }}>
+                                                    Menor a Mayor
+                                                </option>
+
+                                                <option value="desc"
+                                                    {{ request('ordenar') == 'desc' ? 'selected' : '' }}>
+                                                    Mayor a Menor
+                                                </option>
+                                            </select>
+
+                                            <button type="submit" class="btn btn-primary">
+                                                Filtrar
+                                            </button>
+                                        </div>
+                                    </form>
+                                </div>
+
+                                <!-- BUSCADOR PRODUCTOS -->
+                                <div class="col-md-4 mb-2">
+                                    <form method="GET" action="{{ route('articulos.index') }}">
+                                        <label>Buscar Producto:</label>
+
+                                        <div class="d-flex">
+                                            <input type="text" name="buscar" class="form-control mr-2"
+                                                placeholder="Código o descripción..." value="{{ request('buscar') }}">
+
+                                            <button type="submit" class="btn btn-primary">
+                                                Buscar
+                                            </button>
+                                        </div>
+                                    </form>
+                                </div>
+
+                                <!-- IMPORTAR EXCEL -->
+                                <div class="col-md-4 text-md-right">
+                                    <form id="import-form" enctype="multipart/form-data">
+                                        @csrf
+                                        <input type="file" name="archivo" id="file" class="form-control mb-2"
+                                            required>
+                                        <button type="button" id="btn-import" class="btn btn-success">
+                                            <i class="fas fa-file-excel"></i> Importar Excel
+                                        </button>
+
+                                        <input type="file" id="excelFile" accept=".xlsx,.xls,.csv"
+                                            style="display:none;">
+                                    </form>
+                                </div>
+
+                            </div>
+                        </div>
                     </div>
 
                 </div>
@@ -96,13 +161,13 @@
             <table class="table table-striped table-bordered table-hover" id="articulos-table">
                 <thead class="thead-dark">
                     <tr>
-                        <th>#</th>
-                        <th class="producto">Codigo</th>
-                        <th class="producto">Descripcion</th>
-                        <th class="producto">Costo</th>
-                        <th class="producto">Venta</th>
-                        <th class="producto">Iva</th>
-                        <th colspan="3" class="text-center">Operaciones</th>
+                        <th class="producto text-center" style="width:5%;">#</th>
+                        <th class="producto text-center" style="width:9%;">Código</th>
+                        <th class="producto text-left" style="width:33%;">Descripción</th>
+                        <th class="producto text-center" style="width:12%;">Costo</th>
+                        <th class="producto text-center" style="width:12%;">Venta</th>
+                        <th class="producto text-center" style="width:5%;">IVA</th>
+                        <th colspan="3" class="text-center" style="width:5%;">Operaciones</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -155,115 +220,201 @@
         </div>
     </div>
 
-    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-    <!-- 🔥 OVERLAY DE CARGA -->
-    <div id="loadingOverlay"
-        style="
-    display:none;
-    position:fixed;
-    top:0;
-    left:0;
-    width:100%;
-    height:100%;
-    backdrop-filter: blur(6px);
-    background: rgba(0,0,0,0.5); /* 🔥 importante */
-    z-index:9999;
-    align-items:center;
-    justify-content:center;
-    flex-direction:column;
-    color:#fff;
-    font-family: 'Segoe UI', sans-serif;
-">
+    <div id="loadingOverlayArticulos">
+        <div class="loading-box">
 
-        <div
-            style="
-        background: rgba(20,20,20,0.85); /* 🔥 fondo oscuro */
-        padding:30px 40px;
-        border-radius:16px;
-        text-align:center;
-        box-shadow: 0 10px 40px rgba(0,0,0,0.5);
-        width: 300px;
-    ">
-
-            <!-- Spinner -->
-            <div style="margin-bottom:15px;">
-                <div class="spinner-border text-light" style="width:50px;height:50px;"></div>
+            <div class="icon-circle">
+                <i class="fas fa-file-excel"></i>
             </div>
 
-            <!-- Texto -->
-            <h5 style="margin-bottom:5px; font-weight:600; color:#fff;">
-                Importando artículos
-            </h5>
+            <h4>Importando Artículos</h4>
+            <p>Procesando archivo Excel...</p>
 
-            <span style="font-size:13px; opacity:0.8; color:#d1d5db;">
-                Por favor espere...
-            </span>
-
-            <!-- Barra -->
-            <div
-                style="
-            width:100%;
-            height:8px;
-            background:rgba(255,255,255,0.1); /* 🔥 visible */
-            border-radius:10px;
-            margin-top:20px;
-            overflow:hidden;
-        ">
-                <div id="progressBar"
-                    style="
-                height:100%;
-                width:0%;
-                background:linear-gradient(90deg, #22c55e, #4ade80);
-                transition: width 0.5s ease;
-            ">
-                </div>
+            <div class="progress-custom">
+                <div id="progressBarArticulos"></div>
             </div>
 
-            <!-- Contador -->
-            <div id="counter"
-                style="
-            margin-top:15px;
-            font-size:15px;
-            font-weight:600;
-            color:#22c55e; /* 🔥 verde visible */
-            letter-spacing:1px;
-        ">
-                0s
-            </div>
+            <div id="counterArticulos">0s</div>
 
         </div>
     </div>
+
+    <style>
+        th,
+        td {
+            text-align: center;
+            vertical-align: middle;
+        }
+
+        td.producto,
+        th.producto {
+            text-align: center;
+            vertical-align: middle;
+        }
+
+        td.producto_descri {
+            text-align: left;
+            vertical-align: middle;
+        }
+
+        .btn-group {
+            display: flex;
+            justify-content: center;
+        }
+
+        .btn-group .btn {
+            margin: 0;
+        }
+
+        .btn-info,
+        .btn-danger {
+            transition: all 0.3s ease;
+        }
+
+        .btn-info:hover,
+        .btn-danger:hover {
+            transform: scale(1.08);
+        }
+
+        #articulos-table {
+            font-size: 13px;
+            width: 100%;
+        }
+
+        #articulos-table th,
+        #articulos-table td {
+            padding: 3px 5px !important;
+            white-space: nowrap;
+        }
+
+        /* ================= LOADER ================= */
+        #loadingOverlayArticulos {
+            position: fixed;
+            inset: 0;
+            display: none;
+            z-index: 99999;
+            background: rgba(10, 10, 10, .65);
+            backdrop-filter: blur(8px);
+            justify-content: center;
+            align-items: center;
+        }
+
+        .loading-box {
+            width: 380px;
+            background: #fff;
+            border-radius: 18px;
+            padding: 35px 30px;
+            text-align: center;
+            box-shadow: 0 20px 50px rgba(0, 0, 0, .25);
+            animation: fadeUp .3s ease;
+        }
+
+        .icon-circle {
+            width: 70px;
+            height: 70px;
+            margin: 0 auto 15px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #16a34a, #22c55e);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            color: #fff;
+            font-size: 26px;
+        }
+
+        .loading-box h4 {
+            font-weight: 700;
+            color: #111;
+        }
+
+        .loading-box p {
+            color: #6b7280;
+            font-size: 14px;
+            margin-bottom: 18px;
+        }
+
+        .progress-custom {
+            width: 100%;
+            height: 10px;
+            background: #e5e7eb;
+            border-radius: 30px;
+            overflow: hidden;
+            margin-bottom: 15px;
+        }
+
+        #progressBarArticulos {
+            width: 0%;
+            height: 100%;
+            background: linear-gradient(90deg, #16a34a, #22c55e, #4ade80);
+            transition: width .4s ease;
+        }
+
+        #counterArticulos {
+            font-size: 18px;
+            font-weight: 700;
+            color: #16a34a;
+        }
+
+        @keyframes fadeUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+    </style>
 </body>
 
 </html>
+<!-- REEMPLAZÁ TODO TU SCRIPT POR ESTE -->
+
 <script>
     document.addEventListener("DOMContentLoaded", function() {
 
         const btnImport = document.getElementById('btn-import');
         const fileInput = document.getElementById('file');
 
-        const loader = document.getElementById('loadingOverlay');
-        const counter = document.getElementById('counter');
+        const loader = document.getElementById('loadingOverlayArticulos');
+        const counter = document.getElementById('counterArticulos');
+        const progressBar = document.getElementById('progressBarArticulos');
 
         let seconds = 0;
         let interval;
+        let fakeProgress;
 
-        btnImport.addEventListener('click', async () => {
+        function resetUI() {
+            clearInterval(interval);
+            clearInterval(fakeProgress);
 
+            btnImport.disabled = false;
+            btnImport.innerHTML = `<i class="fas fa-file-excel"></i> Importar Excel`;
+
+            progressBar.style.width = "0%";
+            loader.style.display = "none";
+        }
+
+        btnImport.addEventListener('click', async function() {
+
+            // VALIDACIÓN
             if (!fileInput.files.length) {
-                alert('Seleccione un archivo');
+                Swal.fire({
+                    icon: 'warning',
+                    title: 'Seleccione un archivo',
+                    text: 'Debe elegir un Excel para importar'
+                });
                 return;
             }
 
-            // mostrar overlay
+            // SHOW LOADER
             loader.style.display = 'flex';
 
-            // desactivar botón
             btnImport.disabled = true;
-            btnImport.innerHTML = `
-            <span class="spinner-border spinner-border-sm"></span>
-            Importando...
-        `;
+            btnImport.innerHTML =
+                `<span class="spinner-border spinner-border-sm"></span> Importando...`;
 
             // contador
             seconds = 0;
@@ -274,37 +425,72 @@
                 counter.innerText = seconds + "s";
             }, 1000);
 
+            // fake progress
+            let progreso = 0;
+            fakeProgress = setInterval(() => {
+                if (progreso < 90) {
+                    progreso += Math.random() * 6;
+                    progressBar.style.width = progreso + "%";
+                }
+            }, 400);
+
             let formData = new FormData();
             formData.append('archivo', fileInput.files[0]);
             formData.append('_token', '{{ csrf_token() }}');
 
             try {
-                await fetch("{{ route('articulos.importar') }}", {
+
+                let response = await fetch("{{ route('articulos.importar') }}", {
                     method: 'POST',
-                    body: formData
+                    body: formData,
+                    headers: {
+                        'X-Requested-With': 'XMLHttpRequest'
+                    }
                 });
 
+                let data = await response.json();
+
+                clearInterval(interval);
+                clearInterval(fakeProgress);
+
+                progressBar.style.width = "100%";
+
+                setTimeout(() => {
+
+                    resetUI();
+
+                    if (data.success) {
+
+                        Swal.fire({
+                            icon: 'success',
+                            title: 'Importación completada',
+                            text: data.message
+                        }).then(() => location.reload());
+
+                    } else {
+
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'Error',
+                            html: data.message
+                        });
+
+                    }
+
+                }, 500);
+
             } catch (error) {
-                alert('Error en la importación');
+
+                resetUI();
+
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Error de conexión',
+                    text: 'No se pudo completar la importación'
+                });
             }
-
-            clearInterval(interval);
-
-            setTimeout(() => {
-                loader.style.display = 'none';
-                location.reload();
-            }, 500);
 
         });
 
     });
-    let progressFake = 0;
-
-    setInterval(() => {
-        if (progressFake < 90) {
-            progressFake += Math.random() * 5;
-            document.getElementById("progressBar").style.width = progressFake + "%";
-        }
-    }, 800);
-    document.getElementById("progressBar").style.width = "100%";
 </script>

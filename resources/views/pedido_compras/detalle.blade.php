@@ -65,7 +65,17 @@
                         </tr>
                     @endforeach
                 </tbody>
+                <tfoot>
+                    <tr class="font-weight-bold">
+                        <td colspan="2" class="text-right">TOTAL ARTÍCULOS:</td>
+                        <td id="totalCantidad" class="text-center">0</td>
+                        <td></td>
+                        <td></td>
+                        <td></td>
+                    </tr>
+                </tfoot>
             </table>
         </div>
     </div>
 </div>
+

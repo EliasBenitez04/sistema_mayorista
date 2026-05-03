@@ -26,15 +26,6 @@
         </p>
     </a>
     <ul class="nav nav-treeview">
-        @can('lineas index')
-            <li class="nav-item">
-                <a href="{{ route('lineas.index') }}"
-                    class="nav-link {{ request()->routeIs('lineas.*') ? 'active' : '' }}">
-                    <i class="nav-icon fas fa-tshirt"></i>
-                    <p>- Lineas</p>
-                </a>
-            </li>
-        @endcan
         @can('articulos index')
             <li class="nav-item">
                 <a href="{{ route('articulos.index') }}"
@@ -50,6 +41,14 @@
                 <p>- Importar Stock</p>
             </a>
         </li>
+        @can('lineas index')
+            <li class="nav-item">
+                <a href="{{ route('lineas.index') }}" class="nav-link {{ request()->routeIs('lineas.*') ? 'active' : '' }}">
+                    <i class="nav-icon fas fa-tshirt"></i>
+                    <p>- Lineas</p>
+                </a>
+            </li>
+        @endcan
         @can('sucursal index')
             <li class="nav-item">
                 <a href="{{ route('sucursal.index') }}"
@@ -116,17 +115,17 @@
 </li>
 <br>
 
-<li class="nav-item {{ request()->routeIs('carga_fotos.*') ? 'menu-open' : '' }}">
-    <a href="#" class="nav-link {{ request()->routeIs('carga_fotos.*') ? 'active' : '' }}">
-        <i class="nav-icon fas fa-camera-retro"></i>
-        <p>
-            Carga De Fotos
-            <i class="right fas fa-angle-left"></i>
-        </p>
-    </a>
+@can('carga_fotos index')
+    <li class="nav-item {{ request()->routeIs('carga_fotos.*') ? 'menu-open' : '' }}">
+        <a href="#" class="nav-link {{ request()->routeIs('carga_fotos.*') ? 'active' : '' }}">
+            <i class="nav-icon fas fa-camera-retro"></i>
+            <p>
+                Carga De Fotos
+                <i class="right fas fa-angle-left"></i>
+            </p>
+        </a>
 
-    <ul class="nav nav-treeview">
-        @can('carga_fotos index')
+        <ul class="nav nav-treeview">
             <li class="nav-item">
                 <a href="{{ route('carga_fotos.index') }}"
                     class="nav-link {{ request()->routeIs('carga_fotos.*') ? 'active' : '' }}">
@@ -134,10 +133,10 @@
                     <p>- Carga De Fotos</p>
                 </a>
             </li>
-        @endcan
-    </ul>
-</li>
-<br>
+        </ul>
+    </li>
+    <br>
+@endcan
 <!-- Configuraciones -->
 <li class="nav-item {{ Request::is('usuarios*', 'roles*', 'permissions*', 'auditoria*') ? 'menu-open' : '' }}">
     <a href="#"

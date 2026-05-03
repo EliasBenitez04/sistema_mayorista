@@ -36,7 +36,7 @@ class ArticulosImport implements ToCollection, WithHeadingRow, WithChunkReading
 
             $codigo = trim($row['art_codigo']);
 
-            // evitar duplicados en memoria (más rápido que exists)
+            // evitar duplicados en memoria
             $data[$codigo] = [
                 'art_codigo' => $codigo,
                 'art_descripcion' => substr($row['art_descripcion'], 0, 45),
@@ -48,13 +48,47 @@ class ArticulosImport implements ToCollection, WithHeadingRow, WithChunkReading
             $this->updatePercent($processed);
         }
 
-        // 🔥 UPSERT MASIVO (PRO)
+        // 🔥 UPSERT MASIVO (NO TOCADO)
         if (!empty($data)) {
+
             DB::table('articulos')->upsert(
                 array_values($data),
                 ['art_codigo'],
                 ['art_descripcion', 'art_precio', 'art_iva', 'prec_vent']
             );
+
+            // 🔥 AGREGADO: CREAR STOCK (SIN TOCAR TU LOGICA)
+            $codigos = array_keys($data);
+
+            $articulos = DB::table('articulos')
+                ->whereIn('art_codigo', $codigos)
+                ->get(['id_articulo', 'art_codigo']);
+
+            $map = [];
+
+            foreach ($articulos as $a) {
+                $map[$a->art_codigo] = $a->id_articulo;
+            }
+
+            foreach ($data as $item) {
+
+                if (!isset($map[$item['art_codigo']])) continue;
+
+                $idArticulo = $map[$item['art_codigo']];
+
+                $existeStock = DB::table('stock')
+                    ->where('id_articulo', $idArticulo)
+                    ->where('cod_suc', 1)
+                    ->exists();
+
+                if (!$existeStock) {
+                    DB::table('stock')->insert([
+                        'id_articulo' => $idArticulo,
+                        'cod_suc' => 1,
+                        'cantidad' => 1
+                    ]);
+                }
+            }
         }
     }
 
