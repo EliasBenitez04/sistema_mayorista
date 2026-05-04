@@ -61,11 +61,17 @@
 
         <tbody>
             @forelse ($detalle as $det)
-
                 @php
-                    $precioUnitario = $det->det_subtotal / ($det->det_cantidad * (1 - $det->det_descuento / 100));
+                    $factor = 1 - $det->det_descuento / 100;
 
-                    $subtotalSinDesc = $precioUnitario * $det->det_cantidad;
+                    if ($det->det_cantidad > 0 && $factor > 0) {
+                        $precioUnitario = $det->det_subtotal / ($det->det_cantidad * $factor);
+                        $subtotalSinDesc = $precioUnitario * $det->det_cantidad;
+                    } else {
+                        $precioUnitario = 0;
+                        $subtotalSinDesc = 0;
+                    }
+
                     $subtotalConDesc = $det->det_subtotal;
                 @endphp
 
@@ -123,7 +129,8 @@
                     $totalCantidad = $detalle->sum('det_cantidad');
 
                     $totalSinDesc = $detalle->sum(function ($d) {
-                        return $d->det_subtotal / (1 - $d->det_descuento / 100);
+                        $factor = 1 - $d->det_descuento / 100;
+                        return $factor > 0 ? $d->det_subtotal / $factor : 0;
                     });
 
                     $totalConDesc = $detalle->sum('det_subtotal');

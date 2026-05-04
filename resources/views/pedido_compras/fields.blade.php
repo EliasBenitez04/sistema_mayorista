@@ -122,9 +122,9 @@
             'step' => '0.01',
             'id' => 'descuento_input',
             'oninput' => '
-        if(this.value > 100) this.value = 100;
-        if(this.value < 0) this.value = 0;
-        ',
+                                            if(this.value > 100) this.value = 100;
+                                            if(this.value < 0) this.value = 0;
+                                            ',
         ]) !!}
     </div>
 
@@ -185,6 +185,41 @@
         ]) !!}
     </div>
 
+</div>
+
+<div class="form-group col-md-4">
+    {!! Form::label('obs', 'Observación') !!}
+
+    <div class="input-group input-group-sm">
+
+        <div class="input-group-prepend">
+            <span class="input-group-text"><i class="fas fa-comment"></i></span>
+        </div>
+
+        <div style="flex:1;">
+            {!! Form::textarea('obs', $pedido->obs ?? null, [
+                'class' => 'form-control',
+                'placeholder' => 'Ingrese una observación',
+                'rows' => 1,
+                'style' => 'width:100%; resize:none;',
+            ]) !!}
+        </div>
+
+    </div>
+</div>
+
+<div class="mb-2 form-group col-sm-2">
+    <label for="cantidad_multiplicador">Cantidad de inserción</label>
+
+    <div class="input-group input-group-sg">
+        <div class="input-group-prepend">
+            <span class="input-group-text">
+                <i class="fas fa-layer-group"></i>
+            </span>
+        </div>
+
+        <input type="number" id="cantidad_multiplicador" class="form-control" value="1" min="1">
+    </div>
 </div>
 
 <!-- DETALLE COMPRAS -->
@@ -332,6 +367,9 @@
             if (!tabla) return;
 
             let filas = tabla.getElementsByTagName('tr');
+
+            let cantidadMultiplicador = parseInt(document.getElementById("cantidad_multiplicador").value) || 1;
+
             let filaExistente = null;
 
             for (let fila of filas) {
@@ -346,25 +384,17 @@
             // ================= SI YA EXISTE =================
             if (filaExistente) {
 
-                let inputCantidad = filaExistente.querySelector('.cantidad');
-
-                let nuevaCantidad = (parseInt(inputCantidad.value) || 0) + 1;
-                inputCantidad.value = nuevaCantidad;
-
-                calcularTodo();
-                calcularTotal();
-
                 Swal.fire({
-                    icon: 'info',
-                    title: 'Producto actualizado',
-                    text: `Total unidades de este producto: ${nuevaCantidad}`,
-                    timer: 1200,
+                    icon: 'warning',
+                    title: 'Producto ya agregado',
+                    text: 'Este producto ya está en la lista. Solo podés modificar la cantidad desde la tabla.',
+                    timer: 1500,
                     showConfirmButton: false,
                     toast: true,
                     position: 'top-end'
                 });
 
-                return; // 🔥 IMPORTANTE: cortar aquí para evitar doble suma
+                return; // 🔥 NO hace nada más
             }
 
             // ================= NUEVO PRODUCTO =================
@@ -380,7 +410,7 @@
         </td>
 
         <td class="text-center">
-            <input type="number" name="cantidad[]" class="form-control text-center cantidad" value="1" min="1">
+            <input type="number" name="cantidad[]" class="form-control text-center cantidad" value="${cantidadMultiplicador}" min="1" readonly>
         </td>
 
         <td class="text-center">
@@ -389,7 +419,7 @@
         </td>
 
         <td class="text-center">
-            <input type="text" name="subtotal[]" class="form-control text-center subtotal" value="${formatearMiles(precio)}" readonly>
+            <input type="text" name="subtotal[]" class="form-control text-center subtotal" value="${formatearMiles(precio * cantidadMultiplicador)}" readonly>
         </td>
 
         <td class="text-center">
@@ -400,12 +430,12 @@
     `;
 
             tabla.appendChild(row);
+
             row.scrollIntoView({
                 behavior: 'smooth',
                 block: 'center'
             });
 
-            // 🔥 resaltar visualmente
             row.style.backgroundColor = '#d4edda';
             setTimeout(() => {
                 row.style.transition = 'background-color 0.5s';
@@ -414,9 +444,10 @@
 
             calcularTodo();
             calcularTotal();
+
             Swal.fire({
                 icon: 'success',
-                title: 'Producto agregado',
+                title: `Agregado x${cantidadMultiplicador}`,
                 timer: 1000,
                 showConfirmButton: false,
                 toast: true,
@@ -447,8 +478,6 @@
         // ================= RECALCULAR UNA FILA =================
         function recalcularFila(row) {
 
-            if (!row) return;
-
             const cantidadInput = row.querySelector(".cantidad");
             const precioInput = row.querySelector(".precio_raw");
             const subtotalInput = row.querySelector(".subtotal");
@@ -460,7 +489,11 @@
 
             let subtotal = cantidad * precio;
 
-            subtotalInput.value = formatearMiles(subtotal);
+            // 👇 guardar valor REAL (NO VISUAL)
+            subtotalInput.dataset.value = subtotal;
+
+            // 👇 SOLO VISUAL
+            subtotalInput.value = subtotal.toLocaleString('es-PY');
         }
 
         // ================= RECALCULAR TODO =================
@@ -470,22 +503,16 @@
 
             document.querySelectorAll("#selectedProducts tr").forEach(row => {
 
-                const cantidadInput = row.querySelector(".cantidad");
+                let input = row.querySelector(".cantidad");
+                if (!input) return;
 
-                if (!cantidadInput) return;
-
-                let cantidad = parseInt(cantidadInput.value) || 0;
-
+                let cantidad = parseInt(input.value) || 0;
                 totalCantidad += cantidad;
 
                 recalcularFila(row);
             });
 
-            let totalCantidadLabel = document.getElementById("totalCantidad");
-
-            if (totalCantidadLabel) {
-                totalCantidadLabel.innerText = totalCantidad;
-            }
+            document.getElementById("totalCantidad").innerText = totalCantidad;
 
             calcularTotal();
         }
@@ -496,21 +523,17 @@
             let total = 0;
 
             document.querySelectorAll(".subtotal").forEach(input => {
-                total += limpiarMiles(input.value);
+                total += parseFloat(input.dataset.value || 0);
             });
 
             if (document.getElementById("descuento_si")?.checked) {
 
-                let descuento = parseFloat(
-                    document.getElementById("descuento_input").value
-                ) || 0;
-
-                if (descuento > 0) {
-                    total = total - (total * descuento / 100);
-                }
+                let d = parseFloat(document.getElementById("descuento_input").value) || 0;
+                total -= total * (d / 100);
             }
 
-            document.getElementById("ped_total").value = formatearMiles(total);
+            document.getElementById("ped_total").value =
+                total.toLocaleString('es-PY');
         }
 
         // ================= INPUT MANUAL CANTIDAD =================
@@ -518,19 +541,15 @@
 
             if (!e.target.classList.contains("cantidad")) return;
 
-            const input = e.target;
+            let row = e.target.closest("tr");
+            if (!row) return;
 
-            // SOLO NUMEROS
-            let valor = input.value.replace(/[^0-9]/g, '');
+            e.target.value = e.target.value.replace(/[^0-9]/g, '');
 
-            if (valor === '') valor = '0';
-
-            input.value = valor;
-
-            const row = input.closest("tr");
+            if (e.target.value === "") e.target.value = 0;
 
             recalcularFila(row);
-            calcularTodo();
+            calcularTotal();
         });
 
         // ================= SI SALE DEL INPUT =================
@@ -623,5 +642,29 @@
             });
 
         });
+
+        function bloquearTabFila(row) {
+
+            row.querySelectorAll("input").forEach(input => {
+
+                if (
+                    input.classList.contains("cantidad") ||
+                    input.classList.contains("precio") ||
+                    input.classList.contains("subtotal")
+                ) {
+                    input.setAttribute("tabindex", "-1");
+                }
+
+            });
+        }
+
+        document.addEventListener("keydown", function(e) {
+            if (e.key === "Tab") {
+                e.preventDefault();
+                e.stopPropagation();
+                return false;
+            }
+        });
+        
     </script>
 @endpush

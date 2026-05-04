@@ -23,6 +23,7 @@
                 'route' => ['articulos.update', $articulo->id_articulo],
                 'method' => 'patch',
                 'files' => true,
+                'class' => 'confirm-submit'
             ]) !!}
 
             <div class="card-body">

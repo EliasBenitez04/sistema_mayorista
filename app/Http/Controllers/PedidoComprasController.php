@@ -155,6 +155,7 @@ class PedidoComprasController extends Controller
                 'ped_fecha'   => $input['ped_fecha'],
                 'ped_estado'  => "PENDIENTE",
                 'cod_suc'     => $input['cod_suc'],
+                'obs'         => $input['obs'] ?? null,
             ], 'id_pedido');
 
             // Verificar si se aplica descuento general
@@ -311,19 +312,24 @@ class PedidoComprasController extends Controller
             ->get();
 
         // Calcular totales generales
-        $totalCantidad = $detalle->sum('det_cantidad');
         $totalSinDescuento = $detalle->sum(function ($d) {
+            if ($d->det_descuento >= 100) {
+                return 0; // o podés devolver det_subtotal según tu lógica
+            }
             return $d->det_subtotal / (1 - $d->det_descuento / 100);
         });
+
         $totalDescuento = $detalle->sum(function ($d) {
-            return $d->det_subtotal / (1 - $d->det_descuento / 100) - $d->det_subtotal;
+            if ($d->det_descuento >= 100) {
+                return $d->det_subtotal; // todo es descuento
+            }
+            return ($d->det_subtotal / (1 - $d->det_descuento / 100)) - $d->det_subtotal;
         });
         $totalConDescuento = $detalle->sum('det_subtotal');
 
         return view('pedido_compras.show', compact(
             'pedido',
             'detalle',
-            'totalCantidad',
             'totalSinDescuento',
             'totalDescuento',
             'totalConDescuento'

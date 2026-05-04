@@ -15,7 +15,7 @@
                     <th class="sortable">Total Pedido</th>
                     <th class="sortable">Realizado Por</th>
                     <th class="sortable">Estado</th>
-                    <th class="sortable">Confirmado Por</th>
+                    <th class="sortable">Obs</th>
                     <th colspan="3">Operaciones</th>
                 </tr>
             </thead>
@@ -34,7 +34,7 @@
                                 {{ $pedido->ped_estado }}
                             </span>
                         </td>
-                        <td>{{ $pedido->confirmado_por ?? '—' }}</td>
+                        <td>{{ $pedido->obs ?? '—' }}</td>
                         <td class="text-center" style="min-width: 180px; white-space: nowrap;">
                             <div class="btn-group" role="group">
                                 @if ($pedido->ped_estado === 'PENDIENTE')

@@ -19,9 +19,7 @@
 
         <div class="card">
 
-            {!! Form::open(['route' => 'articulos.store', 'files' => true]) !!}
-            @csrf
-            <input type="hidden" name="return_to" value="pedido_compras">
+            {!! Form::open(['route' => 'articulos.store','class' => 'confirm-submit' ]) !!}
 
             <div class="card-body">
                 @include('sweetalert::alert')

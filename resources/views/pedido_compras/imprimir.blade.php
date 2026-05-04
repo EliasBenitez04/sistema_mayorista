@@ -246,10 +246,15 @@
                         <tbody>
                             @foreach ($detalle as $d)
                                 @php
-                                    $precioUnitario =
-                                        $d->det_subtotal /
-                                        ($hayDescuento ? 1 - $d->det_descuento / 100 : 1) /
-                                        $d->det_cantidad;
+                                    $factor = 1 - $d->det_descuento / 100;
+
+                                    if ($d->det_cantidad > 0 && $factor > 0) {
+                                        $precioUnitario = $d->det_subtotal / ($factor * $d->det_cantidad);
+                                        $subtotalSinDesc = $d->det_subtotal / $factor;
+                                    } else {
+                                        $precioUnitario = 0;
+                                        $subtotalSinDesc = 0;
+                                    }
                                 @endphp
 
                                 <tr>
@@ -262,7 +267,7 @@
                                     </td>
 
                                     <td class="text-center p-1">
-                                        {{ number_format($d->det_subtotal / ($hayDescuento ? 1 - $d->det_descuento / 100 : 1), 0, ',', '.') }}
+                                        {{ number_format($subtotalSinDesc, 0, ',', '.') }}
                                     </td>
 
                                     @if ($hayDescuento)
@@ -293,14 +298,27 @@
                                 <tr>
                                     <th>Total Sin Descuento</th>
                                     <td class="text-right">
-                                        <strong>{{ number_format($detalle->sum(function ($d) use ($hayDescuento) {return $d->det_subtotal / ($hayDescuento ? 1 - $d->det_descuento / 100 : 1);}),0,',','.') }}
+                                        <strong>{{ number_format(
+                                            $detalle->sum(function ($d) {
+                                                $factor = 1 - $d->det_descuento / 100;
+                                                return $factor > 0 ? $d->det_subtotal / $factor : 0;
+                                            }),
+                                        ) }}
                                             Gs.</strong>
                                     </td>
                                 </tr>
                                 <tr>
                                     <th>Total Descuento {{ $d->det_descuento }}%</th>
                                     <td class="text-right">
-                                        <strong>{{ number_format($detalle->sum(function ($d) {return $d->det_subtotal / (1 - $d->det_descuento / 100) - $d->det_subtotal;}),0,',','.') }}
+                                        <strong>{{ number_format(
+                                            $detalle->sum(function ($d) {
+                                                $factor = 1 - $d->det_descuento / 100;
+                                                return $factor > 0 ? $d->det_subtotal / $factor - $d->det_subtotal : $d->det_subtotal;
+                                            }),
+                                            0,
+                                            ',',
+                                            '.',
+                                        ) }}
                                             Gs.</strong>
                                     </td>
                                 </tr>
