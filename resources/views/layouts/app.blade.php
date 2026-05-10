@@ -277,6 +277,7 @@
     {{-- STACKS --}}
     @stack('third_party_scripts')
     @stack('page_scripts')
+    @include('sweetalert::alert')
 
     <script>
         $(".select2:visible").select2({

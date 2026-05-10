@@ -7,6 +7,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Carbon\Carbon;
 use App\Exports\PedidoExport;
+use Illuminate\Console\View\Components\Alert;
 use Maatwebsite\Excel\Facades\Excel;
 
 class PedidoComprasController extends Controller
@@ -111,18 +112,31 @@ class PedidoComprasController extends Controller
 
     public function store(Request $request)
     {
+        Log::info("==== INICIO STORE PEDIDO ====");
+
         $input = $request->all();
+
+        Log::info("Total inputs recibidos", [
+            'total_inputs' => count($input),
+            'codigos_count' => isset($input['codigo']) ? count($input['codigo']) : 0,
+            'cantidades_count' => isset($input['cantidad']) ? count($input['cantidad']) : 0,
+        ]);
+
         $fecha  = Carbon::parse($input['ped_fecha'])->format('Y-m-d');
         $actual = Carbon::now()->format('Y-m-d');
 
         // Validar fecha
         if ($fecha > $actual) {
+            Log::warning("Fecha inválida", ['fecha' => $fecha, 'actual' => $actual]);
+
             alert()->info('Error', 'La fecha del pedido no puede ser mayor a la fecha actual.');
             return redirect(route('pedido_compras.create'))->withInput();
         }
 
         // Validar que haya artículos
         if (!$request->has('codigo') || count($request->codigo) === 0) {
+            Log::warning("No hay artículos en el request");
+
             alert()->warning('Atención', 'Debe agregar al menos un artículo al pedido.');
             return redirect()->back()->withInput();
         }
@@ -130,6 +144,8 @@ class PedidoComprasController extends Controller
         DB::beginTransaction();
 
         try {
+            Log::info("Iniciando transacción");
+
             // Buscar número de pedido libre
             $usados = DB::table('pedido_compras')
                 ->where('ped_estado', '!=', 'ANULADO')
@@ -143,6 +159,8 @@ class PedidoComprasController extends Controller
                 $numero++;
             }
             $nroPedido = "PED-" . $numero;
+
+            Log::info("Número de pedido generado", ['nroPedido' => $nroPedido]);
 
             // Insertar pedido cabecera
             $insertCompra = DB::table('pedido_compras')->insertGetId([
@@ -158,6 +176,8 @@ class PedidoComprasController extends Controller
                 'obs'         => $input['obs'] ?? null,
             ], 'id_pedido');
 
+            Log::info("Cabecera insertada", ['id_pedido' => $insertCompra]);
+
             // Verificar si se aplica descuento general
             $aplicaDescuento = $input['aplica_descuento'] ?? 'NO';
             $descuentoGeneral = ($aplicaDescuento === 'SI' && isset($input['descuento']))
@@ -168,16 +188,34 @@ class PedidoComprasController extends Controller
                 $descuentoGeneral = $descuentoGeneral * 100;
             }
 
+            Log::info("Descuento aplicado", [
+                'aplica' => $aplicaDescuento,
+                'descuento' => $descuentoGeneral
+            ]);
+
             $totalSinDescuento = 0;
+            $contador = 0;
 
             // Insertar detalles
             foreach ($input['codigo'] as $key => $value) {
+
+                $contador++;
+
+                // Log cada 50 registros para no saturar
+                if ($contador % 50 == 0) {
+                    Log::info("Procesando detalle", [
+                        'iteracion' => $contador,
+                        'codigo' => $value
+                    ]);
+                }
+
                 $articulo = DB::table('articulos')
                     ->where('art_codigo', $value)
                     ->select('id_articulo', 'prec_vent')
                     ->first();
 
                 if (!$articulo) {
+                    Log::error("Artículo no encontrado", ['codigo' => $value]);
                     throw new \Exception("El artículo con código {$value} no existe.");
                 }
 
@@ -202,6 +240,10 @@ class PedidoComprasController extends Controller
                 );
             }
 
+            Log::info("Detalles insertados", [
+                'total_procesados' => $contador
+            ]);
+
             // Actualizar cabecera con total y descuento
             DB::table('pedido_compras')
                 ->where('id_pedido', $insertCompra)
@@ -210,14 +252,25 @@ class PedidoComprasController extends Controller
                     'descuento' => $descuentoGeneral
                 ]);
 
+            Log::info("Cabecera actualizada con totales", [
+                'total' => $totalSinDescuento
+            ]);
+
             DB::commit();
 
-            Log::info("Pedido {$insertCompra} creado correctamente por usuario: " . auth()->user()->id);
+            Log::info("==== FIN STORE OK ====");
+
             alert()->success("Éxito", "Pedido generado correctamente!!!");
             return redirect(route('pedido_compras.index'));
         } catch (\Exception $ex) {
             DB::rollBack();
-            Log::error("ERROR DE CREACION DE PEDIDOS:::::::::" . $ex->getMessage());
+
+            Log::error("ERROR DE CREACION DE PEDIDOS:::::::::", [
+                'mensaje' => $ex->getMessage(),
+                'linea' => $ex->getLine(),
+                'archivo' => $ex->getFile()
+            ]);
+
             alert()->error("Error", "Error en la creación de Pedido.");
             return redirect()->back()->withInput($input);
         }
@@ -225,11 +278,11 @@ class PedidoComprasController extends Controller
 
     public function buscarProductoPed(Request $request)
     {
-        $query = $request->get('query');
+        $query = trim($request->get('query'));
         $cod_suc = $request->get('cod_suc');
 
-        $productosQuery = DB::table('articulos as a')
-            ->join('stock as s', 'a.id_articulo', '=', 's.id_articulo')
+        $productosQuery = DB::table('stock as s')
+            ->join('articulos as a', 'a.id_articulo', '=', 's.id_articulo')
             ->select(
                 'a.art_codigo',
                 'a.art_descripcion',
@@ -238,16 +291,18 @@ class PedidoComprasController extends Controller
                 's.cod_suc'
             )
             ->when($cod_suc, function ($q) use ($cod_suc) {
-                return $q->where('s.cod_suc', $cod_suc);
+                $q->where('s.cod_suc', $cod_suc);
             })
             ->when($query, function ($q) use ($query) {
-                return $q->where(function ($q2) use ($query) {
-                    $q2->where('a.art_codigo', 'ILIKE', "%{$query}%")
-                        ->orWhere('a.art_descripcion', 'ILIKE', "%{$query}%");
+
+                $q->where(function ($q2) use ($query) {
+
+                    $q2->where('a.art_codigo', 'ILIKE', $query . '%')
+                        ->orWhere('a.art_descripcion', 'ILIKE', $query . '%');
                 });
             })
-            ->orderBy('a.art_codigo', 'asc')
-            ->take(20)
+            ->orderBy('a.art_codigo')
+            ->limit(15)
             ->get();
 
         return view('pedido_compras.buscar_producto', [
@@ -458,5 +513,208 @@ class PedidoComprasController extends Controller
             new PedidoExport($id),
             $nombreArchivo
         );
+    }
+
+    public function edit($id)
+    {
+        Log::info("EDIT PEDIDO INICIO", [
+            'pedido_id' => $id
+        ]);
+
+        $pedido = DB::table('pedido_compras')
+            ->where('id_pedido', $id)
+            ->first();
+
+        if (!$pedido) {
+
+            Log::warning("PEDIDO NO ENCONTRADO EN EDIT", [
+                'pedido_id' => $id
+            ]);
+
+            alert()->error('Error', 'Pedido no encontrado');
+
+            return redirect()->route('pedido_compras.index');
+        }
+
+        Log::info("PEDIDO ENCONTRADO", [
+            'pedido' => $pedido
+        ]);
+
+        $detalles = DB::table('detalle_pedido')
+            ->join('articulos', 'articulos.id_articulo', '=', 'detalle_pedido.id_articulo')
+            ->where('detalle_pedido.id_pedido_compras', $id)
+            ->select(
+                'detalle_pedido.id_det_pedido',
+                'detalle_pedido.id_articulo',
+                'detalle_pedido.det_cantidad',
+                'detalle_pedido.det_subtotal',
+                'detalle_pedido.det_descuento',
+                'articulos.art_codigo',
+                'articulos.art_descripcion',
+                'articulos.prec_vent as det_precio'
+            )
+            ->get();
+
+        Log::info("DETALLES CARGADOS EN EDIT", [
+            'pedido_id' => $id,
+            'total_detalles' => count($detalles),
+            'detalles' => $detalles
+        ]);
+
+        $condicion = ["CONTADO" => "CONTADO", "CREDITO" => "CREDITO"];
+
+        $clientes = DB::table('clientes')
+            ->select(
+                'id_cliente',
+                DB::raw("cli_ci || ' - ' || cli_nombre || ' ' || cli_apellido AS nombre")
+            )
+            ->pluck('nombre', 'id_cliente');
+
+        $sucursal = DB::table('sucursal')
+            ->pluck('suc_descri', 'cod_suc');
+
+        Log::info("CATALOGOS CARGADOS EN EDIT", [
+            'clientes' => count($clientes),
+            'sucursales' => count($sucursal)
+        ]);
+
+        return view('pedido_compras.edit', [
+            'pedido_compras' => $pedido,
+            'detalle' => $detalles,
+            'condicion' => $condicion,
+            'clientes' => $clientes,
+            'sucursal' => $sucursal
+        ]);
+    }
+
+    public function update(Request $request, $id)
+    {
+        DB::beginTransaction();
+
+        try {
+
+            $input = $request->all();
+
+            Log::info("UPDATE PEDIDO INICIO", [
+                'pedido_id' => $id,
+                'request' => $input
+            ]);
+
+            $fecha  = Carbon::parse($input['ped_fecha'])->format('Y-m-d');
+            $actual = Carbon::now()->format('Y-m-d');
+
+            if ($fecha > $actual) {
+                Log::warning("Fecha inválida", ['fecha' => $fecha, 'actual' => $actual]);
+
+                alert()->info('Atención!!!', 'La fecha del pedido no puede ser mayor a la fecha actual.');
+                return redirect(route('pedido_compras.edit', ['id' => $id]))->withInput();
+            }
+
+            // =====================
+            // 1. ACTUALIZAR CABECERA
+            // =====================
+            DB::table('pedido_compras')
+                ->where('id_pedido', $id)
+                ->update([
+                    'id_cliente'  => $input['id_cliente'],
+                    'condicion'   => $input['condicion'],
+                    'intervalo'   => $input['intervalo'] ?? null,
+                    'cant_cuotas' => $input['cant_cuotas'] ?? null,
+                    'ped_fecha'   => $input['ped_fecha'],
+                    'obs'         => $input['obs'] ?? null,
+                ]);
+
+            // =====================
+            // 2. BORRAR DETALLES
+            // =====================
+            DB::table('detalle_pedido')
+                ->where('id_pedido_compras', $id)
+                ->delete();
+
+            // =====================
+            // 3. VALIDAR DETALLE (🔥 NUEVO)
+            // =====================
+            if (!isset($input['codigo']) || !is_array($input['codigo']) || count($input['codigo']) === 0) {
+
+                Log::warning("UPDATE PEDIDO SIN DETALLE", [
+                    'pedido_id' => $id,
+                    'input' => $input
+                ]);
+
+                alert()->error('Error', 'No se puede guardar sin productos en el detalle');
+
+                DB::rollBack();
+                return redirect()->back()->withInput();
+            }
+
+            // =====================
+            // 4. REINSERTAR DETALLES
+            // =====================
+            $aplicaDescuento = $input['aplica_descuento'] ?? 'NO';
+            $descuentoGeneral = ($aplicaDescuento === 'SI') ? floatval($input['descuento'] ?? 0) : 0;
+
+            $totalSinDescuento = 0;
+
+            foreach ($input['codigo'] ?? [] as $key => $value) {
+
+                $articulo = DB::table('articulos')
+                    ->where('art_codigo', $value)
+                    ->first();
+
+                if (!$articulo) {
+
+                    Log::warning("ARTICULO NO ENCONTRADO", [
+                        'codigo' => $value
+                    ]);
+
+                    throw new \Exception("Artículo no encontrado: $value");
+                }
+
+                $cantidad = $input['cantidad'][$key] ?? 0;
+                $precio   = $articulo->prec_vent;
+
+                $subtotal = $cantidad * $precio;
+                $subtotalConDesc = $subtotal * (1 - $descuentoGeneral / 100);
+
+                $totalSinDescuento += $subtotal;
+
+                DB::table('detalle_pedido')->insert([
+                    'id_articulo'        => $articulo->id_articulo,
+                    'id_pedido_compras'  => $id,
+                    'det_cantidad'       => $cantidad,
+                    'det_subtotal'       => $subtotalConDesc,
+                    'det_descuento'      => $descuentoGeneral
+                ]);
+            }
+
+            // =====================
+            // 5. ACTUALIZAR TOTAL
+            // =====================
+            DB::table('pedido_compras')
+                ->where('id_pedido', $id)
+                ->update([
+                    'ped_total' => $totalSinDescuento * (1 - $descuentoGeneral / 100),
+                    'descuento' => $descuentoGeneral
+                ]);
+
+            DB::commit();
+
+            alert()->success('Éxito', 'Pedido actualizado correctamente');
+
+            return redirect()->route('pedido_compras.index');
+        } catch (\Exception $e) {
+
+            DB::rollBack();
+
+            Log::error("ERROR UPDATE PEDIDO", [
+                'pedido_id' => $id,
+                'msg' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+
+            Alert()->error('Error', 'No se pudo actualizar el pedido');
+
+            return redirect()->back()->withInput();
+        }
     }
 }

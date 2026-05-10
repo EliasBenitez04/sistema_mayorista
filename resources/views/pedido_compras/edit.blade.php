@@ -6,7 +6,7 @@
             <div class="row mb-2">
                 <div class="col-sm-12">
                     <h1>
-                        Edit Pedido Compras
+                        Editar Pedido Compras
                     </h1>
                 </div>
             </div>
@@ -22,13 +22,23 @@
             {!! Form::model($pedido_compras, [
                 'route' => ['pedido_compras.update', $pedido_compras->id_pedido],
                 'method' => 'patch',
+                'id' => 'formPedido',
+                'class' => 'confirm-submit',
             ]) !!}
 
             <div class="card-body">
                 @include('sweetalert::alert')
 
                 <div class="row">
+
+                    {{-- 🔥 IMPORTANTE: PASAR DETALLE AL FORM --}}
+                    @php
+                        $pedido = $pedido_compras;
+                        $detalles = $detalle ?? [];
+                    @endphp
+
                     @include('pedido_compras.fields')
+
                 </div>
             </div>
 

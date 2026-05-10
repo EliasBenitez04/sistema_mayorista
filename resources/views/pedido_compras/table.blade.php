@@ -66,6 +66,13 @@
                                     </a>
                                 @endif
 
+                                @if (!in_array(trim($pedido->ped_estado), ['CONFIRMADO', 'ANULADO']))
+                                    <a href="{{ route('pedido_compras.edit', [$pedido->id_pedido]) }}"
+                                        class="btn btn-primary btn-sg" title="Editar pedido">
+                                        <i class="far fa-edit"></i>
+                                    </a>
+                                @endif
+
                                 <a href="{{ route('pedido_compras.show', [$pedido->id_pedido]) }}"
                                     class="btn btn-info btn-sg" title="Ver detalles">
                                     <i class="far fa-eye"></i>

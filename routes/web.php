@@ -73,6 +73,8 @@ Route::get('pedido_compras/{id}/imprimir', [App\Http\Controllers\PedidoComprasCo
 
 Route::get('/pedido/export/{id}', [PedidoComprasController::class, 'export'])->name('pedido.export');
 
+route::get('/pedido_compras/{id}/detalle', [PedidoComprasController::class, 'detalle'])->name('pedido_compras.detalle');
+
 /*
 |--------------------------------------------------------------------------
 | ARTICULOS

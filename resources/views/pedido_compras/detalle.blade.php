@@ -33,46 +33,6 @@
                     </tr>
                 </thead>
                 <tbody id="selectedProducts">
-                    @foreach ($detalles as $value)
-                        <tr>
-
-                            <td class="text-center">
-                                <input class="form-control text-center" type="text" name="codigo[]" readonly
-                                    value="{{ $value->art_codigo }}">
-                            </td>
-
-                            <td>
-                                <input type="text" class="form-control" name="producto[]" readonly
-                                    value="{{ $value->art_descripcion }}">
-                            </td>
-
-                            <td class="text-center">
-                                <input class="form-control text-center cantidad" type="number" min="1"
-                                    name="cantidad[]" value="{{ $value->det_cantidad }}">
-                            </td>
-
-                            <td class="text-center">
-                                <input type="hidden" class="precio_raw" value="{{ $value->det_precio }}">
-
-                                <input class="form-control text-center" type="text"
-                                    value="{{ number_format($value->det_precio, 0, ',', '.') }}" readonly>
-                            </td>
-
-                            <td class="text-center">
-                                <input class="form-control text-center subtotal" type="text" name="subtotal[]"
-                                    readonly data-value="{{ $value->det_subtotal }}"
-                                    value="{{ number_format($value->det_subtotal, 0, ',', '.') }}">
-                            </td>
-
-                            <td class="text-center">
-                                <button type="button" class="btn btn-danger btn-sm" onclick="borrarFila(this)">
-                                    <i class="far fa-trash-alt"></i>
-                                </button>
-                            </td>
-
-                            <input type="hidden" name="id_det_pedido[]" value="{{ $value->id_det_pedido }}">
-                        </tr>
-                    @endforeach
                 </tbody>
                 <tfoot>
                     <tr class="font-weight-bold">
