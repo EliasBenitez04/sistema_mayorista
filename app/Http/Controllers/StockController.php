@@ -11,6 +11,12 @@ use RealRashid\SweetAlert\Facades\Alert;
 
 class StockController extends Controller
 {
+    public function __construct()
+    {
+        $this->middleware('auth');
+        $this->middleware('permission:stocks importar')->only('importar');
+    }
+
     public function index()
     {
         $stocks = DB::table('stock_sucursales')

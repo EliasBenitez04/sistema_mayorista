@@ -5,15 +5,13 @@
         <div class="container-fluid">
             <div class="row mb-2">
                 <div class="col-sm-6">
-                    <h1>Articulos</h1>
+                    <h1>Importación De OT</h1>
                 </div>
-                @can('articulos create')
-                    <div class="col-sm-6 d-flex justify-content-end">
-                        <a class="btn btn-primary btn-sg" href="{{ route('articulos.create') }}" role="button">
-                            <i></i> Nuevo
-                        </a>
-                    </div>
-                @endcan
+                <div class="col-sm-6">
+                    <a class="btn btn-primary float-right" href="{{ route('ots.create') }}">
+                        Add New
+                    </a>
+                </div>
             </div>
         </div>
     </section>
@@ -25,7 +23,7 @@
         <div class="clearfix"></div>
 
         <div class="card">
-            @include('articulos.table')
+            @include('ots.table')
         </div>
     </div>
 @endsection

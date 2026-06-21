@@ -44,6 +44,7 @@ Route::resource('permissions', App\Http\Controllers\PermissionController::class)
 Route::resource('roles', App\Http\Controllers\RoleController::class);
 Route::resource('pedido_compras', App\Http\Controllers\PedidoComprasController::class);
 Route::resource('stocks', App\Http\Controllers\StockController::class);
+Route::resource('ots', App\Http\Controllers\OtController::class);
 
 /*
 |--------------------------------------------------------------------------
@@ -142,3 +143,17 @@ Route::get('password/reset/{token}', [ResetPasswordController::class, 'showReset
 
 Route::post('password/reset', [ResetPasswordController::class, 'reset'])
     ->name('password.update');
+
+use App\Http\Controllers\OtController;
+
+Route::get('/ot', [OtController::class, 'index'])
+    ->name('ot.index');
+
+Route::post('/ot/importar', [OtController::class, 'importar'])
+    ->name('ot.importar');
+
+Route::get('/ot/buscar', [OtController::class, 'buscar'])
+    ->name('ot.buscar');
+
+Route::get('/dashboard/ot', [OtController::class, 'dashboard'])
+    ->name('dashboard.ot');

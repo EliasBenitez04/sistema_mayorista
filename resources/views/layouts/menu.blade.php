@@ -35,12 +35,14 @@
                 </a>
             </li>
         @endcan
+        @can('stocks importar')
         <li class="nav-item">
             <a href="{{ route('stocks.index') }}" class="nav-link {{ request()->routeIs('stocks.*') ? 'active' : '' }}">
                 <i class="nav-icon fas fa-sync-alt"></i>
                 <p>- Importar Stock</p>
             </a>
         </li>
+        @endcan
         @can('lineas index')
             <li class="nav-item">
                 <a href="{{ route('lineas.index') }}" class="nav-link {{ request()->routeIs('lineas.*') ? 'active' : '' }}">
@@ -88,32 +90,63 @@
         @endcan
     </ul>
 </li>
+@can('pedido_compras index')
+    <br>
+    <li class="nav-item {{ request()->routeIs('pedido_compras.*') ? 'menu-open' : '' }}">
+        <a href="#" class="nav-link {{ request()->routeIs('pedido_compras.*') ? 'active' : '' }}">
+            <i class="nav-icon fas fa-file-invoice"></i>
+            <p>
+                Pedidos
+                <i class="right fas fa-angle-left"></i>
+            </p>
+        </a>
 
+        <ul class="nav nav-treeview">
+            @can('pedido_compras index')
+                <li class="nav-item">
+                    <a href="{{ route('pedido_compras.index') }}"
+                        class="nav-link {{ request()->routeIs('pedido_compras.*') ? 'active' : '' }}">
+                        <i class="nav-icon fas fa-angle-right"></i>
+                        <p>Realizar Pedido</p>
+                    </a>
+                </li>
+            @endcan
+        </ul>
+    </li>
+@endcan
+@can('ot index')
+    <br>
+    <li class="nav-item {{ request()->routeIs('ot.*') ? 'menu-open' : '' }}">
+        <a href="#" class="nav-link {{ request()->routeIs('ot.*') ? 'active' : '' }}">
+            <i class="nav-icon fas fa-file-invoice"></i>
+            <p>
+                Seguimiento OT
+                <i class="right fas fa-angle-left"></i>
+            </p>
+        </a>
 
-<br>
-
-<li class="nav-item {{ request()->routeIs('pedido_compras.*') ? 'menu-open' : '' }}">
-    <a href="#" class="nav-link {{ request()->routeIs('pedido_compras.*') ? 'active' : '' }}">
-        <i class="nav-icon fas fa-file-invoice"></i>
-        <p>
-            Pedidos
-            <i class="right fas fa-angle-left"></i>
-        </p>
-    </a>
-
-    <ul class="nav nav-treeview">
-        @can('pedido_compras index')
-            <li class="nav-item">
-                <a href="{{ route('pedido_compras.index') }}"
-                    class="nav-link {{ request()->routeIs('pedido_compras.*') ? 'active' : '' }}">
-                    <i class="nav-icon fas fa-angle-right"></i>
-                    <p>Realizar Pedido</p>
-                </a>
-            </li>
-        @endcan
-    </ul>
-</li>
-<br>
+        <ul class="nav nav-treeview">
+            @can('ot importar')
+                <li class="nav-item">
+                    <a href="{{ route('ot.index') }}" class="nav-link {{ request()->routeIs('ot.*') ? 'active' : '' }}">
+                        <i class="nav-icon fas fa-angle-right"></i>
+                        <p>Orden De Trabajos</p>
+                    </a>
+                </li>
+            @endcan
+            @can('ot dashboard')
+                <li class="nav-item">
+                    <a href="{{ route('dashboard.ot') }}"
+                        class="nav-link {{ request()->routeIs('dashboard.ot') ? 'active' : '' }}">
+                        <i class="nav-icon fas fa-chart-line"></i>
+                        <p>Dashboard OT</p>
+                    </a>
+                </li>
+            @endcan
+        </ul>
+    </li>
+    <br>
+@endcan
 
 @can('carga_fotos index')
     <li class="nav-item {{ request()->routeIs('carga_fotos.*') ? 'menu-open' : '' }}">

@@ -135,21 +135,22 @@
                                         </div>
                                     </form>
                                 </div>
+                                @can('stocks importar')
+                                    <!-- IMPORTAR EXCEL -->
+                                    <div class="col-md-4 text-md-right">
+                                        <form id="import-form" enctype="multipart/form-data">
+                                            @csrf
+                                            <input type="file" name="archivo" id="file" class="form-control mb-2"
+                                                required>
+                                            <button type="button" id="btn-import" class="btn btn-success">
+                                                <i class="fas fa-file-excel"></i> Importar Excel
+                                            </button>
 
-                                <!-- IMPORTAR EXCEL -->
-                                <div class="col-md-4 text-md-right">
-                                    <form id="import-form" enctype="multipart/form-data">
-                                        @csrf
-                                        <input type="file" name="archivo" id="file" class="form-control mb-2"
-                                            required>
-                                        <button type="button" id="btn-import" class="btn btn-success">
-                                            <i class="fas fa-file-excel"></i> Importar Excel
-                                        </button>
-
-                                        <input type="file" id="excelFile" accept=".xlsx,.xls,.csv"
-                                            style="display:none;">
-                                    </form>
-                                </div>
+                                            <input type="file" id="excelFile" accept=".xlsx,.xls,.csv"
+                                                style="display:none;">
+                                        </form>
+                                    </div>
+                                @endcan
 
                             </div>
                         </div>
