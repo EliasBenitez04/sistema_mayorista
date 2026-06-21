@@ -5,7 +5,7 @@
     </a>
 </li>
 
-<br>
+{{-- ===================== CARGA DE DATOS ===================== --}}
 @php
     $menuCargaDatos = request()->routeIs(
         'lineas.*',
@@ -17,123 +17,143 @@
         'stocks.*',
     );
 @endphp
+@php
+    $menuConfiguracion = request()->routeIs('usuarios.*', 'permissions.*', 'roles.*');
+@endphp
+
+<li class="nav-header">CARGA DE DATOS</li>
+
 <li class="nav-item {{ $menuCargaDatos ? 'menu-open' : '' }}">
     <a href="#" class="nav-link {{ $menuCargaDatos ? 'active' : '' }}">
         <i class="nav-icon fas fa-database"></i>
-        <p>
-            Carga de Datos
-            <i class="right fas fa-angle-left"></i>
-        </p>
+        <p>Gestión <i class="right fas fa-angle-left"></i></p>
     </a>
+
     <ul class="nav nav-treeview">
-        @can('articulos index')
-            <li class="nav-item">
-                <a href="{{ route('articulos.index') }}"
-                    class="nav-link {{ request()->routeIs('articulos.*') ? 'active' : '' }}">
-                    <i class="nav-icon fas fa-box-open"></i>
-                    <p>- Artículos</p>
-                </a>
-            </li>
-        @endcan
-        @can('stocks importar')
+
         <li class="nav-item">
-            <a href="{{ route('stocks.index') }}" class="nav-link {{ request()->routeIs('stocks.*') ? 'active' : '' }}">
-                <i class="nav-icon fas fa-sync-alt"></i>
-                <p>- Importar Stock</p>
+            <a href="{{ route('articulos.index') }}"
+                class="nav-link {{ request()->routeIs('articulos.*') ? 'active' : '' }}">
+                <i class="nav-icon fas fa-box-open"></i>
+                <p>- Artículos</p>
             </a>
         </li>
-        @endcan
-        @can('lineas index')
+
+        @can('stocks importar')
             <li class="nav-item">
-                <a href="{{ route('lineas.index') }}" class="nav-link {{ request()->routeIs('lineas.*') ? 'active' : '' }}">
-                    <i class="nav-icon fas fa-tshirt"></i>
-                    <p>- Lineas</p>
-                </a>
-            </li>
-        @endcan
-        @can('sucursal index')
-            <li class="nav-item">
-                <a href="{{ route('sucursal.index') }}"
-                    class="nav-link {{ request()->routeIs('sucursal.*') ? 'active' : '' }}">
-                    <i class="nav-icon fas fa-store"></i>
-                    <p>- Sucursales</p>
-                </a>
-            </li>
-        @endcan
-        @can('clientes index')
-            <li class="nav-item">
-                <a href="{{ route('clientes.index') }}"
-                    class="nav-link {{ request()->routeIs('clientes.*') ? 'active' : '' }}">
-                    <i class="nav-icon fas fa-user-friends"></i>
-                    <p>- Clientes</p>
-                </a>
-            </li>
-        @endcan
-        @can('departamentos index')
-            <li class="nav-item">
-                <a href="{{ route('Departamentos.index') }}"
-                    class="nav-link {{ request()->routeIs('Departamentos.*') ? 'active' : '' }}">
-                    <i class="nav-icon fas fa-map-marked-alt"></i>
-                    <p>- Departamentos</p>
+                <a href="{{ route('stocks.index') }}" class="nav-link {{ request()->routeIs('stocks.*') ? 'active' : '' }}">
+                    <i class="nav-icon fas fa-sync-alt"></i>
+                    <p>- Importar Stock</p>
                 </a>
             </li>
         @endcan
 
-        @can('ciudades index')
-            <li class="nav-item">
-                <a href="{{ route('ciudades.index') }}"
-                    class="nav-link {{ request()->routeIs('ciudades.*') ? 'active' : '' }}">
-                    <i class="nav-icon fas fa-city"></i>
-                    <p>- Ciudades</p>
-                </a>
-            </li>
-        @endcan
+        <li class="nav-item">
+            <a href="{{ route('lineas.index') }}" class="nav-link {{ request()->routeIs('lineas.*') ? 'active' : '' }}">
+                <i class="nav-icon fas fa-tshirt"></i>
+                <p>- Líneas</p>
+            </a>
+        </li>
+
+        <li class="nav-item">
+            <a href="{{ route('sucursal.index') }}"
+                class="nav-link {{ request()->routeIs('sucursal.*') ? 'active' : '' }}">
+                <i class="nav-icon fas fa-store"></i>
+                <p>- Sucursales</p>
+            </a>
+        </li>
+
+        <li class="nav-item">
+            <a href="{{ route('clientes.index') }}"
+                class="nav-link {{ request()->routeIs('clientes.*') ? 'active' : '' }}">
+                <i class="nav-icon fas fa-user-friends"></i>
+                <p>- Clientes</p>
+            </a>
+        </li>
+
+        <li class="nav-item">
+            <a href="{{ route('Departamentos.index') }}"
+                class="nav-link {{ request()->routeIs('Departamentos.*') ? 'active' : '' }}">
+                <i class="nav-icon fas fa-map-marked-alt"></i>
+                <p>- Departamentos</p>
+            </a>
+        </li>
+
+        <li class="nav-item">
+            <a href="{{ route('ciudades.index') }}"
+                class="nav-link {{ request()->routeIs('ciudades.*') ? 'active' : '' }}">
+                <i class="nav-icon fas fa-city"></i>
+                <p>- Ciudades</p>
+            </a>
+        </li>
+
     </ul>
 </li>
+
+{{-- ===================== PEDIDOS ===================== --}}
 @can('pedido_compras index')
-    <br>
+    <li class="nav-header">PEDIDOS</li>
+
     <li class="nav-item {{ request()->routeIs('pedido_compras.*') ? 'menu-open' : '' }}">
         <a href="#" class="nav-link {{ request()->routeIs('pedido_compras.*') ? 'active' : '' }}">
             <i class="nav-icon fas fa-file-invoice"></i>
-            <p>
-                Pedidos
-                <i class="right fas fa-angle-left"></i>
-            </p>
+            <p>Pedidos <i class="right fas fa-angle-left"></i></p>
         </a>
 
         <ul class="nav nav-treeview">
-            @can('pedido_compras index')
-                <li class="nav-item">
-                    <a href="{{ route('pedido_compras.index') }}"
-                        class="nav-link {{ request()->routeIs('pedido_compras.*') ? 'active' : '' }}">
-                        <i class="nav-icon fas fa-angle-right"></i>
-                        <p>Realizar Pedido</p>
-                    </a>
-                </li>
-            @endcan
+            <li class="nav-item">
+                <a href="{{ route('pedido_compras.index') }}"
+                    class="nav-link {{ request()->routeIs('pedido_compras.*') ? 'active' : '' }}">
+                    <i class="nav-icon fas fa-angle-right"></i>
+                    <p>Realizar Pedido</p>
+                </a>
+            </li>
         </ul>
     </li>
 @endcan
-@can('ot index')
-    <br>
-    <li class="nav-item {{ request()->routeIs('ot.*') ? 'menu-open' : '' }}">
-        <a href="#" class="nav-link {{ request()->routeIs('ot.*') ? 'active' : '' }}">
-            <i class="nav-icon fas fa-file-invoice"></i>
-            <p>
-                Seguimiento OT
-                <i class="right fas fa-angle-left"></i>
-            </p>
+
+{{-- ===================== IA ===================== --}}
+@can('ia index')
+    <li class="nav-header">INTELIGENCIA ARTIFICIAL</li>
+
+    <li class="nav-item {{ request()->routeIs('ia.*') ? 'menu-open' : '' }}">
+        <a href="#" class="nav-link {{ request()->routeIs('ia.*') ? 'active' : '' }}">
+            <i class="nav-icon fas fa-file-image"></i>
+            <p>Procesar Imágenes <i class="right fas fa-angle-left"></i></p>
         </a>
 
         <ul class="nav nav-treeview">
+            <li class="nav-item">
+                <a href="{{ route('ia.index') }}" class="nav-link {{ request()->routeIs('ia.*') ? 'active' : '' }}">
+                    <i class="nav-icon fas fa-magic"></i>
+                    <p>Eliminar Fondo</p>
+                </a>
+            </li>
+        </ul>
+    </li>
+@endcan
+
+{{-- ===================== OT ===================== --}}
+@can('ot index')
+    <li class="nav-header">SEGUIMIENTO OT</li>
+
+    <li class="nav-item {{ request()->routeIs('ot.*') ? 'menu-open' : '' }}">
+        <a href="#" class="nav-link {{ request()->routeIs('ot.*') ? 'active' : '' }}">
+            <i class="nav-icon fas fa-file"></i>
+            <p>OT <i class="right fas fa-angle-left"></i></p>
+        </a>
+
+        <ul class="nav nav-treeview">
+
             @can('ot importar')
                 <li class="nav-item">
                     <a href="{{ route('ot.index') }}" class="nav-link {{ request()->routeIs('ot.*') ? 'active' : '' }}">
                         <i class="nav-icon fas fa-angle-right"></i>
-                        <p>Orden De Trabajos</p>
+                        <p>Orden de Trabajo</p>
                     </a>
                 </li>
             @endcan
+
             @can('ot dashboard')
                 <li class="nav-item">
                     <a href="{{ route('dashboard.ot') }}"
@@ -143,66 +163,42 @@
                     </a>
                 </li>
             @endcan
+
         </ul>
     </li>
-    <br>
 @endcan
 
-@can('carga_fotos index')
-    <li class="nav-item {{ request()->routeIs('carga_fotos.*') ? 'menu-open' : '' }}">
-        <a href="#" class="nav-link {{ request()->routeIs('carga_fotos.*') ? 'active' : '' }}">
-            <i class="nav-icon fas fa-camera-retro"></i>
-            <p>
-                Carga De Fotos
-                <i class="right fas fa-angle-left"></i>
-            </p>
-        </a>
+{{-- ===================== CONFIGURACIÓN ===================== --}}
+<li class="nav-header">CONFIGURACIÓN</li>
 
-        <ul class="nav nav-treeview">
-            <li class="nav-item">
-                <a href="{{ route('carga_fotos.index') }}"
-                    class="nav-link {{ request()->routeIs('carga_fotos.*') ? 'active' : '' }}">
-                    <i class="nav-icon fas fa-camera"></i>
-                    <p>- Carga De Fotos</p>
-                </a>
-            </li>
-        </ul>
-    </li>
-    <br>
-@endcan
-<!-- Configuraciones -->
-<li class="nav-item {{ Request::is('usuarios*', 'roles*', 'permissions*', 'auditoria*') ? 'menu-open' : '' }}">
-    <a href="#"
-        class="nav-link {{ Request::is('usuarios*', 'roles*', 'permissions*', 'auditoria*') ? 'active' : '' }}">
-        <i class="nav-icon fa fa-cogs"></i>
-        <p>
-            Configuraciones
-            <i class="right fas fa-angle-left"></i>
-        </p>
+<li class="nav-item {{ $menuConfiguracion ? 'menu-open' : '' }}">
+    <a href="#" class="nav-link {{ $menuConfiguracion ? 'active' : '' }}">
+        <i class="nav-icon fas fa-file"></i>
+        <p>Configuración <i class="right fas fa-angle-left"></i></p>
     </a>
 
     <ul class="nav nav-treeview">
 
         <li class="nav-item">
-            <a href="{{ route('usuarios.index') }}" class="nav-link {{ Request::is('usuarios*') ? 'active' : '' }}">
+            <a href="{{ route('usuarios.index') }}" class="nav-link">
                 <i class="nav-icon fas fa-users"></i>
-                <p>- Usuarios</p>
+                <p>Usuarios</p>
             </a>
         </li>
 
         <li class="nav-item">
-            <a href="{{ route('permissions.index') }}"
-                class="nav-link {{ Request::is('permissions*') ? 'active' : '' }}">
+            <a href="{{ route('permissions.index') }}" class="nav-link">
                 <i class="nav-icon fas fa-key"></i>
-                <p>- Permisos</p>
+                <p>Permisos</p>
             </a>
         </li>
 
         <li class="nav-item">
-            <a href="{{ route('roles.index') }}" class="nav-link {{ Request::is('roles*') ? 'active' : '' }}">
+            <a href="{{ route('roles.index') }}" class="nav-link">
                 <i class="nav-icon fas fa-user-shield"></i>
-                <p>- Roles</p>
+                <p>Roles</p>
             </a>
         </li>
+
     </ul>
 </li>

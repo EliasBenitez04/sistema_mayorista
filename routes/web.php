@@ -157,3 +157,11 @@ Route::get('/ot/buscar', [OtController::class, 'buscar'])
 
 Route::get('/dashboard/ot', [OtController::class, 'dashboard'])
     ->name('dashboard.ot');
+
+use App\Http\Controllers\ProcesadorImagenController;
+
+Route::get('/ia-prendas', [ProcesadorImagenController::class, 'index'])->name('ia.index');
+
+Route::post('/ia-prendas/subir', [ProcesadorImagenController::class, 'subir'])->name('ia.subir');
+
+Route::get('/ia-prendas/descargar', [ProcesadorImagenController::class, 'descargarZip'])->name('ia.descargar');

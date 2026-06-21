@@ -111,9 +111,11 @@
                                                 </div>
                                             </div>
                                         </div>
-                                        <button type="submit" class="btn btn-primary btn-block">
-                                            <i class="fas fa-save"></i> Guardar Cambios
-                                        </button>
+                                        @can('usuarios index')
+                                            <button type="submit" class="btn btn-primary btn-block">
+                                                <i class="fas fa-save"></i> Guardar Cambios
+                                            </button>
+                                        @endcan
                                     </form>
                                 </div>
 
