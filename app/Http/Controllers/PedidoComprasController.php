@@ -283,24 +283,60 @@ class PedidoComprasController extends Controller
 
         $productosQuery = DB::table('stock as s')
             ->join('articulos as a', 'a.id_articulo', '=', 's.id_articulo')
+
+            // Vista que contiene el stock de todas las sucursales
+            ->leftJoin('v_stock_sucursales as v', function ($join) {
+                $join->on('v.codigo', '=', 'a.art_codigo');
+            })
+
             ->select(
+                'a.art_codigo',
+                'a.art_descripcion',
+                'a.prec_vent',
+                's.cantidad',
+                's.cod_suc',
+
+                // Stock total de todas las sucursales
+                DB::raw('COALESCE(MAX(v.stock_general), 0) as stock_general'),
+
+                // Stock disponible en OTRAS sucursales
+                DB::raw('
+                GREATEST(
+                    COALESCE(MAX(v.stock_general), 0) - COALESCE(s.cantidad, 0),
+                    0
+                ) as stock_disponible_pedir
+            ')
+            )
+
+            ->when($cod_suc, function ($q) use ($cod_suc) {
+                $q->where('s.cod_suc', $cod_suc);
+            })
+
+            ->when($query, function ($q) use ($query) {
+                $q->where(function ($q2) use ($query) {
+
+                    $q2->where(
+                        'a.art_codigo',
+                        'ILIKE',
+                        $query . '%'
+                    )
+
+                        ->orWhere(
+                            'a.art_descripcion',
+                            'ILIKE',
+                            $query . '%'
+                        );
+                });
+            })
+
+            ->groupBy(
                 'a.art_codigo',
                 'a.art_descripcion',
                 'a.prec_vent',
                 's.cantidad',
                 's.cod_suc'
             )
-            ->when($cod_suc, function ($q) use ($cod_suc) {
-                $q->where('s.cod_suc', $cod_suc);
-            })
-            ->when($query, function ($q) use ($query) {
 
-                $q->where(function ($q2) use ($query) {
-
-                    $q2->where('a.art_codigo', 'ILIKE', $query . '%')
-                        ->orWhere('a.art_descripcion', 'ILIKE', $query . '%');
-                });
-            })
             ->orderBy('a.art_codigo')
             ->limit(15)
             ->get();

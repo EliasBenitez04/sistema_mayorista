@@ -4,17 +4,11 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\File;
+use Illuminate\Support\Facades\Http;
 use ZipArchive;
 
 class ProcesadorImagenController extends Controller
 {
-    public function __construct()
-    {
-        $this->middleware('auth');
-        $this->middleware('permission:ia index')->only('index');
-        $this->middleware('permission:ia create')->only('subir');
-    }
-
     public function index()
     {
         return view('ia_prendas.index');
@@ -24,11 +18,13 @@ class ProcesadorImagenController extends Controller
     {
         $request->validate([
             'imagenes' => 'required',
-            'imagenes.*' => 'image|max:10240'
+            'imagenes.*' => 'image|max:10240',
+            'estilo' => 'nullable|string'
         ]);
 
-        $base = storage_path('app/public/prendas');
+        $token = env('REPLICATE_API_TOKEN');
 
+        $base = storage_path('app/public/prendas');
         $originales = $base . '/originales';
         $procesadas = $base . '/procesadas';
 
@@ -38,102 +34,126 @@ class ProcesadorImagenController extends Controller
         File::cleanDirectory($originales);
         File::cleanDirectory($procesadas);
 
-        // 🔹 Guardar nombres originales
         $imagenes = [];
 
         foreach ($request->file('imagenes') as $img) {
-
-            $name = uniqid() . '.' . $img->getClientOriginalExtension();
-
+            $name = uniqid() . '.png';
             $img->move($originales, $name);
-
             $imagenes[] = $name;
         }
 
-        /*
-        -------------------------------------------------
-        🔥 EJECUTAR REMBG
-        -------------------------------------------------
-        */
-        $cmd = 'rembg p "' . $originales . '" "' . $procesadas . '" 2>&1';
+        // REMOVE BACKGROUND
+        exec('rembg p "' . $originales . '" "' . $procesadas . '" 2>&1');
 
-        exec($cmd, $output, $code);
-
-        if ($code !== 0) {
-            return back()->with('error', 'Error IA al procesar imágenes')
-                ->with('log', $output);
-        }
-
-        /*
-        -------------------------------------------------
-        🔥 CONVERTIR PNG → JPG (OBLIGATORIO)
-        -------------------------------------------------
-        */
         $preview = [];
 
         foreach ($imagenes as $nombre) {
 
             $nombreSinExt = pathinfo($nombre, PATHINFO_FILENAME);
-
             $pngPath = $procesadas . '/' . $nombreSinExt . '.png';
 
-            $jpgPath = $procesadas . '/' . $nombreSinExt . '.jpg';
+            if (!File::exists($pngPath)) continue;
 
-            if (File::exists($pngPath)) {
+            $prompt = $this->prompt($request->estilo);
 
-                $image = imagecreatefrompng($pngPath);
+            $fondoUrl = $this->generarFondoIA($prompt, $token);
 
-                // fondo blanco para JPG
-                $bg = imagecreatetruecolor(imagesx($image), imagesy($image));
-                $white = imagecolorallocate($bg, 255, 255, 255);
-                imagefill($bg, 0, 0, $white);
-                imagecopy($bg, $image, 0, 0, 0, 0, imagesx($image), imagesy($image));
+            if (!$fondoUrl) continue;
 
-                imagejpeg($bg, $jpgPath, 90);
+            // descargar fondo REAL
+            $tmpBg = storage_path('app/public/prendas/bg_' . uniqid() . '.jpg');
+            file_put_contents($tmpBg, file_get_contents($fondoUrl));
 
-                imagedestroy($image);
-                imagedestroy($bg);
-            }
+            $fondo = imagecreatefromstring(file_get_contents($tmpBg));
+            $producto = imagecreatefrompng($pngPath);
+
+            imagesavealpha($producto, true);
+
+            // resize producto
+            $newW = 700;
+            $ratio = imagesy($producto) / imagesx($producto);
+            $newH = intval($newW * $ratio);
+
+            $tmp = imagecreatetruecolor($newW, $newH);
+            imagealphablending($tmp, false);
+            imagesavealpha($tmp, true);
+
+            imagecopyresampled($tmp, $producto, 0, 0, 0, 0, $newW, $newH, imagesx($producto), imagesy($producto));
+
+            $producto = $tmp;
+
+            // centrar
+            $x = (imagesx($fondo) - imagesx($producto)) / 2;
+            $y = (imagesy($fondo) - imagesy($producto)) / 2;
+
+            imagecopy($fondo, $producto, $x, $y, 0, 0, imagesx($producto), imagesy($producto));
+
+            $finalPath = $procesadas . '/' . $nombreSinExt . '_final.jpg';
+            imagejpeg($fondo, $finalPath, 92);
+
+            imagedestroy($fondo);
+            imagedestroy($producto);
 
             $preview[] = [
                 'original' => asset('storage/prendas/originales/' . $nombre),
-                'procesada' => asset('storage/prendas/procesadas/' . $nombreSinExt . '.jpg'),
+                'final' => asset('storage/prendas/procesadas/' . $nombreSinExt . '_final.jpg'),
             ];
         }
 
         session()->flash('preview_ia', $preview);
 
-        alert()->success('Listo', 'Imágenes procesadas correctamente con IA');
-
         return back();
     }
 
-    public function descargarZip()
+    // ================= FIX REAL REPLICATE =================
+    private function generarFondoIA($prompt, $token)
     {
-        $procesadas = storage_path('app/public/prendas/procesadas');
-        $zipPath = storage_path('app/public/prendas/zip/prendas.zip');
+        $response = Http::withHeaders([
+            'Authorization' => 'Bearer ' . $token,
+            'Content-Type' => 'application/json'
+        ])->post('https://api.replicate.com/v1/models/stability-ai/sdxl/predictions', [
+            "input" => [
+                "prompt" => $prompt,
+                "width" => 768,
+                "height" => 768
+            ]
+        ]);
 
-        File::ensureDirectoryExists(dirname($zipPath));
+        $prediction = $response->json();
 
-        if (File::exists($zipPath)) {
-            File::delete($zipPath);
+        if (!isset($prediction['urls']['get'])) {
+            return null;
         }
 
-        $zip = new ZipArchive;
+        // polling correcto
+        for ($i = 0; $i < 40; $i++) {
 
-        if ($zip->open($zipPath, ZipArchive::CREATE) === true) {
+            sleep(2);
 
-            // 🔥 SOLO JPG (NO PNG)
-            foreach (File::files($procesadas) as $file) {
+            $check = Http::withHeaders([
+                'Authorization' => 'Bearer ' . $token
+            ])->get($prediction['urls']['get'])->json();
 
-                if ($file->getExtension() === 'jpg') {
-                    $zip->addFile($file->getRealPath(), $file->getFilename());
-                }
+            if (($check['status'] ?? '') === 'succeeded') {
+
+                return $check['output'][0] ?? null;
             }
 
-            $zip->close();
+            if (($check['status'] ?? '') === 'failed') {
+                return null;
+            }
         }
 
-        return response()->download($zipPath);
+        return null;
+    }
+
+    private function prompt($estilo)
+    {
+        return match ($estilo) {
+            'verano' => 'luxury beach ecommerce background, soft sunlight, empty center, product photography',
+            'invierno' => 'snow winter cinematic studio background, soft light, ecommerce',
+            'otoño' => 'autumn leaves warm aesthetic product photography background',
+            default => 'clean professional ecommerce studio background'
+        };
     }
 }

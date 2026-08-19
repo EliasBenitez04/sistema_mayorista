@@ -204,20 +204,6 @@
     </div>
 </div>
 
-<div class="mb-2 form-group col-sm-2">
-    <label for="cantidad_multiplicador">Cantidad de inserción</label>
-
-    <div class="input-group input-group-sg">
-        <div class="input-group-prepend">
-            <span class="input-group-text">
-                <i class="fas fa-layer-group"></i>
-            </span>
-        </div>
-
-        <input type="number" id="cantidad_multiplicador" class="form-control" value="1" min="1">
-    </div>
-</div>
-
 <!-- DETALLE COMPRAS -->
 <div class="form-group col-sm-12">
     <hr>
@@ -243,8 +229,7 @@
     }
 </style>
 <!-- Agregar SweetAlert2 -->
-@include('pedido_compras.modal_producto')
-
+@include('sweetalert::alert')
 <button id="btnScroll" type="button" class="btn btn-primary" onclick="toggleScroll()">
     <i id="iconScroll" class="fas fa-arrow-up"></i>
 </button>
@@ -457,10 +442,10 @@
 
 
         // ================= AGREGAR PRODUCTO =================
-        function seleccionarProductoPed(codigo, producto, precio) {
+            function seleccionarProductoPed(codigo, producto, precio) {
 
-            let tabla = document.getElementById('selectedProducts');
-            let cantidadMultiplicador = parseInt(document.getElementById("cantidad_multiplicador").value) || 1;
+                let tabla = document.getElementById('selectedProducts');
+                let cantidadMultiplicador = parseInt(document.getElementById("cantidad_multiplicador").value) || 1;
 
             // 🔥 VALIDAR DUPLICADO
             let existe = Array.from(tabla.querySelectorAll("input[name='codigo[]']"))

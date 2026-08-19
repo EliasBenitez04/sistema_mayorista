@@ -47,7 +47,6 @@
 
                 {{-- FORM --}}
                 <form id="formIA" method="POST" action="{{ route('ia.subir') }}" enctype="multipart/form-data">
-
                     @csrf
 
                     <div class="form-group">
@@ -58,9 +57,21 @@
                         <input type="file" name="imagenes[]" class="form-control" multiple accept="image/*" required>
                     </div>
 
+                    <div class="form-group mt-3">
+                        <label class="font-weight-bold text-dark">
+                            Fondo (opcional)
+                        </label>
+
+                        <select name="estilo">
+                            <option value="verano">Verano</option>
+                            <option value="invierno">Invierno</option>
+                            <option value="otoño">Otoño</option>
+                        </select>
+                    </div>
+
                     <button type="submit" id="btnIA" class="btn btn-primary btn-lg px-4 shadow-sm">
                         <i class="fas fa-magic mr-2"></i>
-                        Procesar IA
+                        Procesar IA + Fondo
                     </button>
 
                     <a href="{{ route('ia.descargar') }}" class="btn btn-success btn-lg px-4 shadow-sm">
@@ -100,6 +111,7 @@
 
     </div>
 
+    {{-- ================= PREVIEW ================= --}}
     @if (session('preview_ia'))
         <div class="mt-4">
 
@@ -114,17 +126,28 @@
 
                             <div class="card-body">
 
+                                {{-- ORIGINAL --}}
                                 <div class="text-center mb-2">
                                     <small class="text-muted">ANTES</small>
                                     <img src="{{ $img['original'] }}" class="img-fluid rounded border"
                                         style="height: 180px; object-fit: cover;">
                                 </div>
 
-                                <div class="text-center">
+                                {{-- IA --}}
+                                <div class="text-center mb-2">
                                     <small class="text-success">DESPUÉS (IA)</small>
                                     <img src="{{ $img['procesada'] }}" class="img-fluid rounded border border-success"
                                         style="height: 180px; object-fit: cover;">
                                 </div>
+
+                                {{-- FINAL --}}
+                                @if (!empty($img['final']))
+                                    <div class="text-center">
+                                        <small class="text-primary">FINAL (FONDO + IA)</small>
+                                        <img src="{{ $img['final'] }}" class="img-fluid rounded border border-primary"
+                                            style="height: 180px; object-fit: cover;">
+                                    </div>
+                                @endif
 
                             </div>
 
@@ -138,6 +161,7 @@
         </div>
     @endif
 
+    {{-- ================= ESTILOS ================= --}}
     <style>
         #loadingOverlay {
             position: fixed;
@@ -203,12 +227,8 @@
         }
     </style>
 
+    {{-- ================= SCRIPT ================= --}}
     <script>
-        let seconds = 0;
-        let interval;
-        let progress = 0;
-        let fakeBar;
-
         document.getElementById('formIA').addEventListener('submit', function() {
 
             document.getElementById('loadingOverlay').style.display = 'flex';
@@ -220,18 +240,18 @@
         Procesando...
     `;
 
-            seconds = 0;
-            progress = 0;
+            let seconds = 0;
+            let progress = 0;
 
             document.getElementById('counter').innerText = "0s";
             document.getElementById('progressBar').style.width = "0%";
 
-            interval = setInterval(() => {
+            let interval = setInterval(() => {
                 seconds++;
                 document.getElementById('counter').innerText = seconds + "s";
             }, 1000);
 
-            fakeBar = setInterval(() => {
+            setInterval(() => {
                 if (progress < 90) {
                     progress += Math.random() * 8;
                     document.getElementById('progressBar').style.width = progress + "%";
@@ -240,4 +260,5 @@
 
         });
     </script>
+
 @endsection

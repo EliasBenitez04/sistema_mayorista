@@ -3,532 +3,1611 @@
 
 <head>
     <meta charset="UTF-8">
-    <title>Dashboard OT</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Seguimiento OT</title>
 
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
     <style>
+        :root {
+            --primary: #1f3a5f;
+            --primary-dark: #162b46;
+            --secondary: #64748b;
+            --border: #e2e8f0;
+            --background: #f5f7fa;
+            --white: #ffffff;
+            --success: #198754;
+            --warning: #d99a00;
+            --danger: #c62828;
+            --info: #2563eb;
+            --text: #1e293b;
+            --muted: #64748b;
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
         body {
-            background: #f4f6f9;
+            margin: 0;
+            background: var(--background);
+            color: var(--text);
+            font-family: "Segoe UI", Arial, sans-serif;
+            font-size: 14px;
         }
 
-        .kpi-card {
-            border: none;
-            border-radius: 15px;
-            box-shadow: 0 2px 10px rgba(0, 0, 0, .08);
-            transition: .3s;
-            height: 100%;
+        /* =========================================================
+           CONTENEDOR
+        ========================================================= */
+
+        .dashboard-container {
+            max-width: 1980px;
+            margin: auto;
+            padding: 25px 30px 50px;
         }
 
-        .kpi-card:hover {
-            transform: translateY(-3px);
+        /* =========================================================
+           HEADER
+        ========================================================= */
+
+        .dashboard-header {
+            background: var(--white);
+            border: 1px solid var(--border);
+            border-left: 5px solid var(--primary);
+            padding: 22px 25px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 8px rgba(15, 23, 42, .04);
         }
 
-        .kpi-value {
-            font-size: 28px;
-            font-weight: bold;
-            color: #0d6efd;
-            line-height: 1.1;
+        .dashboard-header h1 {
+            font-size: 24px;
+            font-weight: 700;
+            margin: 0;
+            color: var(--primary);
+        }
+
+        .dashboard-header p {
+            margin: 5px 0 0;
+            color: var(--muted);
+            font-size: 13px;
+        }
+
+        .search-box {
+            display: flex;
+            gap: 8px;
+        }
+
+        .search-box input {
+            min-width: 190px;
+            border: 1px solid #cbd5e1;
+            border-radius: 4px;
+            height: 38px;
+        }
+
+        .btn-enterprise {
+            background: var(--primary);
+            border: 1px solid var(--primary);
+            color: white;
+            border-radius: 4px;
+            padding: 7px 16px;
+            font-weight: 600;
+        }
+
+        .btn-enterprise:hover {
+            background: var(--primary-dark);
+            color: white;
+        }
+
+        .btn-outline-enterprise {
+            background: white;
+            border: 1px solid #cbd5e1;
+            color: #334155;
+            border-radius: 4px;
+            padding: 7px 14px;
+        }
+
+        /* =========================================================
+           ALERTA
+        ========================================================= */
+
+        .system-alert {
+            border-radius: 4px;
+            border: 1px solid #f1d48a;
+            background: #fffaf0;
+            padding: 13px 16px;
+            margin-bottom: 20px;
+        }
+
+        /* =========================================================
+           OT IDENTIFICACION
+        ========================================================= */
+
+        .ot-header {
+            background: white;
+            border: 1px solid var(--border);
+            box-shadow: 0 2px 8px rgba(15, 23, 42, .04);
+            margin-bottom: 18px;
+        }
+
+        .ot-header-main {
+            padding: 22px 25px;
+        }
+
+        .ot-number {
+            font-size: 27px;
+            font-weight: 700;
+            color: var(--primary);
+            margin-right: 10px;
+        }
+
+        .ot-code {
+            background: #eef2f7;
+            color: #475569;
+            border: 1px solid #d8e0e8;
+            padding: 5px 10px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+
+        .ot-description {
+            margin-top: 9px;
+            color: #475569;
+            font-size: 14px;
+        }
+
+        .status-badge {
+            display: inline-flex;
+            align-items: center;
+            padding: 6px 12px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: 700;
+        }
+
+        /* =========================================================
+           AVANCE
+        ========================================================= */
+
+        .progress-section {
+            border-top: 1px solid var(--border);
+            padding: 18px 25px;
+            background: #fafbfc;
+        }
+
+        .progress-title {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 7px;
+            font-weight: 600;
+            font-size: 13px;
+        }
+
+        .enterprise-progress {
+            height: 9px;
+            border-radius: 2px;
+            background: #e8edf3;
+            overflow: hidden;
+        }
+
+        .enterprise-progress .progress-bar {
+            border-radius: 2px;
+        }
+
+        /* =========================================================
+           KPI
+        ========================================================= */
+
+        .kpi-grid {
+            display: grid;
+            grid-template-columns: repeat(6, 1fr);
+            gap: 12px;
+            margin-bottom: 20px;
+        }
+
+        .kpi {
+            background: white;
+            border: 1px solid var(--border);
+            min-height: 112px;
+            padding: 18px;
+            position: relative;
+            box-shadow: 0 1px 5px rgba(15, 23, 42, .03);
+        }
+
+        .kpi::before {
+            content: "";
+            position: absolute;
+            left: 0;
+            top: 0;
+            bottom: 0;
+            width: 3px;
+            background: var(--primary);
         }
 
         .kpi-label {
-            font-size: 12px;
+            color: var(--muted);
             text-transform: uppercase;
-            letter-spacing: .05em;
-            color: #6c757d;
+            font-size: 10px;
+            font-weight: 700;
+            letter-spacing: .06em;
         }
 
-        .chart-card,
-        .table-card,
-        .info-card,
-        .resumen-card {
-            border: none;
-            border-radius: 15px;
-            box-shadow: 0 2px 10px rgba(0, 0, 0, .08);
+        .kpi-value {
+            font-size: 25px;
+            font-weight: 700;
+            margin-top: 8px;
+            color: var(--primary);
         }
+
+        .kpi-sub {
+            color: #94a3b8;
+            font-size: 11px;
+            margin-top: 3px;
+        }
+
+        /* =========================================================
+           SECCIONES
+        ========================================================= */
+
+        .section-card {
+            background: white;
+            border: 1px solid var(--border);
+            box-shadow: 0 1px 6px rgba(15, 23, 42, .03);
+            margin-bottom: 20px;
+        }
+
+        .section-header {
+            padding: 15px 20px;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .section-title {
+            font-size: 14px;
+            font-weight: 700;
+            color: var(--primary);
+            margin: 0;
+        }
+
+        .section-title i {
+            margin-right: 7px;
+        }
+
+        .section-body {
+            padding: 20px;
+        }
+
+        /* =========================================================
+           RESUMEN EJECUTIVO
+        ========================================================= */
+
+        .executive-summary {
+            border-left: 4px solid var(--primary);
+            background: #f8fafc;
+            padding: 17px 20px;
+            color: #475569;
+            line-height: 1.7;
+        }
+
+        .executive-summary strong {
+            color: var(--primary);
+        }
+
+        /* =========================================================
+           ALERTAS ESTADO
+        ========================================================= */
+
+        .status-message {
+            padding: 13px 16px;
+            border: 1px solid;
+            margin-top: 15px;
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+
+        .status-message-danger {
+            background: #fff5f5;
+            border-color: #f1b5b5;
+            color: #842029;
+        }
+
+        .status-message-success {
+            background: #f1faf4;
+            border-color: #b9dfc5;
+            color: #146c43;
+        }
+
+        .status-message-secondary {
+            background: #f5f6f7;
+            border-color: #d6d9dc;
+            color: #495057;
+        }
+
+        /* =========================================================
+           GRAFICOS
+        ========================================================= */
+
+        .chart-container {
+            height: 320px;
+            position: relative;
+        }
+
+        /* =========================================================
+           TABLA
+        ========================================================= */
+
+        .enterprise-table {
+            margin: 0;
+        }
+
+        .enterprise-table thead th {
+            background: #f1f5f9;
+            color: #475569;
+            border-bottom: 1px solid #cbd5e1;
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: .04em;
+            font-weight: 700;
+            padding: 12px;
+            white-space: nowrap;
+        }
+
+        .enterprise-table tbody td {
+            padding: 11px 12px;
+            border-bottom: 1px solid #edf0f3;
+            vertical-align: middle;
+        }
+
+        .enterprise-table tbody tr:hover {
+            background: #f8fafc;
+        }
+
+        /* =========================================================
+           BADGES
+        ========================================================= */
+
+        .enterprise-badge {
+            display: inline-block;
+            padding: 4px 8px;
+            border-radius: 3px;
+            font-size: 11px;
+            font-weight: 700;
+        }
+
+        .badge-process {
+            background: #e8f0fe;
+            color: #1d4ed8;
+        }
+
+        .badge-success {
+            background: #e8f7ee;
+            color: #147a42;
+        }
+
+        .badge-warning {
+            background: #fff5d9;
+            color: #946200;
+        }
+
+        .badge-secondary {
+            background: #edf0f2;
+            color: #59636e;
+        }
+
+        /* =========================================================
+           TIMELINE
+        ========================================================= */
 
         .timeline {
             position: relative;
-            margin-left: 20px;
+            padding-left: 28px;
         }
 
         .timeline::before {
-            content: '';
+            content: "";
             position: absolute;
-            left: 10px;
-            top: 0;
-            width: 3px;
-            height: 100%;
-            background: #0d6efd;
+            left: 7px;
+            top: 5px;
+            bottom: 5px;
+            width: 1px;
+            background: #cbd5e1;
         }
 
         .timeline-item {
             position: relative;
-            padding-left: 35px;
-            margin-bottom: 20px;
+            padding-bottom: 22px;
         }
 
         .timeline-item::before {
-            content: '';
+            content: "";
             position: absolute;
-            left: 3px;
-            top: 5px;
-            width: 15px;
-            height: 15px;
+            left: -25px;
+            top: 3px;
+            width: 9px;
+            height: 9px;
             border-radius: 50%;
-            background: #0d6efd;
-            border: 3px solid #fff;
+            background: var(--primary);
+            border: 2px solid white;
+            box-shadow: 0 0 0 1px #94a3b8;
         }
 
         .timeline-item.is-last::before {
-            background: #198754;
+            background: var(--success);
         }
 
-        .progress {
-            height: 25px;
+        .timeline-item.is-suspended::before {
+            background: #64748b;
         }
 
-        .progress-bar {
-            font-weight: bold;
+        .timeline-process {
+            font-weight: 700;
+            color: var(--primary);
         }
 
-        .header-card {
-            background: linear-gradient(135deg, #0d6efd, #4a8cff);
-            color: white;
-            border-radius: 15px;
+        .timeline-date {
+            color: #94a3b8;
+            font-size: 11px;
+            margin-top: 3px;
         }
 
-        .report-meta {
-            font-size: 12px;
-            opacity: .85;
+        /* =========================================================
+           LOGISTICA
+        ========================================================= */
+
+        .logistica-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+            gap: 10px;
+        }
+
+        .branch-card {
+            border: 1px solid var(--border);
+            padding: 15px;
+            background: #fafbfc;
+        }
+
+        .branch-name {
+            font-size: 11px;
+            color: var(--muted);
+            text-transform: uppercase;
+            font-weight: 700;
+        }
+
+        .branch-value {
+            font-size: 25px;
+            font-weight: 700;
+            color: var(--primary);
+            margin-top: 5px;
+        }
+
+        .logistica-total {
+            border-left: 3px solid var(--success);
+        }
+
+        .logistica-diferencia {
+            border-left: 3px solid var(--warning);
+        }
+
+        /* =========================================================
+           RESPONSIVE
+        ========================================================= */
+
+        @media (max-width: 1200px) {
+            .kpi-grid {
+                grid-template-columns: repeat(3, 1fr);
+            }
+        }
+
+        @media (max-width: 768px) {
+
+            .dashboard-container {
+                padding: 15px;
+            }
+
+            .kpi-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+
+            .search-box {
+                width: 100%;
+            }
+
+            .search-box input {
+                min-width: 0;
+                flex: 1;
+            }
+
+            .dashboard-header {
+                padding: 18px;
+            }
+
+            .ot-number {
+                font-size: 22px;
+            }
         }
 
         @media print {
+
             body {
-                background: #fff;
+                background: white;
             }
 
             .no-print {
                 display: none !important;
             }
 
-            .card {
-                box-shadow: none !important;
-                border: 1px solid #dee2e6 !important;
+            .dashboard-container {
+                padding: 0;
             }
 
-            .header-card {
-                background: #0d6efd !important;
-                -webkit-print-color-adjust: exact;
-                print-color-adjust: exact;
+            .section-card,
+            .ot-header,
+            .kpi {
+                box-shadow: none !important;
             }
+
         }
     </style>
+
 </head>
 
 <body>
 
-    <div class="container-fluid py-4">
+    <div class="dashboard-container">
 
-        <div class="card header-card p-4 mb-4">
+        {{-- =========================================================
+         HEADER
+    ========================================================== --}}
+
+        <div class="dashboard-header">
+
             <div class="d-flex justify-content-between align-items-center flex-wrap gap-3">
+
                 <div>
-                    <h2 class="mb-1">Dashboard de Trazabilidad</h2>
-                    <p class="mb-0">Reporte gerencial de seguimiento de Orden de Trabajo</p>
+
+                    <h1>
+                        <i class="bi bi-clipboard2-data me-2"></i>
+                        Seguimiento de Orden de Trabajo
+                    </h1>
+
+                    <p>
+                        Control operativo, trazabilidad y seguimiento de producción
+                    </p>
+
                 </div>
 
-                <div class="d-flex align-items-end flex-column gap-2 no-print">
+                <div class="search-box no-print">
+
                     <form method="GET" action="{{ route('dashboard.ot') }}" class="d-flex gap-2">
+
                         <input type="text" name="nro_ot" value="{{ $nroOtBuscada ?? '' }}" class="form-control"
-                            placeholder="Ingrese N° de OT">
+                            placeholder="N° de OT">
 
-                        <button class="btn btn-light">
-                            <i class="bi bi-search"></i> Buscar
-                        </button>
-                        <button type="button" class="btn btn-light" onclick="history.back()">
-                            <i class="bi bi-arrow-left"></i> Volver
+                        <button class="btn btn-enterprise">
+                            <i class="bi bi-search me-1"></i>
+                            Consultar
                         </button>
 
-                        {{-- @if ($ot)
-                            <button type="button" class="btn btn-outline-light" onclick="window.print()">
-                                <i class="bi bi-printer"></i> Imprimir
-                            </button>
-                        @endif --}}
+                        <button type="button" class="btn btn-outline-enterprise" onclick="url = '{{ route('home') }}'; window.location.href = url;">
+
+                            <i class="bi bi-arrow-left"></i>
+
+                        </button>
+
                     </form>
+
                 </div>
+
             </div>
+
         </div>
 
+
+        {{-- =========================================================
+         MENSAJE
+    ========================================================== --}}
+
         @if ($mensaje)
-            <div class="alert alert-warning shadow-sm rounded-3 d-flex align-items-center gap-2">
-                <i class="bi bi-exclamation-triangle-fill fs-5"></i>
-                <div>{{ $mensaje }}</div>
-            </div>
+        <div class="system-alert">
+
+            <i class="bi bi-exclamation-triangle me-2"></i>
+
+            {{ $mensaje }}
+
+        </div>
         @endif
+
 
         @if ($ot && $resumen)
 
-            {{-- DATOS GENERALES --}}
-            <div class="card info-card mb-4">
-                <div class="card-body">
 
-                    <div class="row align-items-center">
+        {{-- =====================================================
+             IDENTIFICACION OT
+        ====================================================== --}}
 
-                        <div class="col-md-7">
-                            <div class="d-flex align-items-center gap-2 flex-wrap">
-                                <h3 class="mb-0">OT N° {{ $ot->nro_ot }}</h3>
-                                <span class="badge bg-primary">{{ $ot->codigo }}</span>
-                                <span class="badge bg-{{ $resumen['estado_color'] }} fs-6">
-                                    {{ $resumen['estado_texto'] }}
-                                </span>
-                            </div>
+        <div class="ot-header">
 
-                            <p class="text-muted mt-2 mb-1">
-                                {{ $ot->descripcion }}
-                            </p>
+            <div class="ot-header-main">
 
-                            <p class="report-meta text-muted mb-0" style="font-size:13px">
-                                Inicio: {{ $resumen['fecha_inicio']->format('d/m/Y') }}
-                                &nbsp;·&nbsp;
-                                Último movimiento: {{ $resumen['fecha_ultimo_proceso']->format('d/m/Y') }}
-                                &nbsp;·&nbsp;
-                                Reporte generado: {{ $resumen['fecha_generacion_reporte']->format('d/m/Y') }}
-                            </p>
+                <div class="row align-items-center">
+
+                    <div class="col-lg-8">
+
+                        <div class="d-flex align-items-center flex-wrap gap-2">
+
+                            <span class="ot-number">
+                                OT N° {{ $ot->nro_ot }}
+                            </span>
+
+                            <span class="ot-code">
+                                {{ $ot->codigo }}
+                            </span>
+
+                            <span class="status-badge bg-{{ $resumen['estado_color'] }} text-white">
+                                {{ $resumen['estado_texto'] }}
+                            </span>
+
                         </div>
 
-                        <div class="col-md-5">
-                            <label class="fw-semibold">Avance de la OT</label>
-
-                            <div class="progress">
-                                <div class="progress-bar bg-{{ $resumen['avance_color'] }}"
-                                    style="width: {{ $resumen['avance'] }}%">
-                                    {{ $resumen['avance'] }}%
-                                </div>
-                            </div>
+                        <div class="ot-description">
+                            {{ $ot->descripcion }}
                         </div>
 
                     </div>
 
-                    @if ($resumen['esta_demorada'])
-                        <div class="alert alert-danger mt-3 mb-0 d-flex align-items-center gap-2">
-                            <i class="bi bi-clock-history fs-5"></i>
+                    <div class="col-lg-4 mt-3 mt-lg-0">
+
+                        <div class="small text-muted">
+
                             <div>
-                                Esta OT no registra movimientos hace
-                                <strong>{{ $resumen['dias_desde_ultimo_proceso'] }} días</strong>.
-                                Último proceso: <strong>{{ $resumen['ultimo_proceso'] }}</strong>.
+                                <strong>Inicio:</strong>
+                                {{ $resumen['fecha_inicio']->format('d/m/Y') }}
                             </div>
+
+                            <div>
+                                <strong>Último Proceso:</strong>
+                                {{ $resumen['fecha_ultimo_proceso']->format('d/m/Y') }}
+                            </div>
+
+                            <div>
+                                <strong>Consulta:</strong>
+                                {{ $resumen['fecha_generacion_reporte']->format('d/m/Y H:i') }}
+                            </div>
+
                         </div>
+
+                    </div>
+
+                </div>
+
+            </div>
+
+
+            {{-- AVANCE --}}
+
+            <div class="progress-section">
+
+                <div class="progress-title">
+
+                    <span>
+                        Avance de la Orden de Trabajo
+                    </span>
+
+                    <strong>
+                        {{ $resumen['avance'] }}%
+                    </strong>
+
+                </div>
+
+                <div class="progress enterprise-progress">
+
+                    <div class="progress-bar bg-{{ $resumen['avance_color'] }}"
+                        style="width: {{ $resumen['avance'] }}%">
+                    </div>
+
+                </div>
+
+            </div>
+
+
+            {{-- ESTADO DINAMICO --}}
+
+            @if ($resumen['esta_demorada'])
+            <div class="status-message status-message-danger mx-4 mb-4">
+
+                <i class="bi bi-clock-history fs-5"></i>
+
+                <div>
+
+                    <strong>OT DEMORADA</strong><br>
+
+                    Sin movimientos durante
+                    <strong>
+                        {{ $resumen['dias_desde_ultimo_proceso'] }} días
+                    </strong>.
+
+                    Último proceso:
+                    <strong>
+                        {{ $resumen['ultimo_proceso'] }}
+                    </strong>
+
+                </div>
+
+            </div>
+            @elseif ($resumen['finalizada'])
+            <div class="status-message status-message-success mx-4 mb-4">
+
+                <i class="bi bi-check-circle fs-5"></i>
+
+                <div>
+
+                    <strong>OT FINALIZADA</strong><br>
+
+                    Completada hace
+                    <strong>
+                        {{ $resumen['dias_desde_ultimo_proceso'] }} días
+                    </strong>.
+
+                </div>
+
+            </div>
+            @elseif ($resumen['esta_suspendida'])
+            <div class="status-message status-message-secondary mx-4 mb-4">
+
+                <i class="bi bi-pause-circle fs-5"></i>
+
+                <div>
+
+                    <strong>OT SUSPENDIDA</strong><br>
+
+                    Suspensión registrada hace
+                    <strong>
+                        {{ $resumen['dias_desde_ultimo_proceso'] }} días
+                    </strong>.
+
+                </div>
+
+            </div>
+            @endif
+
+        </div>
+
+
+        {{-- =====================================================
+             KPI
+        ====================================================== --}}
+
+        <div class="kpi-grid">
+
+            <div class="kpi">
+
+                <div class="kpi-label">
+                    Procesos
+                </div>
+
+                <div class="kpi-value">
+                    {{ $resumen['cantidad_procesos'] }}
+                </div>
+
+                <div class="kpi-sub">
+                    procesos registrados
+                </div>
+
+            </div>
+
+
+            <div class="kpi">
+
+                <div class="kpi-label">
+                    Avance
+                </div>
+
+                <div class="kpi-value">
+                    {{ $resumen['avance'] }}%
+                </div>
+
+                <div class="kpi-sub">
+                    cumplimiento OT
+                </div>
+
+            </div>
+
+
+            <div class="kpi">
+
+                <div class="kpi-label">
+                    Tiempo Total
+                </div>
+
+                <div class="kpi-value">
+                    {{ number_format($resumen['tiempo_total_horas'], 1) }} h
+                </div>
+
+                <div class="kpi-sub">
+                    {{ $resumen['tiempo_total_dias'] }} días
+                </div>
+
+            </div>
+
+
+            <div class="kpi">
+
+                <div class="kpi-label">
+
+                    @if ($resumen['finalizada'])
+                    Días Finalizada
+                    @elseif ($resumen['esta_suspendida'])
+                    Días Suspendida
+                    @else
+                    Sin Movimiento
                     @endif
 
                 </div>
-            </div>
 
-            {{-- KPI --}}
-            <div class="row mb-4 g-3">
+                <div class="kpi-value">
 
-                <div class="col-xl-2 col-md-4 col-6">
-                    <div class="card kpi-card">
-                        <div class="card-body text-center">
-                            <div class="kpi-label">Procesos</div>
-                            <div class="kpi-value">{{ $resumen['cantidad_procesos'] }}</div>
-                        </div>
-                    </div>
+                    {{ $resumen['dias_desde_ultimo_proceso'] }}
+
                 </div>
 
-                <div class="col-xl-2 col-md-4 col-6">
-                    <div class="card kpi-card">
-                        <div class="card-body text-center">
-                            <div class="kpi-label">Avance</div>
-                            <div class="kpi-value text-{{ $resumen['avance_color'] }}">
-                                {{ $resumen['avance'] }}%
-                            </div>
-                        </div>
-                    </div>
-                </div>
+                <div class="kpi-sub">
 
-                <div class="col-xl-2 col-md-4 col-6">
-                    <div class="card kpi-card">
-                        <div class="card-body text-center">
-                            <div class="kpi-label">Tiempo Total</div>
-                            <div class="kpi-value" style="font-size:24px">
-                                {{ number_format($resumen['tiempo_total_horas'], 2) }} h
-                            </div>
-                            <small class="text-muted">{{ $resumen['tiempo_total_dias'] }} días</small>
-                        </div>
-                    </div>
-                </div>
+                    @if ($resumen['finalizada'])
+                    desde finalización
+                    @elseif ($resumen['esta_suspendida'])
+                    desde suspensión
+                    @else
+                    desde último proceso
+                    @endif
 
-                <div class="col-xl-2 col-md-4 col-6">
-                    <div class="card kpi-card">
-                        <div class="card-body text-center">
-                            <div class="kpi-label">Días sin Movimiento</div>
-                            <div class="kpi-value {{ $resumen['esta_demorada'] ? 'text-danger' : '' }}"
-                                style="font-size:24px">
-                                {{ $resumen['dias_desde_ultimo_proceso'] }}
-                            </div>
-                            <small class="text-muted">desde el último proceso</small>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="col-xl-2 col-md-4 col-6">
-                    <div class="card kpi-card">
-                        <div class="card-body text-center">
-                            <div class="kpi-label">Duración Promedio</div>
-                            <div class="kpi-value" style="font-size:24px">
-                                {{ number_format($resumen['duracion_promedio_horas'], 2) }} h
-                            </div>
-                            <small class="text-muted">por proceso</small>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="col-xl-2 col-md-4 col-6">
-                    <div class="card kpi-card">
-                        <div class="card-body text-center">
-                            <div class="kpi-label">Último Proceso</div>
-                            <div class="kpi-value" style="font-size:16px">
-                                {{ $resumen['ultimo_proceso'] }}
-                            </div>
-                        </div>
-                    </div>
                 </div>
 
             </div>
 
-            {{-- RESUMEN EJECUTIVO --}}
-            <div class="card resumen-card mb-4">
-                <div class="card-body">
-                    <h5><i class="bi bi-clipboard-data"></i> Resumen Ejecutivo</h5>
-                    <p class="mb-0">
-                        La OT lleva <strong>{{ $resumen['tiempo_total_dias'] }} días</strong>
-                        ({{ number_format($resumen['tiempo_total_horas'], 2) }} horas) desde su primer proceso
-                        registrado, con un avance de <strong>{{ $resumen['avance'] }}%</strong>
-                        y estado <strong>{{ $resumen['estado_texto'] }}</strong>.
 
-                        @if ($resumen['proceso_mas_lento'])
-                            El proceso con mayor duración fue
-                            <strong>{{ $resumen['proceso_mas_lento']['proceso'] }}</strong>
-                            ({{ number_format($resumen['proceso_mas_lento']['duracion_horas'], 2) }} horas),
-                            mientras que el más rápido fue
-                            <strong>{{ $resumen['proceso_mas_rapido']['proceso'] }}</strong>
-                            ({{ number_format($resumen['proceso_mas_rapido']['duracion_horas'], 2) }} horas).
-                        @endif
+            <div class="kpi">
 
-                        @if ($resumen['finalizada'])
-                            La OT se encuentra <strong>finalizada</strong>.
-                        @elseif ($resumen['esta_demorada'])
-                            La OT está <strong>demorada</strong>: no hay movimientos hace
-                            {{ $resumen['dias_desde_ultimo_proceso'] }} días.
-                        @else
-                            La OT está <strong>en proceso</strong> con actividad reciente.
-                        @endif
-                    </p>
+                <div class="kpi-label">
+                    Promedio
                 </div>
+
+                <div class="kpi-value">
+                    {{ number_format($resumen['duracion_promedio_horas'], 1) }} h
+                </div>
+
+                <div class="kpi-sub">
+                    por proceso
+                </div>
+
             </div>
 
-            {{-- GRAFICOS --}}
-            <div class="row mb-4">
 
-                <div class="col-lg-6">
+            <div class="kpi">
 
-                    <div class="card chart-card">
-                        <div class="card-body">
-                            <h5>Duración por Proceso (horas)</h5>
+                <div class="kpi-label">
+                    Último Proceso
+                </div>
+
+                <div class="kpi-value" style="font-size:16px;">
+                    {{ $resumen['ultimo_proceso'] }}
+                </div>
+
+            </div>
+
+        </div>
+
+
+        {{-- =====================================================
+             RESUMEN EJECUTIVO
+        ====================================================== --}}
+
+        <div class="section-card">
+
+            <div class="section-header">
+
+                <h5 class="section-title">
+
+                    <i class="bi bi-file-earmark-bar-graph"></i>
+
+                    Resumen Ejecutivo
+
+                </h5>
+
+            </div>
+
+            <div class="section-body">
+
+                <div class="executive-summary">
+
+                    La OT lleva
+                    <strong>
+                        {{ $resumen['tiempo_total_dias'] }} días
+                    </strong>
+
+                    desde su primer proceso registrado,
+
+                    equivalente a
+                    <strong>
+                        {{ number_format($resumen['tiempo_total_horas'], 2) }} horas
+                    </strong>,
+
+                    con un avance de
+                    <strong>
+                        {{ $resumen['avance'] }}%
+                    </strong>
+
+                    y estado
+
+                    <strong>
+                        {{ $resumen['estado_texto'] }}
+                    </strong>.
+
+                    @if ($resumen['proceso_mas_lento'])
+                    El proceso de mayor duración fue
+
+                    <strong>
+                        {{ $resumen['proceso_mas_lento']['proceso'] }}
+                    </strong>
+
+                    con
+
+                    <strong>
+                        {{ number_format($resumen['proceso_mas_lento']['duracion_horas'], 2) }}
+                        horas
+                    </strong>.
+                    @endif
+
+                    @if ($resumen['finalizada'])
+                    La OT se encuentra
+                    <strong>finalizada</strong>.
+                    @elseif ($resumen['esta_suspendida'])
+                    La OT se encuentra
+                    <strong>suspendida</strong>.
+                    @elseif ($resumen['esta_demorada'])
+                    La OT presenta
+                    <strong>demora operativa</strong>.
+                    @else
+                    La OT continúa
+                    <strong>en proceso</strong>.
+                    @endif
+
+                </div>
+
+            </div>
+
+        </div>
+
+
+        {{-- =====================================================
+             GRAFICOS
+        ====================================================== --}}
+
+        <div class="row g-3 mb-4">
+
+            <div class="col-lg-6">
+
+                <div class="section-card mb-0">
+
+                    <div class="section-header">
+
+                        <h5 class="section-title">
+
+                            <i class="bi bi-bar-chart"></i>
+
+                            Duración por Proceso
+
+                        </h5>
+
+                        <span class="text-muted small">
+                            Horas
+                        </span>
+
+                    </div>
+
+                    <div class="section-body">
+
+                        <div class="chart-container">
+
                             <canvas id="chartTiempos"></canvas>
+
                         </div>
-                    </div>
 
-                </div>
-
-                <div class="col-lg-6">
-
-                    <div class="card chart-card">
-                        <div class="card-body">
-                            <h5>Avance Acumulado (%)</h5>
-                            <canvas id="chartProcesos"></canvas>
-                        </div>
                     </div>
 
                 </div>
 
             </div>
 
-            {{-- TIMELINE + HISTORIAL --}}
-            <div class="row">
 
-                <div class="col-lg-4">
+            <div class="col-lg-6">
 
-                    <div class="card chart-card">
-                        <div class="card-body">
+                <div class="section-card mb-0">
 
-                            <h5>Línea de Tiempo</h5>
+                    <div class="section-header">
 
-                            <div class="timeline">
+                        <h5 class="section-title">
+
+                            <i class="bi bi-graph-up"></i>
+
+                            Avance Acumulado
+
+                        </h5>
+
+                        <span class="text-muted small">
+                            Porcentaje
+                        </span>
+
+                    </div>
+
+                    <div class="section-body">
+
+                        <div class="chart-container">
+
+                            <canvas id="chartProcesos"></canvas>
+
+                        </div>
+
+                    </div>
+
+                </div>
+
+            </div>
+
+        </div>
+
+
+        {{-- =====================================================
+ HISTORIAL + TIMELINE
+====================================================== --}}
+
+        {{-- =====================================================
+ HISTORIAL + TIMELINE
+====================================================== --}}
+
+        <div class="row g-3">
+
+            {{-- =====================================================
+         TIMELINE
+    ====================================================== --}}
+            <div class="col-lg-4">
+
+                <div class="section-card">
+
+                    <div class="section-header">
+
+                        <h5 class="section-title">
+                            <i class="bi bi-diagram-3"></i>
+                            Secuencia de Procesos
+                        </h5>
+
+                    </div>
+
+                    <div class="section-body">
+
+                        <div class="timeline">
+
+                            @foreach ($procesos as $p)
+                            <div
+                                class="timeline-item
+                            @if ($p['es_suspendido'] ?? false) is-suspended
+                            @elseif ($loop->last)
+                                is-last @endif">
+
+                                <div class="timeline-process">
+                                    {{ $p['proceso'] }}
+                                </div>
+
+                                <div class="timeline-date">
+                                    {{ $p['fecha']->format('d/m/Y') }}
+                                </div>
+
+                                <div class="mt-2">
+
+                                    <span class="enterprise-badge badge-process">
+                                        {{ $p['resultado'] }}
+                                    </span>
+
+                                    <span class="enterprise-badge badge-secondary">
+                                        {{ $p['avance_acumulado'] }}%
+                                    </span>
+
+                                </div>
+
+                                @if (!$loop->first)
+                                <div class="small text-muted mt-2">
+                                    +{{ number_format($p['duracion_horas'], 2) }}
+                                    horas
+                                </div>
+                                @endif
+
+                            </div>
+                            @endforeach
+
+                        </div>
+
+                    </div>
+
+                </div>
+
+            </div>
+
+
+            {{-- =====================================================
+         COLUMNA DERECHA
+         HISTORIAL + LOGÍSTICA
+    ====================================================== --}}
+            <div class="col-lg-8">
+
+                {{-- =================================================
+             HISTORIAL DE TRAZABILIDAD
+        ================================================== --}}
+
+                <div class="section-card">
+
+                    <div class="section-header">
+
+                        <h5 class="section-title">
+                            <i class="bi bi-list-check"></i>
+                            Historial de Trazabilidad
+                        </h5>
+
+                        <span class="text-muted small">
+                            {{ count($procesos) }} registros
+                        </span>
+
+                    </div>
+
+                    <div class="table-responsive">
+
+                        <table class="table enterprise-table">
+
+                            <thead>
+
+                                <tr>
+                                    <th>#</th>
+                                    <th>Proceso</th>
+                                    <th>Resultado</th>
+                                    <th>Fecha</th>
+                                    <th>Duración</th>
+                                    <th>Avance</th>
+                                    @can('ot destroy')<th>Acciones</th>@endcan
+                                </tr>
+
+                            </thead>
+
+                            <tbody>
 
                                 @foreach ($procesos as $p)
-                                    <div class="timeline-item @if ($loop->last) is-last @endif">
-                                        <strong>{{ $p['proceso'] }}</strong>
-                                        <br>
-                                        <small class="text-muted">{{ $p['fecha']->format('d/m/Y H:i') }}</small>
-                                        <br>
-                                        <span class="badge bg-secondary">{{ $p['resultado'] }}</span>
-                                        <span class="badge bg-light text-dark border">
-                                            {{ $p['avance_acumulado'] }}%
+                                <tr>
+
+                                    <td>
+                                        {{ $loop->iteration }}
+                                    </td>
+
+                                    <td>
+                                        <strong>
+                                            {{ $p['proceso'] }}
+                                        </strong>
+                                    </td>
+
+                                    <td>
+
+                                        <span class="enterprise-badge badge-process">
+                                            {{ $p['resultado'] }}
                                         </span>
-                                        @if (!$loop->first)
-                                            <div class="small text-muted mt-1">
-                                                +{{ number_format($p['duracion_horas'], 2) }} h desde el proceso
-                                                anterior
-                                            </div>
+
+                                    </td>
+
+                                    <td>
+                                        {{ $p['fecha']->format('d/m/Y') }}
+                                    </td>
+
+                                    <td>
+
+                                        {{ number_format($p['duracion_horas'], 2) }} h
+
+                                        <span class="text-muted">
+                                            ({{ $p['duracion_dias'] }} d)
+                                        </span>
+
+                                    </td>
+
+                                    <td>
+
+                                        @if ($p['es_suspendido'] ?? false)
+                                        <span class="enterprise-badge badge-secondary">
+                                            Suspendido
+                                        </span>
+                                        @else
+                                        <span
+                                            class="enterprise-badge
+                                            @if ($p['avance_acumulado'] >= 100) badge-success
+                                            @elseif ($p['avance_acumulado'] >= 50)
+                                                badge-process
+                                            @else
+                                                badge-warning @endif">
+
+                                            {{ $p['avance_acumulado'] }}%
+
+                                        </span>
                                         @endif
-                                    </div>
+
+                                    </td>
+                                    <td>
+                                        <form
+                                            action="{{ route('ot.trazabilidad.destroy', $p['id_trazabilidad']) }}"
+                                            method="POST"
+                                            class="form-eliminar-trazabilidad">
+
+                                            @csrf
+                                            @method('DELETE')
+
+                                            @can('ot destroy')
+                                            <button type="button"
+                                                class="btn btn-sm btn-outline-danger btn-eliminar-trazabilidad"
+                                                title="Eliminar proceso">
+                                                <i class="bi bi-trash"></i>
+                                            </button>
+                                            @endcan
+
+                                        </form>
+                                    </td>
+
+                                </tr>
                                 @endforeach
 
-                            </div>
+                            </tbody>
 
-                        </div>
+                        </table>
+
                     </div>
 
                 </div>
 
-                <div class="col-lg-8">
 
-                    <div class="card table-card">
-                        <div class="card-body">
+                {{-- =================================================
+             DISTRIBUCIÓN LOGÍSTICA
+             QUEDA LITERALMENTE DEBAJO DEL HISTORIAL
+        ================================================== --}}
 
-                            <h5>Historial Completo</h5>
+                @if ($ot->logisticaDetalle && $ot->logisticaDetalle->count() > 0)
 
-                            <div class="table-responsive">
+                <div class="section-card logistica-section">
 
-                                <table class="table table-hover align-middle">
+                    <div class="section-header">
 
-                                    <thead class="table-dark">
-                                        <tr>
-                                            <th>#</th>
-                                            <th>Proceso</th>
-                                            <th>Resultado</th>
-                                            <th>Fecha</th>
-                                            <th>Duración</th>
-                                            <th>Avance</th>
-                                        </tr>
-                                    </thead>
+                        <h5 class="section-title">
 
-                                    <tbody>
+                            <i class="bi bi-truck"></i>
 
-                                        @foreach ($procesos as $p)
-                                            <tr>
-                                                <td>{{ $loop->iteration }}</td>
-                                                <td>{{ $p['proceso'] }}</td>
-                                                <td>{{ $p['resultado'] }}</td>
-                                                <td>{{ $p['fecha']->format('d/m/Y') }}</td>
-                                                <td>
-                                                    {{ number_format($p['duracion_horas'], 2) }} h
-                                                    <span class="text-muted">
-                                                        ({{ $p['duracion_dias'] }} d)
-                                                    </span>
-                                                </td>
-                                                <td>
-                                                    <span
-                                                        class="badge bg-{{ $p['avance_acumulado'] >= 100 ? 'success' : ($p['avance_acumulado'] >= 50 ? 'info' : 'warning') }}">
-                                                        {{ $p['avance_acumulado'] }}%
-                                                    </span>
-                                                </td>
-                                            </tr>
-                                        @endforeach
+                            Distribución Logística
 
-                                    </tbody>
+                        </h5>
 
-                                </table>
+                        <span class="text-muted small">
+                            OT {{ $ot->nro_ot }}
+                        </span>
+
+                    </div>
+
+
+                    <div class="section-body">
+
+                        <p class="text-muted mb-3">
+                            Distribución de unidades por sucursal.
+                        </p>
+
+
+                        @php
+
+                        $trazabilidadPT = $ot->trazabilidades
+                        ->where('proceso', 'TERMINACION - PRODUCTO TERMINADO')
+                        ->last();
+
+                        $productoTerminado = $trazabilidadPT->resultado ?? 0;
+
+                        $logisticaTotal = $ot->logisticaDetalle->sum('cantidad');
+
+                        $diferencia = $logisticaTotal - $productoTerminado;
+
+                        @endphp
+
+
+                        <div class="logistica-grid">
+
+                            {{-- SUCURSALES --}}
+
+                            @foreach ($ot->logisticaDetalle as $logistica)
+                            <div class="branch-card">
+
+                                <div class="branch-name">
+                                    {{ $logistica->sucursal }}
+                                </div>
+
+                                <div class="branch-value">
+                                    {{ $logistica->cantidad }}
+                                </div>
+
+                            </div>
+                            @endforeach
+
+
+                            {{-- TOTAL --}}
+
+                            <div class="branch-card logistica-total">
+
+                                <div class="branch-name">
+                                    Total Distribuido
+                                </div>
+
+                                <div class="branch-value text-success">
+                                    {{ $logisticaTotal }}
+                                </div>
+
+                            </div>
+
+
+                            {{-- DIFERENCIA --}}
+
+                            <div class="branch-card logistica-diferencia">
+
+                                <div class="branch-name">
+                                    Diferencia
+                                </div>
+
+                                <div
+                                    class="branch-value
+                                {{ $diferencia < 0 ? 'text-danger' : ($diferencia == 0 ? 'text-success' : 'text-warning') }}">
+
+                                    {{ $diferencia }}
+
+                                </div>
 
                             </div>
 
                         </div>
+
                     </div>
 
                 </div>
+
+                @endif
 
             </div>
+
+        </div>
+
+        {{-- =========================================================
+     CHARTS
+========================================================= --}}
+
+        @if ($ot && $resumen)
+        <script>
+            const labels = @json($labels);
+            const duraciones = @json($duraciones);
+            const avances = @json($avancesAcumulados);
+
+            /* =========================================================
+               DURACIÓN
+            ========================================================= */
+
+            new Chart(
+                document.getElementById('chartTiempos'), {
+
+                    type: 'bar',
+
+                    data: {
+
+                        labels: labels,
+
+                        datasets: [{
+
+                            label: 'Días',
+
+                            data: duraciones,
+
+                            backgroundColor: '#1f3a5f',
+
+                            borderRadius: 2
+
+                        }]
+
+                    },
+
+                    options: {
+
+                        responsive: true,
+
+                        maintainAspectRatio: false,
+
+                        plugins: {
+
+                            legend: {
+                                display: false
+                            }
+
+                        },
+
+                        scales: {
+
+                            x: {
+
+                                grid: {
+                                    display: false
+                                }
+
+                            },
+
+                            y: {
+
+                                beginAtZero: true,
+
+                                grid: {
+                                    color: '#edf0f3'
+                                },
+
+                                title: {
+
+                                    display: true,
+
+                                    text: 'Horas'
+
+                                }
+
+                            }
+
+                        }
+
+                    }
+
+                }
+            );
+
+
+            /* =========================================================
+               AVANCE
+            ========================================================= */
+
+            new Chart(
+                document.getElementById('chartProcesos'), {
+
+                    type: 'line',
+
+                    data: {
+
+                        labels: labels,
+
+                        datasets: [{
+
+                            label: '% Avance',
+
+                            data: avances,
+
+                            borderColor: '#198754',
+
+                            backgroundColor: 'rgba(25,135,84,.08)',
+
+                            borderWidth: 2,
+
+                            pointRadius: 4,
+
+                            pointHoverRadius: 6,
+
+                            fill: true,
+
+                            tension: .25
+
+                        }]
+
+                    },
+
+                    options: {
+
+                        responsive: true,
+
+                        maintainAspectRatio: false,
+
+                        plugins: {
+
+                            legend: {
+                                display: false
+                            }
+
+                        },
+
+                        scales: {
+
+                            x: {
+
+                                grid: {
+                                    display: false
+                                }
+
+                            },
+
+                            y: {
+
+                                beginAtZero: true,
+
+                                max: 100,
+
+                                grid: {
+                                    color: '#edf0f3'
+                                },
+
+                                ticks: {
+
+                                    callback: function(value) {
+
+                                        return value + '%';
+
+                                    }
+
+                                }
+
+                            }
+
+                        }
+
+                    }
+
+                }
+            );
+        </script>
+        @endif
+
+
+        {{-- =========================================================
+     CIERRE DEL IF PRINCIPAL
+========================================================= --}}
 
         @endif
 
+
     </div>
 
-    @if ($ot && $resumen)
-        <script>
-            const labels = {!! json_encode($labels) !!};
-            const duraciones = {!! json_encode($duraciones) !!};
-            const avances = {!! json_encode($avancesAcumulados) !!};
 
-            new Chart(document.getElementById('chartTiempos'), {
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
 
-                type: 'bar',
+            document.querySelectorAll('.btn-eliminar-trazabilidad').forEach(function(button) {
 
-                data: {
-                    labels: labels,
-                    datasets: [{
-                        label: 'Horas',
-                        data: duraciones,
-                        backgroundColor: '#0d6efd'
-                    }]
-                },
+                button.addEventListener('click', function() {
 
-                options: {
-                    responsive: true,
-                    plugins: {
-                        legend: {
-                            display: false
+                    const form = this.closest('.form-eliminar-trazabilidad');
+
+                    Swal.fire({
+                        title: '¿Eliminar proceso?',
+                        text: 'Este registro de trazabilidad será eliminado.',
+                        icon: 'warning',
+                        showCancelButton: true,
+                        confirmButtonColor: '#d33',
+                        cancelButtonColor: '#6c757d',
+                        confirmButtonText: 'Sí, eliminar',
+                        cancelButtonText: 'Cancelar'
+                    }).then((result) => {
+
+                        if (result.isConfirmed) {
+                            form.submit();
                         }
-                    },
-                    scales: {
-                        y: {
-                            beginAtZero: true,
-                            title: {
-                                display: true,
-                                text: 'Horas'
-                            }
-                        }
-                    }
-                }
+
+                    });
+
+                });
 
             });
 
-            new Chart(document.getElementById('chartProcesos'), {
-
-                type: 'line',
-
-                data: {
-                    labels: labels,
-                    datasets: [{
-                        label: '% Avance',
-                        data: avances,
-                        borderColor: '#198754',
-                        backgroundColor: 'rgba(25, 135, 84, .15)',
-                        fill: true,
-                        tension: .3
-                    }]
-                },
-
-                options: {
-                    responsive: true,
-                    scales: {
-                        y: {
-                            beginAtZero: true,
-                            max: 100,
-                            ticks: {
-                                callback: value => value + '%'
-                            }
-                        }
-                    }
-                }
-
-            });
-        </script>
-    @endif
-
+        });
+    </script>
 </body>
 
 </html>

@@ -1,13 +1,18 @@
 <?php
 
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Route;
+use Illuminate\Support\Facades\Cache;
+
 use App\Http\Controllers\auditoriaController;
 use App\Http\Controllers\Auth\ForgotPasswordController;
 use App\Http\Controllers\Auth\ResetPasswordController;
 use App\Http\Controllers\PedidoComprasController;
+use App\Http\Controllers\stock_ventas_sucursales_Controller;
 use App\Http\Controllers\StockController;
-use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Route;
-use Illuminate\Support\Facades\Cache;
+use App\Http\Controllers\OtController;
+use App\Http\Controllers\ProcesadorImagenController;
+use App\Http\Controllers\RedistribucionSugeridaController;
 
 /*
 |--------------------------------------------------------------------------
@@ -19,11 +24,17 @@ Route::get('/', function () {
     return view('auth.login');
 });
 
-Route::get('/home', [App\Http\Controllers\HomeController::class, 'index'])->name('home');
+Route::get('/home', [
+    App\Http\Controllers\HomeController::class,
+    'index'
+])->name('home');
 
 Auth::routes();
 
-Route::post('/login', [App\Http\Controllers\Auth\Logincontroller::class, 'login']);
+Route::post('/login', [
+    App\Http\Controllers\Auth\Logincontroller::class,
+    'login'
+]);
 
 /*
 |--------------------------------------------------------------------------
@@ -32,19 +43,181 @@ Route::post('/login', [App\Http\Controllers\Auth\Logincontroller::class, 'login'
 */
 
 Route::resource('ciudades', App\Http\Controllers\Ciudadcontroller::class);
-Route::resource('Departamentos', App\Http\Controllers\DepartamentoController::class);
-Route::resource('clientes', App\Http\Controllers\ClienteController::class);
-Route::resource('articulos', App\Http\Controllers\ArticuloController::class);
-Route::resource('sucursal', App\Http\Controllers\sucursalController::class);
-Route::resource('lineas', App\Http\Controllers\LineaController::class);
-Route::resource('carga_fotos', App\Http\Controllers\CargaFotosController::class);
-Route::resource('usuarios', App\Http\Controllers\UsuarioController::class);
-Route::resource('auditoria', App\Http\Controllers\auditoriaController::class);
-Route::resource('permissions', App\Http\Controllers\PermissionController::class);
-Route::resource('roles', App\Http\Controllers\RoleController::class);
-Route::resource('pedido_compras', App\Http\Controllers\PedidoComprasController::class);
-Route::resource('stocks', App\Http\Controllers\StockController::class);
-Route::resource('ots', App\Http\Controllers\OtController::class);
+
+Route::resource(
+    'Departamentos',
+    App\Http\Controllers\DepartamentoController::class
+);
+
+Route::resource(
+    'clientes',
+    App\Http\Controllers\ClienteController::class
+);
+
+Route::resource(
+    'articulos',
+    App\Http\Controllers\ArticuloController::class
+);
+
+Route::resource(
+    'sucursal',
+    App\Http\Controllers\sucursalController::class
+);
+
+Route::resource(
+    'lineas',
+    App\Http\Controllers\LineaController::class
+);
+
+Route::resource(
+    'carga_fotos',
+    App\Http\Controllers\CargaFotosController::class
+);
+
+Route::resource(
+    'usuarios',
+    App\Http\Controllers\UsuarioController::class
+);
+
+Route::resource(
+    'auditoria',
+    App\Http\Controllers\auditoriaController::class
+);
+
+Route::resource(
+    'permissions',
+    App\Http\Controllers\PermissionController::class
+);
+
+Route::resource(
+    'roles',
+    App\Http\Controllers\RoleController::class
+);
+
+Route::resource(
+    'pedido_compras',
+    App\Http\Controllers\PedidoComprasController::class
+);
+
+Route::resource(
+    'stocks',
+    App\Http\Controllers\StockController::class
+);
+
+Route::resource(
+    'ots',
+    App\Http\Controllers\OtController::class
+);
+
+Route::resource(
+    'stock_ventas_sucursales',
+    App\Http\Controllers\stock_ventas_sucursales_Controller::class
+);
+
+/*
+|--------------------------------------------------------------------------
+| REDISTRIBUCIÓN
+|--------------------------------------------------------------------------
+|
+| Flujo:
+|
+| 1. Analizar
+| 2. Generar sugerencias
+| 3. Aprobar
+| 4. Crear proceso
+| 5. Ver proceso
+| 6. Generar lote
+| 7. Ver lote
+|
+|--------------------------------------------------------------------------
+*/
+
+/*
+|--------------------------------------------------------------------------
+| REDISTRIBUCIÓN - RESOURCE
+|--------------------------------------------------------------------------
+*/
+
+Route::resource(
+    'RedistribucionSugeridas',
+    RedistribucionSugeridaController::class
+);
+
+/*
+|--------------------------------------------------------------------------
+| REDISTRIBUCIÓN - ANALIZAR
+|--------------------------------------------------------------------------
+*/
+
+Route::post(
+    '/RedistribucionSugeridas/analizar',
+    [
+        RedistribucionSugeridaController::class,
+        'analizar'
+    ]
+)->name('RedistribucionSugeridas.analizar');
+
+/*
+|--------------------------------------------------------------------------
+| REDISTRIBUCIÓN - APROBAR
+|--------------------------------------------------------------------------
+*/
+
+Route::post(
+    '/RedistribucionSugeridas/aprobar',
+    [
+        RedistribucionSugeridaController::class,
+        'aprobar'
+    ]
+)->name('RedistribucionSugeridas.aprobar');
+
+/*
+|--------------------------------------------------------------------------
+| REDISTRIBUCIÓN - RECHAZAR
+|--------------------------------------------------------------------------
+*/
+
+Route::post(
+    '/RedistribucionSugeridas/rechazar',
+    [
+        RedistribucionSugeridaController::class,
+        'rechazar'
+    ]
+)->name('RedistribucionSugeridas.rechazar');
+
+/*
+|--------------------------------------------------------------------------
+| REDISTRIBUCIÓN - VER PROCESO
+|--------------------------------------------------------------------------
+*/
+
+Route::get(
+    '/redistribucion-sugeridas/proceso/{id}',
+    [
+        RedistribucionSugeridaController::class,
+        'proceso'
+    ]
+)->name('RedistribucionSugeridas.proceso');
+
+/*
+|--------------------------------------------------------------------------
+| REDISTRIBUCIÓN - GENERAR LOTE
+|--------------------------------------------------------------------------
+*/
+
+/*
+|--------------------------------------------------------------------------
+| REDISTRIBUCIÓN - VER LOTE
+|--------------------------------------------------------------------------
+*/
+
+Route::get(
+    '/redistribucion-sugeridas/lote/{id}',
+    [
+        RedistribucionSugeridaController::class,
+        'lote'
+    ]
+)->name('RedistribucionSugeridas.lote');
 
 /*
 |--------------------------------------------------------------------------
@@ -52,53 +225,120 @@ Route::resource('ots', App\Http\Controllers\OtController::class);
 |--------------------------------------------------------------------------
 */
 
-Route::get('users/detail/perfil', [App\Http\Controllers\UsuarioController::class, 'perfil']);
+Route::get(
+    'users/detail/perfil',
+    [
+        App\Http\Controllers\UsuarioController::class,
+        'perfil'
+    ]
+);
 
-Route::post('users/perfil/cambiar-password', [App\Http\Controllers\UsuarioController::class, 'cambiarPassword']);
+Route::post(
+    'users/perfil/cambiar-password',
+    [
+        App\Http\Controllers\UsuarioController::class,
+        'cambiarPassword'
+    ]
+);
 
 /*
 |--------------------------------------------------------------------------
-| PEDIDOS COMPRA (ACCIONES ESPECIALES)
+| PEDIDOS DE COMPRA
 |--------------------------------------------------------------------------
 */
 
-Route::patch('/pedido_compras/confirm/{id}', [PedidoComprasController::class, 'confirm'])->name('pedido_compras.confirm');
+Route::patch(
+    '/pedido_compras/confirm/{id}',
+    [
+        PedidoComprasController::class,
+        'confirm'
+    ]
+)->name('pedido_compras.confirm');
 
-Route::get('pedido_compras/{id}/edit', [PedidoComprasController::class, 'edit'])->name('pedido_compras.edit');
+Route::get(
+    'pedido_compras/{id}/edit',
+    [
+        PedidoComprasController::class,
+        'edit'
+    ]
+)->name('pedido_compras.edit');
 
-Route::put('pedido_compras/{id}', [PedidoComprasController::class, 'update'])->name('pedido_compras.update');
+Route::put(
+    'pedido_compras/{id}',
+    [
+        PedidoComprasController::class,
+        'update'
+    ]
+)->name('pedido_compras.update');
 
-Route::get('pedido_compras/{id}/imprimir', [App\Http\Controllers\PedidoComprasController::class, 'imprimir'])
-    ->name('pedido_compras.imprimir')
+Route::get(
+    'pedido_compras/{id}/imprimir',
+    [
+        PedidoComprasController::class,
+        'imprimir'
+    ]
+)->name('pedido_compras.imprimir')
     ->middleware('auth');
 
-Route::get('/pedido/export/{id}', [PedidoComprasController::class, 'export'])->name('pedido.export');
+Route::get(
+    '/pedido/export/{id}',
+    [
+        PedidoComprasController::class,
+        'export'
+    ]
+)->name('pedido.export');
 
-route::get('/pedido_compras/{id}/detalle', [PedidoComprasController::class, 'detalle'])->name('pedido_compras.detalle');
-
-/*
-|--------------------------------------------------------------------------
-| ARTICULOS
-|--------------------------------------------------------------------------
-*/
-
-Route::get('/buscar-productos', [App\Http\Controllers\ArticuloController::class, 'buscarProductos'])
-    ->name('buscar.productos');
-
-Route::get('/articulos/importar', [App\Http\Controllers\ArticuloController::class, 'showImportForm'])
-    ->name('articulos.importar.form');
-
-Route::post('/articulos/importar', [App\Http\Controllers\ArticuloController::class, 'import'])
-    ->name('articulos.importar');
+Route::get(
+    '/pedido_compras/{id}/detalle',
+    [
+        PedidoComprasController::class,
+        'detalle'
+    ]
+)->name('pedido_compras.detalle');
 
 /*
 |--------------------------------------------------------------------------
-| PEDIDO COMPRA - BUSQUEDA
+| ARTÍCULOS
 |--------------------------------------------------------------------------
 */
 
-Route::get('buscar-productos-ped', [App\Http\Controllers\PedidoComprasController::class, 'buscarProductoPed'])
-    ->name('buscar-productos-ped');
+Route::get(
+    '/buscar-productos',
+    [
+        App\Http\Controllers\ArticuloController::class,
+        'buscarProductos'
+    ]
+)->name('buscar.productos');
+
+Route::get(
+    '/articulos/importar',
+    [
+        App\Http\Controllers\ArticuloController::class,
+        'showImportForm'
+    ]
+)->name('articulos.importar.form');
+
+Route::post(
+    '/articulos/importar',
+    [
+        App\Http\Controllers\ArticuloController::class,
+        'import'
+    ]
+)->name('articulos.importar');
+
+/*
+|--------------------------------------------------------------------------
+| PEDIDO COMPRA - BÚSQUEDA
+|--------------------------------------------------------------------------
+*/
+
+Route::get(
+    'buscar-productos-ped',
+    [
+        App\Http\Controllers\PedidoComprasController::class,
+        'buscarProductoPed'
+    ]
+)->name('buscar-productos-ped');
 
 /*
 |--------------------------------------------------------------------------
@@ -106,28 +346,53 @@ Route::get('buscar-productos-ped', [App\Http\Controllers\PedidoComprasController
 |--------------------------------------------------------------------------
 */
 
-Route::post('/import-stock', [StockController::class, 'importStock'])
-    ->name('import.stock');
+Route::post(
+    '/import-stock',
+    [
+        StockController::class,
+        'importStock'
+    ]
+)->name('import.stock');
+
+Route::post(
+    '/import-stock-ventas-sucursales',
+    [
+        stock_ventas_sucursales_Controller::class,
+        'importStock'
+    ]
+)->name('import.stock.ventas.sucursales');
 
 /*
 |--------------------------------------------------------------------------
-| AUDITORIA
+| AUDITORÍA
 |--------------------------------------------------------------------------
 */
 
-Route::get('/auditoria', [auditoriaController::class, 'index'])->name('auditoria.index');
+Route::get(
+    '/auditoria',
+    [
+        auditoriaController::class,
+        'index'
+    ]
+)->name('auditoria.index');
 
 /*
 |--------------------------------------------------------------------------
-| IMPORT PROGRESS (CACHE)
+| IMPORT PROGRESS
 |--------------------------------------------------------------------------
 */
 
-Route::get('/import-progress', function () {
-    return response()->json([
-        'progress' => Cache::get('import_progress', 0)
-    ]);
-})->name('import.progress');
+Route::get(
+    '/import-progress',
+    function () {
+        return response()->json([
+            'progress' => Cache::get(
+                'import_progress',
+                0
+            )
+        ]);
+    }
+)->name('import.progress');
 
 /*
 |--------------------------------------------------------------------------
@@ -135,33 +400,181 @@ Route::get('/import-progress', function () {
 |--------------------------------------------------------------------------
 */
 
-Route::get('password/reset', [ForgotPasswordController::class, 'showLinkRequestForm'])
-    ->name('password.request');
+Route::get(
+    'password/reset',
+    [
+        ForgotPasswordController::class,
+        'showLinkRequestForm'
+    ]
+)->name('password.request');
 
-Route::get('password/reset/{token}', [ResetPasswordController::class, 'showResetForm'])
-    ->name('password.reset');
+Route::get(
+    'password/reset/{token}',
+    [
+        ResetPasswordController::class,
+        'showResetForm'
+    ]
+)->name('password.reset');
 
-Route::post('password/reset', [ResetPasswordController::class, 'reset'])
-    ->name('password.update');
+Route::post(
+    'password/reset',
+    [
+        ResetPasswordController::class,
+        'reset'
+    ]
+)->name('password.update');
 
-use App\Http\Controllers\OtController;
+/*
+|--------------------------------------------------------------------------
+| OT
+|--------------------------------------------------------------------------
+*/
 
-Route::get('/ot', [OtController::class, 'index'])
-    ->name('ot.index');
+Route::get(
+    '/ot',
+    [
+        OtController::class,
+        'index'
+    ]
+)->name('ot.index');
 
-Route::post('/ot/importar', [OtController::class, 'importar'])
-    ->name('ot.importar');
+Route::post(
+    '/ot/importar',
+    [
+        OtController::class,
+        'importar'
+    ]
+)->name('ot.importar');
 
-Route::get('/ot/buscar', [OtController::class, 'buscar'])
-    ->name('ot.buscar');
+Route::get(
+    '/ot/buscar',
+    [
+        OtController::class,
+        'buscar'
+    ]
+)->name('ot.buscar');
 
-Route::get('/dashboard/ot', [OtController::class, 'dashboard'])
-    ->name('dashboard.ot');
+Route::get(
+    '/dashboard/ot',
+    [
+        OtController::class,
+        'dashboard'
+    ]
+)->name('dashboard.ot');
 
-use App\Http\Controllers\ProcesadorImagenController;
+Route::post(
+    '/ot/importar-logistica',
+    [
+        OtController::class,
+        'importarLogistica'
+    ]
+)->name('ot.importar.logistica');
 
-Route::get('/ia-prendas', [ProcesadorImagenController::class, 'index'])->name('ia.index');
+/*
+|--------------------------------------------------------------------------
+| OT - PROCESOS
+|--------------------------------------------------------------------------
+*/
 
-Route::post('/ia-prendas/subir', [ProcesadorImagenController::class, 'subir'])->name('ia.subir');
+Route::get(
+    'ots/{id}/proceso/crear',
+    [
+        OtController::class,
+        'nuevoProceso'
+    ]
+)->name('ots.proceso.create');
 
-Route::get('/ia-prendas/descargar', [ProcesadorImagenController::class, 'descargarZip'])->name('ia.descargar');
+Route::post(
+    'ots/{id}/proceso',
+    [
+        OtController::class,
+        'guardarProceso'
+    ]
+)->name('ots.proceso.store');
+
+Route::get(
+    '/get-ot-details/{id}',
+    [
+        OtController::class,
+        'getOtDetails'
+    ]
+);
+
+/*
+|--------------------------------------------------------------------------
+| IA PRENDAS
+|--------------------------------------------------------------------------
+*/
+
+Route::get(
+    '/ia-prendas',
+    [
+        ProcesadorImagenController::class,
+        'index'
+    ]
+)->name('ia.index');
+
+Route::post(
+    '/ia-prendas/subir',
+    [
+        ProcesadorImagenController::class,
+        'subir'
+    ]
+)->name('ia.subir');
+
+Route::get(
+    '/ia-prendas/descargar',
+    [
+        ProcesadorImagenController::class,
+        'descargarZip'
+    ]
+)->name('ia.descargar');
+
+
+Route::post(
+    '/redistribucion-sugeridas/lote/{lote}/procesar',
+    [RedistribucionSugeridaController::class, 'procesarLote']
+)->name('RedistribucionSugeridas.procesarLote');
+
+
+Route::post(
+    '/redistribucion-sugeridas/lote/{id}/finalizar',
+    [RedistribucionSugeridaController::class, 'finalizarLote']
+)->name('RedistribucionSugeridas.finalizarLote');
+
+
+Route::post(
+    '/redistribucion-sugeridas/generar-lote',
+    [RedistribucionSugeridaController::class, 'generarLote']
+)->name('RedistribucionSugeridas.generarLote');
+
+
+// GESTIÓN DE LOTES
+Route::get(
+    '/redistribucion-sugeridas/lotes',
+    [RedistribucionSugeridaController::class, 'lotes']
+)->name('RedistribucionSugeridas.lotes');
+
+// VER LOTE INDIVIDUAL
+Route::get(
+    '/redistribucion-sugeridas/lote/{id}',
+    [RedistribucionSugeridaController::class, 'lote']
+)->name('RedistribucionSugeridas.lote');
+
+Route::get(
+    '/redistribucion-sugeridas/lote/{id}/pdf',
+    [RedistribucionSugeridaController::class, 'exportarLotePdf']
+)->name('RedistribucionSugeridas.lote.pdf');
+
+Route::get(
+    '/redistribucion-sugeridas/lote/{id}/excel',
+    [RedistribucionSugeridaController::class, 'exportarLoteExcel']
+)->name('RedistribucionSugeridas.lote.excel');
+
+Route::delete(
+    '/ot/trazabilidad/{id}',
+    [OtController::class, 'destroyTrazabilidad']
+)->name('ot.trazabilidad.destroy');
+
+Route::get('/dashboard/ot-atrasadas', [OtController::class, 'otAtrasadas'])
+    ->name('dashboard.ot-atrasadas');

@@ -29,4 +29,9 @@ class Ot extends Model
             'id_ot'
         );
     }
+
+    public function logisticaDetalle()
+    {
+        return $this->hasMany(OtLogisticaDetalle::class, 'id_ot', 'id_ot');
+    }
 }
