@@ -18,11 +18,17 @@
             </h1>
 
             <p class="text-muted mb-0">
+
                 Órdenes de trabajo sin movimiento durante
 
                 <strong>
                     {{ $diasAlerta }} días o más
                 </strong>
+
+                <span class="ml-2 badge badge-secondary">
+                    Se excluyen OT POSTERGADAS
+                </span>
+
             </p>
 
         </div>
@@ -65,8 +71,12 @@
                                 OT Atrasadas
                             </div>
 
-                            <div class="h3 mb-0 font-weight-bold">
+                            <div
+                                class="h3 mb-0 font-weight-bold"
+                                id="totalOTDashboard">
+
                                 {{ $totalAtrasadas }}
+
                             </div>
 
                             <small class="text-muted">
@@ -106,7 +116,9 @@
                             </div>
 
                             <div class="h3 mb-0 font-weight-bold">
+
                                 {{ number_format($promedioDiasAtraso, 2, ',', '.') }}
+
                             </div>
 
                             <small class="text-muted">
@@ -146,7 +158,9 @@
                             </div>
 
                             <div class="h3 mb-0 font-weight-bold">
+
                                 {{ number_format($mayorAtraso, 2, ',', '.') }}
+
                             </div>
 
                             <small class="text-muted">
@@ -355,11 +369,13 @@
     <div class="card shadow-sm">
 
         {{-- HEADER --}}
+
         <div class="card-header bg-white">
 
             <div class="row align-items-end">
 
                 {{-- TITULO --}}
+
                 <div class="col-xl-4 col-lg-4 col-md-12 mb-3 mb-lg-0">
 
                     <h5 class="mb-1">
@@ -385,7 +401,9 @@
                         de
 
                         <strong>
+
                             {{ $totalAtrasadas }}
+
                         </strong>
 
                         OT
@@ -396,6 +414,7 @@
 
 
                 {{-- FILTRO --}}
+
                 <div class="col-xl-5 col-lg-5 col-md-9 mb-3 mb-lg-0">
 
                     <label
@@ -415,7 +434,9 @@
                         class="form-control">
 
                         <option value="">
+
                             Todos los procesos ({{ $totalAtrasadas }})
+
                         </option>
 
 
@@ -439,6 +460,7 @@
 
 
                 {{-- LIMPIAR --}}
+
                 <div class="col-xl-3 col-lg-3 col-md-3 mb-3 mb-lg-0">
 
                     <button
@@ -460,6 +482,7 @@
 
 
         {{-- MENSAJE FILTRO --}}
+
         <div
             id="mensajeFiltro"
             class="filtro-activo d-none">
@@ -491,6 +514,7 @@
 
 
         {{-- LISTADO --}}
+
         <div class="card-body p-0">
 
             <div
@@ -503,6 +527,28 @@
                 @php
 
                 $ot = $item['ot'];
+
+                /*
+                * =====================================================
+                * EXCLUIR OT POSTERGADAS
+                * =====================================================
+                */
+
+                $estadoOT = strtoupper(
+                trim((string) $ot->estado)
+                );
+
+                @endphp
+
+
+                @if($estadoOT === 'POSTERGADO')
+
+                @continue
+
+                @endif
+
+
+                @php
 
                 $procesos = $item['procesos'];
 
@@ -522,12 +568,15 @@
 
 
                 {{-- OT --}}
+
                 <div
                     class="card mb-0 border-bottom ot-item"
-                    data-proceso="{{ trim($ultimoProceso) }}">
+                    data-proceso="{{ trim($ultimoProceso) }}"
+                    data-estado="{{ $estadoOT }}">
 
 
                     {{-- CABECERA --}}
+
                     <div
                         class="card-header bg-white"
                         id="heading{{ $index }}">
@@ -536,6 +585,7 @@
 
 
                             {{-- OT --}}
+
                             <div class="col-lg-2 col-md-6 mb-2 mb-lg-0">
 
                                 <small class="text-muted d-block">
@@ -552,6 +602,7 @@
 
 
                             {{-- CODIGO --}}
+
                             <div class="col-lg-2 col-md-6 mb-2 mb-lg-0">
 
                                 <small class="text-muted d-block">
@@ -559,13 +610,16 @@
                                 </small>
 
                                 <strong>
+
                                     {{ $ot->codigo }}
+
                                 </strong>
 
                             </div>
 
 
                             {{-- DESCRIPCION --}}
+
                             <div class="col-lg-3 col-md-12 mb-2 mb-lg-0">
 
                                 <small class="text-muted d-block">
@@ -573,13 +627,16 @@
                                 </small>
 
                                 <span>
+
                                     {{ $ot->descripcion }}
+
                                 </span>
 
                             </div>
 
 
                             {{-- ULTIMO PROCESO --}}
+
                             <div class="col-lg-2 col-md-6 mb-2 mb-lg-0">
 
                                 <small class="text-muted d-block">
@@ -604,6 +661,7 @@
 
 
                             {{-- ATRASO --}}
+
                             <div class="col-lg-2 col-md-4 text-center mb-2 mb-lg-0">
 
                                 <span class="badge badge-danger p-2">
@@ -625,6 +683,7 @@
 
 
                             {{-- BOTON --}}
+
                             <div class="col-lg-1 col-md-2 text-right">
 
                                 <button
@@ -647,6 +706,7 @@
 
 
                     {{-- DETALLE --}}
+
                     <div
                         id="collapse{{ $index }}"
                         class="collapse"
@@ -657,6 +717,7 @@
 
 
                             {{-- INFORMACION --}}
+
                             <div class="row mb-4">
 
                                 <div class="col-md-3 mb-3">
@@ -666,7 +727,9 @@
                                     </div>
 
                                     <strong>
+
                                         {{ $ot->cantidad_orden }}
+
                                     </strong>
 
                                 </div>
@@ -712,11 +775,19 @@
                                 <div class="col-md-3 mb-3">
 
                                     <div class="small text-muted">
-                                        Avance
+                                        Estado
                                     </div>
 
-                                    <strong>
-                                        {{ $avance }}%
+                                    <strong
+                                        class="
+                                            {{ $estadoOT === 'ACTIVO'
+                                                ? 'text-success'
+                                                : 'text-secondary'
+                                            }}
+                                        ">
+
+                                        {{ $ot->estado }}
+
                                     </strong>
 
                                 </div>
@@ -725,6 +796,7 @@
 
 
                             {{-- AVANCE --}}
+
                             <div class="mb-4">
 
                                 <div class="d-flex justify-content-between mb-1">
@@ -766,6 +838,7 @@
 
 
                             {{-- HISTORIAL --}}
+
                             <h6 class="font-weight-bold mb-3">
 
                                 <i class="fas fa-route text-primary"></i>
@@ -814,21 +887,27 @@
                                             }}">
 
                                             <td>
+
                                                 {{ $numero + 1 }}
+
                                             </td>
 
 
                                             <td>
 
                                                 <strong>
+
                                                     {{ $proceso['proceso'] }}
+
                                                 </strong>
 
 
                                                 @if($proceso['es_suspendido'])
 
                                                 <span class="badge badge-secondary ml-1">
+
                                                     Suspendido
+
                                                 </span>
 
                                                 @endif
@@ -870,6 +949,7 @@
                                                         ',',
                                                         '.'
                                                     ) }}
+
                                                 h
 
                                                 @else
@@ -956,6 +1036,7 @@
 
 
             {{-- SIN RESULTADOS --}}
+
             <div
                 id="sinResultadosFiltro"
                 class="text-center py-5 d-none">
@@ -963,7 +1044,9 @@
                 <i class="fas fa-filter fa-3x text-muted mb-3"></i>
 
                 <h5 class="text-muted">
+
                     No hay OT para este proceso
+
                 </h5>
 
                 <p class="text-muted mb-0">
@@ -1085,13 +1168,17 @@
     }
 
     .select2-container--default .select2-selection--single .select2-selection__rendered {
+
         line-height: 26px !important;
         color: #495057 !important;
         font-size: 0.875rem;
+
     }
 
     .select2-container--default .select2-selection--single .select2-selection__arrow {
+
         height: 36px !important;
+
     }
 
     .select2-dropdown {
@@ -1104,20 +1191,26 @@
     }
 
     .select2-container--default .select2-results__option--highlighted[aria-selected] {
+
         background-color: #007bff;
+
     }
 
     .select2-container--default .select2-results__option[aria-selected="true"] {
+
         background-color: #e9ecef;
         color: #495057;
+
     }
 
     .filtro-activo {
+
         background: #f8f9fa;
         border-top: 1px solid #e3e6f0;
         border-bottom: 1px solid #e3e6f0;
         padding: 10px 20px;
         font-size: 0.875rem;
+
     }
 
     .btn-expand {
@@ -1126,18 +1219,6 @@
 
     .ot-item.filtro-oculto {
         display: none !important;
-    }
-
-    @media (max-width: 768px) {
-
-        .proceso-cantidad {
-            font-size: 1.7rem;
-        }
-
-        .proceso-nombre {
-            min-height: auto;
-        }
-
     }
 </style>
 
@@ -1171,10 +1252,6 @@
 
         /* =========================================================
            NORMALIZAR TEXTO
-           Quita:
-           - mayúsculas/minúsculas
-           - acentos
-           - espacios duplicados
         ========================================================= */
 
         function normalizarTexto(texto) {
@@ -1221,7 +1298,9 @@
 
             });
 
-            console.log('Select2 inicializado correctamente');
+            console.log(
+                'Select2 inicializado correctamente'
+            );
 
         } else {
 
@@ -1243,8 +1322,10 @@
 
             var totalVisible = 0;
 
-            var totalOT = $('.ot-item').length;
-
+            /*
+             * EL TOTAL GENERAL VIENE DIRECTAMENTE DE LARAVEL
+             */
+            var totalOT = {{ $totalAtrasadas }};
 
             console.log(
                 '------------------------------------'
@@ -1261,7 +1342,7 @@
             );
 
             console.log(
-                'Total OT:',
+                'Total OT atrasadas:',
                 totalOT
             );
 
@@ -1286,6 +1367,27 @@
                 var $ot = $(this);
 
 
+                /* =================================================
+                   SEGURIDAD EXTRA: NO MOSTRAR POSTERGADAS
+                ================================================= */
+
+                var estadoOT =
+                    normalizarTexto(
+                        $ot.attr('data-estado') || ''
+                    );
+
+
+                if (estadoOT === 'POSTERGADO') {
+
+                    $ot
+                        .addClass('filtro-oculto')
+                        .hide();
+
+                    return;
+
+                }
+
+
                 var procesoOT =
                     $ot.attr('data-proceso') || '';
 
@@ -1298,9 +1400,7 @@
                     'OT:',
                     $ot.find('.ot-numero').text().trim(),
                     '| Proceso:',
-                    procesoOT,
-                    '| Normalizado:',
-                    procesoOTNormalizado
+                    procesoOT
                 );
 
 
@@ -1322,7 +1422,7 @@
 
 
                 /* =================================================
-                   COMPARAR
+                   COMPARAR PROCESO
                 ================================================= */
 
                 if (
@@ -1348,11 +1448,21 @@
 
 
             /* =====================================================
-               ACTUALIZAR CONTADOR
+               ACTUALIZAR CONTADOR DEL LISTADO
             ===================================================== */
 
             $('#contadorOTFiltradas')
                 .text(totalVisible);
+
+
+            /*
+             * IMPORTANTE:
+             * El KPI principal siempre conserva
+             * el total general de Laravel.
+             */
+
+            $('#totalOTDashboard')
+                .text(totalOT);
 
 
             /* =====================================================
@@ -1370,9 +1480,7 @@
                 $('#badgeProcesoFiltro')
                     .text(
                         totalVisible +
-                        (totalVisible === 1 ?
-                            ' OT' :
-                            ' OT')
+                        ' OT'
                     );
 
             } else {
@@ -1469,45 +1577,13 @@
             'select2:select',
             function(e) {
 
-                var proceso =
-                    e.params.data.text || '';
-
-                /*
-                 * Quitar la cantidad del texto.
-                 *
-                 * Ejemplo:
-                 *
-                 * PRODUCCION (15)
-                 *
-                 * queda:
-                 *
-                 * PRODUCCION
-                 */
-
-                proceso = proceso
-                    .replace(/\s*\(\d+\)\s*$/, '')
-                    .trim();
-
-
-                /*
-                 * IMPORTANTE:
-                 * usamos el value real del option
-                 */
-
                 var valorReal =
                     $(this).val() || '';
 
-
                 console.log(
                     'SELECT2 SELECT:',
-                    proceso
-                );
-
-                console.log(
-                    'VALUE REAL:',
                     valorReal
                 );
-
 
                 filtrarOTPorProceso(valorReal);
 
@@ -1546,25 +1622,13 @@
                 );
 
 
-                /*
-                 * Limpiar Select2
-                 */
-
                 $('#filtroProceso')
                     .val('')
                     .trigger('change');
 
 
-                /*
-                 * Mostrar todas
-                 */
-
                 filtrarOTPorProceso('');
 
-
-                /*
-                 * Ocultar mensaje
-                 */
 
                 $('#mensajeFiltro')
                     .addClass('d-none');
@@ -1584,7 +1648,11 @@
                 var target =
                     $(this).attr('id');
 
-                $('button[data-target="#' + target + '"] i')
+                $(
+                        'button[data-target="#' +
+                        target +
+                        '"] i'
+                    )
                     .removeClass('fa-chevron-down')
                     .addClass('fa-chevron-up');
 
@@ -1603,7 +1671,11 @@
                 var target =
                     $(this).attr('id');
 
-                $('button[data-target="#' + target + '"] i')
+                $(
+                        'button[data-target="#' +
+                        target +
+                        '"] i'
+                    )
                     .removeClass('fa-chevron-up')
                     .addClass('fa-chevron-down');
 
@@ -1616,7 +1688,6 @@
         ========================================================= */
 
         filtrarOTPorProceso('');
-
 
     });
 </script>

@@ -1,40 +1,59 @@
 @extends('layouts.app')
 
 @section('content')
-    <section class="content-header">
-        <div class="container-fluid">
-            <div class="row mb-2">
-                <div class="col-sm-12">
-                    <h1>
-                        Edit Ot
-                    </h1>
-                </div>
+
+<section class="content-header">
+    <div class="container-fluid">
+        <div class="row mb-2">
+            <div class="col-sm-12">
+                <h1>
+                    Editar Orden de Trabajo
+                </h1>
             </div>
-        </div>
-    </section>
-
-    <div class="content px-3">
-
-        @include('adminlte-templates::common.errors')
-
-        <div class="card">
-
-            {!! Form::model($ot, ['route' => ['ots.update', $ot->id], 'method' => 'patch']) !!}
-
-            <div class="card-body">
-                @include('sweetalert::alert')
-                <div class="row">
-                    @include('ots.fields')
-                </div>
-            </div>
-
-            <div class="card-footer">
-                {!! Form::submit('Save', ['class' => 'btn btn-primary']) !!}
-                <a href="{{ route('ots.index') }}" class="btn btn-default"> Cancel </a>
-            </div>
-
-            {!! Form::close() !!}
-
         </div>
     </div>
+</section>
+
+<div class="content px-3">
+
+    @include('adminlte-templates::common.errors')
+
+    <div class="card">
+
+        {!! Form::model($ot, [
+        'route' => ['ots.update', $ot->id_ot],
+        'method' => 'patch'
+        ]) !!}
+
+        <div class="card-body">
+
+            @include('sweetalert::alert')
+
+            <div class="row">
+
+                @include('ots.fields')
+
+            </div>
+
+        </div>
+
+        <div class="card-footer">
+
+            {!! Form::submit('Guardar', [
+            'class' => 'btn btn-success'
+            ]) !!}
+
+            <a href="{{ route('ots.index') }}"
+                class="btn btn-primary">
+                Cancelar
+            </a>
+
+        </div>
+
+        {!! Form::close() !!}
+
+    </div>
+
+</div>
+
 @endsection

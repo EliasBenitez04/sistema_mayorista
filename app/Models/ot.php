@@ -18,7 +18,9 @@ class Ot extends Model
         'nro_ot',
         'codigo',
         'descripcion',
-        'cantidad_orden'
+        'cantidad_orden',
+        'estado',
+        'obs'
     ];
 
     public function trazabilidades(): HasMany

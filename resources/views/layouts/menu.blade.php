@@ -170,6 +170,18 @@ $menuConfiguracion = request()->routeIs('usuarios.*', 'permissions.*', 'roles.*'
                 <p>OT Atrasadas</p>
             </a>
         </li>
+        <!-- <li class="nav-item">
+            <a href="{{ route('dashboard.otAnalisis') }}"
+                class="nav-link {{ request()->routeIs('dashboard.otAnalisis') ? 'active' : '' }}">
+
+                <i class="nav-icon fas fa-chart-line"></i>
+
+                <p>
+                    Análisis de OT
+                </p>
+
+            </a>
+        </li> -->
     </ul>
 </li>
 @endcan

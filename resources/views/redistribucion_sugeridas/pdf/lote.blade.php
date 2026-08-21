@@ -2,18 +2,24 @@
 <html lang="es">
 
 <head>
+
     <meta charset="UTF-8">
 
-    <title>Lote {{ $lote->numero_lote }}</title>
+    <title>
+        Lote {{ $lote->numero_lote }}
+    </title>
+
 
     <style>
         @page {
             margin: 35px 35px 45px 35px;
         }
 
+
         * {
             box-sizing: border-box;
         }
+
 
         body {
             font-family: DejaVu Sans, sans-serif;
@@ -23,9 +29,10 @@
             padding: 0;
         }
 
+
         /* =====================================================
            HEADER
-        ===================================================== */
+        ====================================================== */
 
         .header {
             width: 100%;
@@ -34,21 +41,25 @@
             margin-bottom: 15px;
         }
 
+
         .header-table {
             width: 100%;
             border-collapse: collapse;
         }
+
 
         .header-left {
             width: 65%;
             vertical-align: middle;
         }
 
+
         .header-right {
             width: 35%;
             text-align: right;
             vertical-align: middle;
         }
+
 
         .system-name {
             font-size: 17px;
@@ -57,10 +68,12 @@
             margin-bottom: 3px;
         }
 
+
         .document-title {
             font-size: 10px;
             color: #64748b;
         }
+
 
         .document-number {
             font-size: 11px;
@@ -68,15 +81,18 @@
             color: #2563eb;
         }
 
+
         .document-date {
             margin-top: 3px;
             font-size: 8px;
             color: #64748b;
         }
 
+
+
         /* =====================================================
-           RESUMEN
-        ===================================================== */
+           SECCIONES
+        ====================================================== */
 
         .section-title {
             font-size: 10px;
@@ -87,12 +103,19 @@
             margin: 15px 0 8px 0;
         }
 
+
+
+        /* =====================================================
+           RESUMEN
+        ====================================================== */
+
         .summary {
             width: 100%;
             border-collapse: separate;
             border-spacing: 6px;
             margin-left: -6px;
         }
+
 
         .summary td {
             width: 25%;
@@ -101,6 +124,7 @@
             padding: 9px;
             vertical-align: top;
         }
+
 
         .summary-label {
             display: block;
@@ -111,12 +135,14 @@
             margin-bottom: 4px;
         }
 
+
         .summary-value {
             display: block;
             color: #172033;
             font-size: 11px;
             font-weight: bold;
         }
+
 
         .status {
             display: inline-block;
@@ -128,14 +154,17 @@
             font-weight: bold;
         }
 
+
+
         /* =====================================================
            TABLA
-        ===================================================== */
+        ====================================================== */
 
         .table-wrapper {
             width: 100%;
             margin-top: 8px;
         }
+
 
         table.detalles {
             width: 100%;
@@ -143,18 +172,21 @@
             table-layout: fixed;
         }
 
+
         table.detalles thead {
             display: table-header-group;
         }
+
 
         table.detalles tr {
             page-break-inside: avoid;
         }
 
+
         table.detalles th {
             background: #172033;
             color: #ffffff;
-            padding: 7px 6px;
+            padding: 7px 5px;
             text-align: left;
             font-size: 7px;
             font-weight: bold;
@@ -162,40 +194,56 @@
             border: 1px solid #172033;
         }
 
+
         table.detalles td {
             border: 1px solid #e2e8f0;
-            padding: 6px;
-            font-size: 8px;
+            padding: 6px 5px;
+            font-size: 7.5px;
             vertical-align: middle;
             word-wrap: break-word;
+            overflow-wrap: break-word;
         }
+
 
         table.detalles tbody tr:nth-child(even) {
             background: #f8fafc;
         }
 
+
         .center {
             text-align: center !important;
         }
 
+
         .codigo {
             font-weight: bold;
             color: #172033;
+            word-break: break-all;
         }
+
+
+        .descripcion {
+            color: #334155;
+            line-height: 1.3;
+        }
+
 
         .cantidad {
             font-weight: bold;
             color: #2563eb;
         }
 
+
         .estado {
             font-size: 7px;
             font-weight: bold;
         }
 
+
+
         /* =====================================================
            TOTALES
-        ===================================================== */
+        ====================================================== */
 
         .totales {
             width: 100%;
@@ -203,17 +251,20 @@
             border-collapse: collapse;
         }
 
+
         .totales td {
             border: 1px solid #e2e8f0;
             padding: 8px;
             background: #f8fafc;
         }
 
+
         .total-label {
             text-align: right;
             color: #64748b;
             font-weight: bold;
         }
+
 
         .total-value {
             width: 100px;
@@ -223,9 +274,11 @@
             font-size: 10px;
         }
 
+
+
         /* =====================================================
            FOOTER
-        ===================================================== */
+        ====================================================== */
 
         .footer {
             margin-top: 20px;
@@ -236,13 +289,17 @@
             color: #94a3b8;
         }
 
+
         .footer strong {
             color: #64748b;
         }
     </style>
+
 </head>
 
+
 <body>
+
 
     {{-- =====================================================
          HEADER
@@ -266,6 +323,7 @@
 
                 </td>
 
+
                 <td class="header-right">
 
                     <div class="document-number">
@@ -273,8 +331,11 @@
                     </div>
 
                     <div class="document-date">
+
                         Generado:
+
                         {{ \Carbon\Carbon::parse($lote->fecha_generacion)->format('d/m/Y H:i') }}
+
                     </div>
 
                 </td>
@@ -286,6 +347,7 @@
     </div>
 
 
+
     {{-- =====================================================
          INFORMACIÓN DEL LOTE
     ====================================================== --}}
@@ -293,6 +355,7 @@
     <div class="section-title">
         INFORMACIÓN DEL LOTE
     </div>
+
 
     <table class="summary">
 
@@ -310,6 +373,7 @@
 
             </td>
 
+
             <td>
 
                 <span class="summary-label">
@@ -322,6 +386,7 @@
 
             </td>
 
+
             <td>
 
                 <span class="summary-label">
@@ -333,6 +398,7 @@
                 </span>
 
             </td>
+
 
             <td>
 
@@ -351,6 +417,7 @@
     </table>
 
 
+
     {{-- =====================================================
          DETALLE
     ====================================================== --}}
@@ -358,6 +425,7 @@
     <div class="section-title">
         DETALLE DE TRANSFERENCIAS
     </div>
+
 
     <div class="table-wrapper">
 
@@ -367,27 +435,37 @@
 
                 <tr>
 
-                    <th width="5%" class="center">
+                    <th width="4%" class="center">
                         #
                     </th>
 
-                    <th width="17%">
+
+                    <th width="15%">
                         Código
                     </th>
 
+
                     <th width="25%">
+                        Descripción
+                    </th>
+
+
+                    <th width="18%">
                         Origen
                     </th>
 
-                    <th width="25%">
+
+                    <th width="18%">
                         Destino
                     </th>
 
-                    <th width="10%" class="center">
+
+                    <th width="9%" class="center">
                         Cantidad
                     </th>
 
-                    <th width="18%">
+
+                    <th width="11%">
                         Estado
                     </th>
 
@@ -395,43 +473,86 @@
 
             </thead>
 
+
             <tbody>
 
-                @foreach ($lote->detalles as $detalle)
+                @forelse ($lote->detalles as $detalle)
                     <tr>
+
+                        {{-- NÚMERO --}}
 
                         <td class="center">
                             {{ $loop->iteration }}
                         </td>
 
+
+                        {{-- CÓDIGO --}}
+
                         <td class="codigo">
                             {{ $detalle->codigo ?? '-' }}
                         </td>
+
+
+                        {{-- DESCRIPCIÓN --}}
+
+                        <td class="descripcion">
+
+                            {{ $detalle->descripcion ?? '-' }}
+
+                        </td>
+
+
+                        {{-- ORIGEN --}}
 
                         <td>
                             {{ $detalle->origen->suc_descri ?? '-' }}
                         </td>
 
+
+                        {{-- DESTINO --}}
+
                         <td>
                             {{ $detalle->destino->suc_descri ?? '-' }}
                         </td>
 
+
+                        {{-- CANTIDAD --}}
+
                         <td class="center cantidad">
+
                             {{ $detalle->cantidad ?? 0 }}
+
                         </td>
 
+
+                        {{-- ESTADO --}}
+
                         <td class="estado">
-                            {{ $detalle->estado }}
+
+                            {{ $detalle->estado ?? '-' }}
+
                         </td>
 
                     </tr>
-                @endforeach
+
+                @empty
+
+                    <tr>
+
+                        <td colspan="7" class="center">
+                            No existen transferencias
+                            registradas en este lote.
+                        </td>
+
+                    </tr>
+                @endforelse
 
             </tbody>
 
         </table>
 
     </div>
+
 
 
     {{-- =====================================================
@@ -447,20 +568,26 @@
             </td>
 
             <td class="total-value">
+
                 {{ $lote->detalles->count() }}
+
             </td>
+
 
             <td class="total-label">
                 Total unidades
             </td>
 
             <td class="total-value">
+
                 {{ $lote->detalles->sum('cantidad') }}
+
             </td>
 
         </tr>
 
     </table>
+
 
 
     {{-- =====================================================
@@ -473,6 +600,7 @@
         <strong>Gestión de Redistribución</strong>.
 
     </div>
+
 
 </body>
 

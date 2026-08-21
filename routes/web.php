@@ -14,6 +14,7 @@ use App\Http\Controllers\OtController;
 use App\Http\Controllers\ProcesadorImagenController;
 use App\Http\Controllers\RedistribucionSugeridaController;
 
+
 /*
 |--------------------------------------------------------------------------
 | HOME / AUTH
@@ -36,13 +37,17 @@ Route::post('/login', [
     'login'
 ]);
 
+
 /*
 |--------------------------------------------------------------------------
 | CRUD PRINCIPALES
 |--------------------------------------------------------------------------
 */
 
-Route::resource('ciudades', App\Http\Controllers\Ciudadcontroller::class);
+Route::resource(
+    'ciudades',
+    App\Http\Controllers\Ciudadcontroller::class
+);
 
 Route::resource(
     'Departamentos',
@@ -105,32 +110,10 @@ Route::resource(
 );
 
 Route::resource(
-    'ots',
-    App\Http\Controllers\OtController::class
-);
-
-Route::resource(
     'stock_ventas_sucursales',
     App\Http\Controllers\stock_ventas_sucursales_Controller::class
 );
 
-/*
-|--------------------------------------------------------------------------
-| REDISTRIBUCIÓN
-|--------------------------------------------------------------------------
-|
-| Flujo:
-|
-| 1. Analizar
-| 2. Generar sugerencias
-| 3. Aprobar
-| 4. Crear proceso
-| 5. Ver proceso
-| 6. Generar lote
-| 7. Ver lote
-|
-|--------------------------------------------------------------------------
-*/
 
 /*
 |--------------------------------------------------------------------------
@@ -142,6 +125,7 @@ Route::resource(
     'RedistribucionSugeridas',
     RedistribucionSugeridaController::class
 );
+
 
 /*
 |--------------------------------------------------------------------------
@@ -157,6 +141,7 @@ Route::post(
     ]
 )->name('RedistribucionSugeridas.analizar');
 
+
 /*
 |--------------------------------------------------------------------------
 | REDISTRIBUCIÓN - APROBAR
@@ -170,6 +155,7 @@ Route::post(
         'aprobar'
     ]
 )->name('RedistribucionSugeridas.aprobar');
+
 
 /*
 |--------------------------------------------------------------------------
@@ -185,6 +171,7 @@ Route::post(
     ]
 )->name('RedistribucionSugeridas.rechazar');
 
+
 /*
 |--------------------------------------------------------------------------
 | REDISTRIBUCIÓN - VER PROCESO
@@ -199,11 +186,6 @@ Route::get(
     ]
 )->name('RedistribucionSugeridas.proceso');
 
-/*
-|--------------------------------------------------------------------------
-| REDISTRIBUCIÓN - GENERAR LOTE
-|--------------------------------------------------------------------------
-*/
 
 /*
 |--------------------------------------------------------------------------
@@ -218,6 +200,7 @@ Route::get(
         'lote'
     ]
 )->name('RedistribucionSugeridas.lote');
+
 
 /*
 |--------------------------------------------------------------------------
@@ -240,6 +223,7 @@ Route::post(
         'cambiarPassword'
     ]
 );
+
 
 /*
 |--------------------------------------------------------------------------
@@ -296,6 +280,7 @@ Route::get(
     ]
 )->name('pedido_compras.detalle');
 
+
 /*
 |--------------------------------------------------------------------------
 | ARTÍCULOS
@@ -326,6 +311,7 @@ Route::post(
     ]
 )->name('articulos.importar');
 
+
 /*
 |--------------------------------------------------------------------------
 | PEDIDO COMPRA - BÚSQUEDA
@@ -339,6 +325,7 @@ Route::get(
         'buscarProductoPed'
     ]
 )->name('buscar-productos-ped');
+
 
 /*
 |--------------------------------------------------------------------------
@@ -362,6 +349,7 @@ Route::post(
     ]
 )->name('import.stock.ventas.sucursales');
 
+
 /*
 |--------------------------------------------------------------------------
 | AUDITORÍA
@@ -375,6 +363,7 @@ Route::get(
         'index'
     ]
 )->name('auditoria.index');
+
 
 /*
 |--------------------------------------------------------------------------
@@ -393,6 +382,7 @@ Route::get(
         ]);
     }
 )->name('import.progress');
+
 
 /*
 |--------------------------------------------------------------------------
@@ -424,9 +414,16 @@ Route::post(
     ]
 )->name('password.update');
 
+
 /*
 |--------------------------------------------------------------------------
 | OT
+|--------------------------------------------------------------------------
+*/
+
+/*
+|--------------------------------------------------------------------------
+| OT - INDEX
 |--------------------------------------------------------------------------
 */
 
@@ -438,6 +435,13 @@ Route::get(
     ]
 )->name('ot.index');
 
+
+/*
+|--------------------------------------------------------------------------
+| OT - IMPORTACIÓN
+|--------------------------------------------------------------------------
+*/
+
 Route::post(
     '/ot/importar',
     [
@@ -445,6 +449,13 @@ Route::post(
         'importar'
     ]
 )->name('ot.importar');
+
+
+/*
+|--------------------------------------------------------------------------
+| OT - BÚSQUEDA
+|--------------------------------------------------------------------------
+*/
 
 Route::get(
     '/ot/buscar',
@@ -454,6 +465,13 @@ Route::get(
     ]
 )->name('ot.buscar');
 
+
+/*
+|--------------------------------------------------------------------------
+| OT - DASHBOARD
+|--------------------------------------------------------------------------
+*/
+
 Route::get(
     '/dashboard/ot',
     [
@@ -462,6 +480,13 @@ Route::get(
     ]
 )->name('dashboard.ot');
 
+
+/*
+|--------------------------------------------------------------------------
+| OT - IMPORTACIÓN LOGÍSTICA
+|--------------------------------------------------------------------------
+*/
+
 Route::post(
     '/ot/importar-logistica',
     [
@@ -469,6 +494,52 @@ Route::post(
         'importarLogistica'
     ]
 )->name('ot.importar.logistica');
+
+
+/*
+|--------------------------------------------------------------------------
+| OT - BÚSQUEDA PARA EDITAR
+|--------------------------------------------------------------------------
+|
+| IMPORTANTE:
+| Esta ruta debe estar ANTES de Route::resource('ots', ...)
+| para que "buscar-editar" no sea interpretado como {ot}.
+|
+|--------------------------------------------------------------------------
+*/
+
+Route::get(
+    '/ots/buscar-editar',
+    [
+        OtController::class,
+        'buscarEditar'
+    ]
+)->name('ots.buscarEditar');
+
+
+/*
+|--------------------------------------------------------------------------
+| OT - RESOURCE
+|--------------------------------------------------------------------------
+|
+| Esta ruta genera automáticamente:
+|
+| GET       /ots
+| GET       /ots/create
+| POST      /ots
+| GET       /ots/{ot}
+| GET       /ots/{ot}/edit
+| PUT/PATCH /ots/{ot}
+| DELETE    /ots/{ot}
+|
+|--------------------------------------------------------------------------
+*/
+
+Route::resource(
+    'ots',
+    App\Http\Controllers\OtController::class
+);
+
 
 /*
 |--------------------------------------------------------------------------
@@ -492,6 +563,13 @@ Route::post(
     ]
 )->name('ots.proceso.store');
 
+
+/*
+|--------------------------------------------------------------------------
+| OT - DETALLES
+|--------------------------------------------------------------------------
+*/
+
 Route::get(
     '/get-ot-details/{id}',
     [
@@ -499,6 +577,52 @@ Route::get(
         'getOtDetails'
     ]
 );
+
+
+/*
+|--------------------------------------------------------------------------
+| OT - TRAZABILIDAD
+|--------------------------------------------------------------------------
+*/
+
+Route::delete(
+    '/ot/trazabilidad/{id}',
+    [
+        OtController::class,
+        'destroyTrazabilidad'
+    ]
+)->name('ot.trazabilidad.destroy');
+
+
+/*
+|--------------------------------------------------------------------------
+| OT - DASHBOARD ATRASADAS
+|--------------------------------------------------------------------------
+*/
+
+Route::get(
+    '/dashboard/ot-atrasadas',
+    [
+        OtController::class,
+        'otAtrasadas'
+    ]
+)->name('dashboard.ot-atrasadas');
+
+
+/*
+|--------------------------------------------------------------------------
+| OT - DASHBOARD ESTADO
+|--------------------------------------------------------------------------
+*/
+
+Route::get(
+    '/dashboard/ot-estado',
+    [
+        OtController::class,
+        'otEstado'
+    ]
+)->name('dashboard.ot-estado');
+
 
 /*
 |--------------------------------------------------------------------------
@@ -531,50 +655,118 @@ Route::get(
 )->name('ia.descargar');
 
 
+/*
+|--------------------------------------------------------------------------
+| REDISTRIBUCIÓN - PROCESAR LOTE
+|--------------------------------------------------------------------------
+*/
+
 Route::post(
     '/redistribucion-sugeridas/lote/{lote}/procesar',
-    [RedistribucionSugeridaController::class, 'procesarLote']
+    [
+        RedistribucionSugeridaController::class,
+        'procesarLote'
+    ]
 )->name('RedistribucionSugeridas.procesarLote');
 
 
+/*
+|--------------------------------------------------------------------------
+| REDISTRIBUCIÓN - FINALIZAR LOTE
+|--------------------------------------------------------------------------
+*/
+
 Route::post(
     '/redistribucion-sugeridas/lote/{id}/finalizar',
-    [RedistribucionSugeridaController::class, 'finalizarLote']
+    [
+        RedistribucionSugeridaController::class,
+        'finalizarLote'
+    ]
 )->name('RedistribucionSugeridas.finalizarLote');
 
 
+/*
+|--------------------------------------------------------------------------
+| REDISTRIBUCIÓN - GENERAR LOTE
+|--------------------------------------------------------------------------
+*/
+
 Route::post(
     '/redistribucion-sugeridas/generar-lote',
-    [RedistribucionSugeridaController::class, 'generarLote']
+    [
+        RedistribucionSugeridaController::class,
+        'generarLote'
+    ]
 )->name('RedistribucionSugeridas.generarLote');
 
 
-// GESTIÓN DE LOTES
+/*
+|--------------------------------------------------------------------------
+| REDISTRIBUCIÓN - GESTIÓN DE LOTES
+|--------------------------------------------------------------------------
+*/
+
 Route::get(
     '/redistribucion-sugeridas/lotes',
-    [RedistribucionSugeridaController::class, 'lotes']
+    [
+        RedistribucionSugeridaController::class,
+        'lotes'
+    ]
 )->name('RedistribucionSugeridas.lotes');
 
-// VER LOTE INDIVIDUAL
+
+/*
+|--------------------------------------------------------------------------
+| REDISTRIBUCIÓN - VER LOTE INDIVIDUAL
+|--------------------------------------------------------------------------
+*/
+
 Route::get(
     '/redistribucion-sugeridas/lote/{id}',
-    [RedistribucionSugeridaController::class, 'lote']
+    [
+        RedistribucionSugeridaController::class,
+        'lote'
+    ]
 )->name('RedistribucionSugeridas.lote');
+
+
+/*
+|--------------------------------------------------------------------------
+| REDISTRIBUCIÓN - PDF LOTE
+|--------------------------------------------------------------------------
+*/
 
 Route::get(
     '/redistribucion-sugeridas/lote/{id}/pdf',
-    [RedistribucionSugeridaController::class, 'exportarLotePdf']
+    [
+        RedistribucionSugeridaController::class,
+        'exportarLotePdf'
+    ]
 )->name('RedistribucionSugeridas.lote.pdf');
+
+
+/*
+|--------------------------------------------------------------------------
+| REDISTRIBUCIÓN - EXCEL LOTE
+|--------------------------------------------------------------------------
+*/
 
 Route::get(
     '/redistribucion-sugeridas/lote/{id}/excel',
-    [RedistribucionSugeridaController::class, 'exportarLoteExcel']
+    [
+        RedistribucionSugeridaController::class,
+        'exportarLoteExcel'
+    ]
 )->name('RedistribucionSugeridas.lote.excel');
 
-Route::delete(
-    '/ot/trazabilidad/{id}',
-    [OtController::class, 'destroyTrazabilidad']
-)->name('ot.trazabilidad.destroy');
 
-Route::get('/dashboard/ot-atrasadas', [OtController::class, 'otAtrasadas'])
-    ->name('dashboard.ot-atrasadas');
+/*
+|--------------------------------------------------------------------------
+| REDISTRIBUCIÓN - FIN
+|--------------------------------------------------------------------------
+*/
+
+Route::get(
+    '/dashboard/ot-analisis',
+    [OtController::class, 'dashboardOT']
+)->name('dashboard.otAnalisis');

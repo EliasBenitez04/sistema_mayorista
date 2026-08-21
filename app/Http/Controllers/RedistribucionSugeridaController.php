@@ -109,8 +109,12 @@ class RedistribucionSugeridaController extends Controller
             'origen',
             'destino'
         ])
+            ->whereIn('estado', [
+                'PENDIENTE',
+                'RECHAZADA'
+            ])
             ->orderBy('codigo')
-            ->orderByDesc('fecha_generacion')
+            ->orderBy('fecha_generacion', 'desc')
             ->get();
 
         return view(
@@ -1069,8 +1073,10 @@ class RedistribucionSugeridaController extends Controller
 
 
             /*
-             * Obtener detalles pendientes sin lote.
-             */
+         * ============================================================
+         * OBTENER DETALLES PENDIENTES SIN LOTE
+         * ============================================================
+         */
 
             $detalles = RedistribucionProcesoDetalle::where(
                 'proceso_id',
@@ -1094,33 +1100,89 @@ class RedistribucionSugeridaController extends Controller
 
 
             /*
-             * Número de lote.
+         * ============================================================
+         * NÚMERO DE LOTE CORRELATIVO
+         * ============================================================
+         *
+         * LOT-1
+         * LOT-2
+         * LOT-3
+         * LOT-4
+         * LOT-5
+         * ...
+         *
+         * Busca el último lote generado y suma 1.
+         */
+
+            $ultimoLote = RedistribucionLote::orderByDesc('id')
+                ->lockForUpdate()
+                ->first();
+
+
+            if ($ultimoLote) {
+
+                /*
+             * Extraer solamente el número.
+             *
+             * Ejemplo:
+             *
+             * LOT-2
+             *
+             * se convierte en:
+             *
+             * 2
              */
 
-            $numeroLote = 'LOT-' . now()->format('dmYHis');
+                $ultimoNumero = (int) str_replace(
+                    'LOT-',
+                    '',
+                    $ultimoLote->numero_lote
+                );
+
+                $siguienteNumero = $ultimoNumero + 1;
+            } else {
+
+                /*
+             * Si todavía no existe ningún lote.
+             */
+
+                $siguienteNumero = 1;
+            }
 
 
-            if (
+            /*
+         * Crear número definitivo.
+         */
+
+            $numeroLote = 'LOT-' . $siguienteNumero;
+
+
+            /*
+         * ============================================================
+         * VERIFICAR QUE NO EXISTA
+         * ============================================================
+         *
+         * Esto agrega una protección adicional.
+         */
+
+            while (
                 RedistribucionLote::where(
                     'numero_lote',
                     $numeroLote
                 )->exists()
             ) {
 
-                $numeroLote =
-                    'LOT-' .
-                    now()->format('dmYHis') .
-                    '-' .
-                    substr(
-                        (string) microtime(true),
-                        -4
-                    );
+                $siguienteNumero++;
+
+                $numeroLote = 'LOT-' . $siguienteNumero;
             }
 
 
             /*
-             * Usuario.
-             */
+         * ============================================================
+         * USUARIO
+         * ============================================================
+         */
 
             $usuarioId = auth()->id();
 
@@ -1130,8 +1192,10 @@ class RedistribucionSugeridaController extends Controller
 
 
             /*
-             * Totales.
-             */
+         * ============================================================
+         * TOTALES
+         * ============================================================
+         */
 
             $totalMovimientos =
                 $detalles->count();
@@ -1149,8 +1213,10 @@ class RedistribucionSugeridaController extends Controller
 
 
             /*
-             * Crear lote.
-             */
+         * ============================================================
+         * CREAR LOTE
+         * ============================================================
+         */
 
             $lote = RedistribucionLote::create([
 
@@ -1191,8 +1257,10 @@ class RedistribucionSugeridaController extends Controller
 
 
             /*
-             * Asociar detalles.
-             */
+         * ============================================================
+         * ASOCIAR DETALLES AL LOTE
+         * ============================================================
+         */
 
             RedistribucionProcesoDetalle::whereIn(
                 'id',
@@ -1202,8 +1270,20 @@ class RedistribucionSugeridaController extends Controller
             ]);
 
 
+            /*
+         * ============================================================
+         * CONFIRMAR TRANSACCIÓN
+         * ============================================================
+         */
+
             DB::commit();
 
+
+            /*
+         * ============================================================
+         * REDIRECCIONAR
+         * ============================================================
+         */
 
             return redirect()
                 ->route('RedistribucionSugeridas.lotes')
@@ -1223,8 +1303,12 @@ class RedistribucionSugeridaController extends Controller
                 'Error generando lote de redistribución: ' .
                     $e->getMessage(),
                 [
-                    'line' => $e->getLine(),
-                    'file' => $e->getFile(),
+                    'line' =>
+                    $e->getLine(),
+
+                    'file' =>
+                    $e->getFile(),
+
                     'proceso_id' =>
                     $request->proceso_id ?? null,
                 ]
@@ -1691,18 +1775,78 @@ class RedistribucionSugeridaController extends Controller
             ])->findOrFail($id);
 
 
+            /*
+        |--------------------------------------------------------------------------
+        | OBTENER CÓDIGOS DEL LOTE
+        |--------------------------------------------------------------------------
+        */
+
+            $codigos = $lote->detalles
+                ->pluck('codigo')
+                ->filter()
+                ->unique()
+                ->values();
+
+
+            /*
+        |--------------------------------------------------------------------------
+        | BUSCAR GRUPO_PLAN = DESCRIPCIÓN
+        |--------------------------------------------------------------------------
+        */
+
+            $descripciones = DB::table('stock_ventas_sucursales')
+                ->whereIn('codigo', $codigos)
+                ->select(
+                    'codigo',
+                    'grupo_plan'
+                )
+                ->orderBy('id')
+                ->get()
+                ->groupBy('codigo')
+                ->map(function ($items) {
+
+                    return $items->first()->grupo_plan ?? '-';
+                });
+
+
+            /*
+        |--------------------------------------------------------------------------
+        | ASIGNAR DESCRIPCIÓN A CADA DETALLE
+        |--------------------------------------------------------------------------
+        */
+
+            $lote->detalles->each(function ($detalle) use ($descripciones) {
+
+                $detalle->descripcion =
+                    $descripciones[$detalle->codigo] ?? '-';
+            });
+
+
+            /*
+        |--------------------------------------------------------------------------
+        | ORDENAR DETALLES
+        |--------------------------------------------------------------------------
+        */
+
             $lote->setRelation(
                 'detalles',
                 $lote->detalles
                     ->sortBy(function ($detalle) {
 
                         return [
+                            // 1. ORIGEN
                             strtoupper(
-                                $detalle->origen->suc_descri ?? ''
+                                trim($detalle->origen->suc_descri ?? '')
                             ),
 
+                            // 2. DESTINO
                             strtoupper(
-                                $detalle->codigo ?? ''
+                                trim($detalle->destino->suc_descri ?? '')
+                            ),
+
+                            // 3. CÓDIGO
+                            strtoupper(
+                                trim($detalle->codigo ?? '')
                             )
                         ];
                     })
@@ -1710,11 +1854,23 @@ class RedistribucionSugeridaController extends Controller
             );
 
 
+            /*
+        |--------------------------------------------------------------------------
+        | GENERAR PDF
+        |--------------------------------------------------------------------------
+        */
+
             $pdf = Pdf::loadView(
                 'redistribucion_sugeridas.pdf.lote',
                 compact('lote')
             );
 
+
+            /*
+        |--------------------------------------------------------------------------
+        | CONFIGURACIÓN
+        |--------------------------------------------------------------------------
+        */
 
             $pdf->setPaper(
                 'A4',
@@ -1722,29 +1878,27 @@ class RedistribucionSugeridaController extends Controller
             );
 
 
+            /*
+        |--------------------------------------------------------------------------
+        | DESCARGAR
+        |--------------------------------------------------------------------------
+        */
+
             return $pdf->download(
-                'Lote-' .
-                    $lote->numero_lote .
-                    '.pdf'
+                'Lote-' . $lote->numero_lote . '.pdf'
             );
         } catch (\Exception $e) {
 
             Log::error(
                 'Error exportando lote a PDF',
                 [
-                    'lote_id' =>
-                    $id,
-
-                    'error' =>
-                    $e->getMessage(),
-
-                    'line' =>
-                    $e->getLine(),
-
-                    'file' =>
-                    $e->getFile()
+                    'lote_id' => $id,
+                    'error'   => $e->getMessage(),
+                    'line'    => $e->getLine(),
+                    'file'    => $e->getFile()
                 ]
             );
+
 
             return back()->with(
                 'error',
@@ -1765,11 +1919,36 @@ class RedistribucionSugeridaController extends Controller
     {
         try {
 
+            /*
+         * ============================================================
+         * OBTENER LOTE
+         * ============================================================
+         *
+         * Cargamos:
+         *
+         * lote
+         *   └── detalles
+         *         ├── origen
+         *         └── destino
+         */
+
             $lote = RedistribucionLote::with([
                 'detalles.origen',
                 'detalles.destino'
             ])->findOrFail($id);
 
+
+            /*
+         * ============================================================
+         * ORDENAR DETALLES
+         * ============================================================
+         *
+         * Primero:
+         *     Sucursal Origen
+         *
+         * Después:
+         *     Código
+         */
 
             $lote->setRelation(
                 'detalles',
@@ -1777,12 +1956,19 @@ class RedistribucionSugeridaController extends Controller
                     ->sortBy(function ($detalle) {
 
                         return [
+                            // 1. ORIGEN
                             strtoupper(
-                                $detalle->origen->suc_descri ?? ''
+                                trim($detalle->origen->suc_descri ?? '')
                             ),
 
+                            // 2. DESTINO
                             strtoupper(
-                                $detalle->codigo ?? ''
+                                trim($detalle->destino->suc_descri ?? '')
+                            ),
+
+                            // 3. CÓDIGO
+                            strtoupper(
+                                trim($detalle->codigo ?? '')
                             )
                         ];
                     })
@@ -1790,31 +1976,44 @@ class RedistribucionSugeridaController extends Controller
             );
 
 
+            /*
+         * ============================================================
+         * EXPORTAR EXCEL
+         * ============================================================
+         */
+
             return Excel::download(
                 new LoteRedistribucionExport($lote),
-                'Lote-' .
-                    $lote->numero_lote .
-                    '.xlsx'
+                'Lote-' . $lote->numero_lote . '.xlsx'
             );
         } catch (\Exception $e) {
+
+            /*
+         * ============================================================
+         * REGISTRAR ERROR
+         * ============================================================
+         */
 
             Log::error(
                 'Error exportando lote a Excel',
                 [
                     'lote_id' => $id,
-                    'error' =>
-                    $e->getMessage(),
-                    'line' =>
-                    $e->getLine(),
-                    'file' =>
-                    $e->getFile()
+                    'error'   => $e->getMessage(),
+                    'line'    => $e->getLine(),
+                    'file'    => $e->getFile()
                 ]
             );
 
+
+            /*
+         * ============================================================
+         * VOLVER CON ERROR
+         * ============================================================
+         */
+
             return back()->with(
                 'error',
-                'No se pudo generar el Excel: ' .
-                    $e->getMessage()
+                'No se pudo generar el Excel: ' . $e->getMessage()
             );
         }
     }
