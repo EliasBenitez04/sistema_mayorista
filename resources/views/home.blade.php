@@ -2,17 +2,13 @@
 
 @section('content')
     <style>
-        /* ==========================================================
-           ENTERPRISE DASHBOARD
-        ========================================================== */
-
         :root {
 
             --primary: #2563eb;
-            --primary-dark: #1e40af;
+            --primary-dark: #1e40afc9;
 
             --success: #16a34a;
-            --warning: #d97706;
+            --warning: #f38405;
             --danger: #dc2626;
             --info: #0891b2;
 
@@ -27,18 +23,25 @@
         }
 
 
+        /*
+        |--------------------------------------------------------------------------
+        | GENERAL
+        |--------------------------------------------------------------------------
+        */
+
         .content-wrapper {
 
             background: var(--background) !important;
-
             min-height: 100vh;
 
         }
 
 
-        /* ==========================================================
-           HEADER
-        ========================================================== */
+        /*
+        |--------------------------------------------------------------------------
+        | HEADER
+        |--------------------------------------------------------------------------
+        */
 
         .enterprise-header {
 
@@ -50,9 +53,7 @@
         .enterprise-header-content {
 
             display: flex;
-
             justify-content: space-between;
-
             align-items: center;
 
         }
@@ -61,13 +62,9 @@
         .enterprise-title {
 
             margin: 0;
-
             color: var(--dark);
-
             font-size: 25px;
-
             font-weight: 750;
-
             letter-spacing: -.5px;
 
         }
@@ -76,9 +73,7 @@
         .enterprise-subtitle {
 
             margin-top: 5px;
-
             color: var(--muted);
-
             font-size: 12px;
 
         }
@@ -87,9 +82,7 @@
         .system-status {
 
             display: inline-flex;
-
             align-items: center;
-
             gap: 7px;
 
             padding: 7px 12px;
@@ -103,7 +96,6 @@
             color: #475569;
 
             font-size: 10px;
-
             font-weight: 700;
 
         }
@@ -112,7 +104,6 @@
         .system-status-dot {
 
             width: 7px;
-
             height: 7px;
 
             border-radius: 50%;
@@ -122,9 +113,11 @@
         }
 
 
-        /* ==========================================================
-           KPI
-        ========================================================== */
+        /*
+        |--------------------------------------------------------------------------
+        | KPI
+        |--------------------------------------------------------------------------
+        */
 
         .kpi-card {
 
@@ -163,7 +156,6 @@
             color: var(--muted);
 
             font-size: 10px;
-
             font-weight: 750;
 
             text-transform: uppercase;
@@ -204,17 +196,14 @@
             position: absolute;
 
             right: 18px;
-
             top: 17px;
 
             width: 39px;
-
             height: 39px;
 
             display: flex;
 
             align-items: center;
-
             justify-content: center;
 
             border-radius: 10px;
@@ -227,7 +216,6 @@
         .kpi-blue {
 
             background: #eff6ff;
-
             color: var(--primary);
 
         }
@@ -236,7 +224,6 @@
         .kpi-orange {
 
             background: #fff7ed;
-
             color: var(--warning);
 
         }
@@ -245,7 +232,6 @@
         .kpi-green {
 
             background: #f0fdf4;
-
             color: var(--success);
 
         }
@@ -254,15 +240,16 @@
         .kpi-cyan {
 
             background: #ecfeff;
-
             color: var(--info);
 
         }
 
 
-        /* ==========================================================
-           ENTERPRISE CARDS
-        ========================================================== */
+        /*
+        |--------------------------------------------------------------------------
+        | CARDS
+        |--------------------------------------------------------------------------
+        */
 
         .enterprise-card {
 
@@ -329,9 +316,11 @@
         }
 
 
-        /* ==========================================================
-           WORKFLOW
-        ========================================================== */
+        /*
+        |--------------------------------------------------------------------------
+        | WORKFLOW
+        |--------------------------------------------------------------------------
+        */
 
         .workflow {
 
@@ -356,7 +345,6 @@
         .workflow-icon {
 
             width: 45px;
-
             height: 45px;
 
             margin: auto;
@@ -364,7 +352,6 @@
             display: flex;
 
             align-items: center;
-
             justify-content: center;
 
             border-radius: 50%;
@@ -403,7 +390,6 @@
         .workflow-line {
 
             width: 50px;
-
             height: 1px;
 
             background: #cbd5e1;
@@ -414,7 +400,6 @@
         .workflow-generated {
 
             background: #fff7ed;
-
             color: var(--warning);
 
         }
@@ -423,7 +408,6 @@
         .workflow-process {
 
             background: #eff6ff;
-
             color: var(--primary);
 
         }
@@ -432,15 +416,16 @@
         .workflow-finished {
 
             background: #f0fdf4;
-
             color: var(--success);
 
         }
 
 
-        /* ==========================================================
-           PROGRESS
-        ========================================================== */
+        /*
+        |--------------------------------------------------------------------------
+        | PROGRESS
+        |--------------------------------------------------------------------------
+        */
 
         .progress-item {
 
@@ -528,9 +513,11 @@
         }
 
 
-        /* ==========================================================
-           TABLE
-        ========================================================== */
+        /*
+        |--------------------------------------------------------------------------
+        | TABLE
+        |--------------------------------------------------------------------------
+        */
 
         .enterprise-table {
 
@@ -600,6 +587,12 @@
         }
 
 
+        /*
+        |--------------------------------------------------------------------------
+        | BADGES
+        |--------------------------------------------------------------------------
+        */
+
         .badge-enterprise {
 
             display: inline-flex;
@@ -620,7 +613,6 @@
         .badge-generated {
 
             color: #92400e;
-
             background: #fef3c7;
 
         }
@@ -629,7 +621,6 @@
         .badge-process {
 
             color: #1e40af;
-
             background: #dbeafe;
 
         }
@@ -638,15 +629,126 @@
         .badge-finished {
 
             color: #166534;
-
             background: #dcfce7;
 
         }
 
 
-        /* ==========================================================
-           ALERT
-        ========================================================== */
+        /*
+        |--------------------------------------------------------------------------
+        | AVANCE DEL LOTE
+        |--------------------------------------------------------------------------
+        */
+
+        .lote-progress {
+
+            min-width: 110px;
+
+        }
+
+
+        .lote-progress-header {
+
+            display: flex;
+
+            justify-content: space-between;
+
+            margin-bottom: 4px;
+
+        }
+
+
+        .lote-progress-text {
+
+            font-size: 8px;
+
+            color: var(--muted);
+
+        }
+
+
+        .lote-progress-percent {
+
+            font-size: 8px;
+
+            font-weight: 750;
+
+            color: var(--dark);
+
+        }
+
+
+        .lote-progress-bar {
+
+            height: 5px;
+
+            background: #f1f5f9;
+
+            border-radius: 10px;
+
+            overflow: hidden;
+
+        }
+
+
+        .lote-progress-fill {
+
+            height: 100%;
+
+            background: var(--success);
+
+            border-radius: 10px;
+
+        }
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | BUTTON
+        |--------------------------------------------------------------------------
+        */
+
+        .enterprise-button {
+
+            display: inline-flex;
+
+            align-items: center;
+
+            gap: 5px;
+
+            padding: 6px 9px;
+
+            border: 1px solid var(--border);
+
+            border-radius: 7px;
+
+            background: white;
+
+            color: var(--text);
+
+            font-size: 9px;
+
+            font-weight: 700;
+
+            text-decoration: none !important;
+
+        }
+
+
+        .enterprise-button:hover {
+
+            background: #f8fafc;
+
+            color: var(--primary);
+
+        }
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | ALERT
+        |--------------------------------------------------------------------------
+        */
 
         .operation-alert {
 
@@ -679,13 +781,11 @@
         .alert-icon {
 
             width: 35px;
-
             height: 35px;
 
             display: flex;
 
             align-items: center;
-
             justify-content: center;
 
             border-radius: 8px;
@@ -742,45 +842,59 @@
         }
 
 
-        /* ==========================================================
-           BUTTON
-        ========================================================== */
+        /*
+        |--------------------------------------------------------------------------
+        | SUMMARY BOX
+        |--------------------------------------------------------------------------
+        */
 
-        .enterprise-button {
+        .summary-box {
 
-            display: inline-flex;
+            display: flex;
+
+            justify-content: space-between;
 
             align-items: center;
 
-            gap: 5px;
+            padding: 12px 0;
 
-            padding: 6px 9px;
-
-            border: 1px solid var(--border);
-
-            border-radius: 7px;
-
-            background: white;
-
-            color: var(--text);
-
-            font-size: 9px;
-
-            font-weight: 700;
-
-            text-decoration: none !important;
+            border-bottom: 1px solid #edf1f5;
 
         }
 
 
-        .enterprise-button:hover {
+        .summary-box:last-child {
 
-            background: #f8fafc;
-
-            color: var(--primary);
+            border-bottom: 0;
 
         }
 
+
+        .summary-label {
+
+            color: var(--muted);
+
+            font-size: 10px;
+
+        }
+
+
+        .summary-value {
+
+            color: var(--dark);
+
+            font-size: 12px;
+
+            font-weight: 750;
+
+        }
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | RESPONSIVE
+        |--------------------------------------------------------------------------
+        */
 
         @media(max-width:768px) {
 
@@ -794,6 +908,7 @@
 
             }
 
+
             .workflow {
 
                 flex-direction: column;
@@ -801,6 +916,7 @@
                 gap: 12px;
 
             }
+
 
             .workflow-line {
 
@@ -818,8 +934,8 @@
 
 
         {{-- ==========================================================
-         HEADER
-    ========================================================== --}}
+        HEADER
+    =========================================================== --}}
 
         <div class="enterprise-header">
 
@@ -828,11 +944,15 @@
                 <div>
 
                     <h1 class="enterprise-title">
+
                         Centro de Operaciones
+
                     </h1>
 
                     <div class="enterprise-subtitle">
+
                         Panel ejecutivo de gestión y redistribución
+
                     </div>
 
                 </div>
@@ -852,8 +972,8 @@
 
 
         {{-- ==========================================================
-         KPI
-    ========================================================== --}}
+        KPI
+    =========================================================== --}}
 
         <div class="row">
 
@@ -871,15 +991,21 @@
                     </div>
 
                     <div class="kpi-label">
+
                         Total de lotes
+
                     </div>
 
                     <div class="kpi-value">
+
                         {{ number_format($totalLotes) }}
+
                     </div>
 
                     <div class="kpi-description">
-                        Operaciones registradas
+
+                        Lotes registrados
+
                     </div>
 
                 </div>
@@ -900,15 +1026,21 @@
                     </div>
 
                     <div class="kpi-label">
+
                         Pendientes
+
                     </div>
 
                     <div class="kpi-value">
+
                         {{ number_format($lotesGenerados) }}
+
                     </div>
 
                     <div class="kpi-description">
+
                         Lotes esperando ejecución
+
                     </div>
 
                 </div>
@@ -929,15 +1061,21 @@
                     </div>
 
                     <div class="kpi-label">
+
                         En proceso
+
                     </div>
 
                     <div class="kpi-value">
+
                         {{ number_format($lotesEnProceso) }}
+
                     </div>
 
                     <div class="kpi-description">
-                        Operaciones activas
+
+                        Lotes actualmente activos
+
                     </div>
 
                 </div>
@@ -958,15 +1096,21 @@
                     </div>
 
                     <div class="kpi-label">
+
                         Finalizados
+
                     </div>
 
                     <div class="kpi-value">
+
                         {{ number_format($lotesFinalizados) }}
+
                     </div>
 
                     <div class="kpi-description">
-                        Operaciones completadas
+
+                        Lotes completados
+
                     </div>
 
                 </div>
@@ -980,10 +1124,13 @@
 
 
             {{-- ======================================================
-             FLUJO OPERATIVO
+            COLUMNA IZQUIERDA
         ======================================================= --}}
 
             <div class="col-lg-8">
+
+
+                {{-- FLUJO OPERATIVO --}}
 
                 <div class="enterprise-card">
 
@@ -992,11 +1139,15 @@
                         <div>
 
                             <div class="enterprise-card-title">
+
                                 Flujo operativo
+
                             </div>
 
                             <div class="enterprise-card-subtitle">
-                                Estado general del proceso de redistribución
+
+                                Estado general de los lotes de redistribución
+
                             </div>
 
                         </div>
@@ -1018,11 +1169,15 @@
                                 </div>
 
                                 <strong>
+
                                     Generados
+
                                 </strong>
 
                                 <span>
-                                    {{ $lotesGenerados }} lotes
+
+                                    {{ number_format($lotesGenerados) }} lotes
+
                                 </span>
 
                             </div>
@@ -1040,11 +1195,15 @@
                                 </div>
 
                                 <strong>
+
                                     En proceso
+
                                 </strong>
 
                                 <span>
-                                    {{ $lotesEnProceso }} lotes
+
+                                    {{ number_format($lotesEnProceso) }} lotes
+
                                 </span>
 
                             </div>
@@ -1062,15 +1221,18 @@
                                 </div>
 
                                 <strong>
+
                                     Finalizados
+
                                 </strong>
 
                                 <span>
-                                    {{ $lotesFinalizados }} lotes
+
+                                    {{ number_format($lotesFinalizados) }} lotes
+
                                 </span>
 
                             </div>
-
 
                         </div>
 
@@ -1079,9 +1241,7 @@
                 </div>
 
 
-                {{-- ==================================================
-                 ACTIVIDAD RECIENTE
-            =================================================== --}}
+                {{-- ACTIVIDAD RECIENTE --}}
 
                 <div class="enterprise-card">
 
@@ -1097,7 +1257,7 @@
 
                             <div class="enterprise-card-subtitle">
 
-                                Últimos lotes procesados por el sistema
+                                Estado real de las transferencias asociadas a cada lote
 
                             </div>
 
@@ -1123,25 +1283,19 @@
 
                                 <tr>
 
-                                    <th>
-                                        Lote
-                                    </th>
+                                    <th>Lote</th>
 
-                                    <th>
-                                        Fecha
-                                    </th>
+                                    <th>Fecha</th>
 
-                                    <th>
-                                        Transferencias
-                                    </th>
+                                    <th>Transferencias</th>
 
-                                    <th>
-                                        Unidades
-                                    </th>
+                                    <th>Unidades</th>
 
-                                    <th>
-                                        Estado
-                                    </th>
+                                    <th>Finalizadas</th>
+
+                                    <th>Avance</th>
+
+                                    <th>Estado</th>
 
                                     <th></th>
 
@@ -1155,6 +1309,9 @@
                                 @forelse($ultimosLotes as $lote)
                                     <tr>
 
+
+                                        {{-- LOTE --}}
+
                                         <td>
 
                                             <span class="lote-code">
@@ -1166,6 +1323,8 @@
                                         </td>
 
 
+                                        {{-- FECHA --}}
+
                                         <td>
 
                                             {{ \Carbon\Carbon::parse($lote->fecha_generacion)->format('d/m/Y H:i') }}
@@ -1173,19 +1332,77 @@
                                         </td>
 
 
+                                        {{-- TRANSFERENCIAS --}}
+
                                         <td>
 
-                                            {{ number_format($lote->total_transferencias) }}
+                                            <strong>
+
+                                                {{ number_format($lote->cantidad_transferencias) }}
+
+                                            </strong>
 
                                         </td>
 
 
+                                        {{-- UNIDADES --}}
+
                                         <td>
 
-                                            {{ number_format($lote->total_unidades) }}
+                                            {{ number_format($lote->cantidad_unidades) }}
 
                                         </td>
 
+
+                                        {{-- FINALIZADAS --}}
+
+                                        <td>
+
+                                            <span style="color:#16a34a;font-weight:750;">
+
+                                                {{ number_format($lote->transferencias_finalizadas) }}
+
+                                            </span>
+
+                                        </td>
+
+
+                                        {{-- AVANCE --}}
+
+                                        <td>
+
+                                            <div class="lote-progress">
+
+                                                <div class="lote-progress-header">
+
+                                                    <span class="lote-progress-text">
+
+                                                        {{ $lote->transferencias_finalizadas }}/{{ $lote->cantidad_transferencias }}
+
+                                                    </span>
+
+                                                    <span class="lote-progress-percent">
+
+                                                        {{ $lote->porcentaje_avance }}%
+
+                                                    </span>
+
+                                                </div>
+
+                                                <div class="lote-progress-bar">
+
+                                                    <div class="lote-progress-fill"
+                                                        style="width: {{ $lote->porcentaje_avance }}%;">
+                                                    </div>
+
+                                                </div>
+
+                                            </div>
+
+                                        </td>
+
+
+                                        {{-- ESTADO --}}
 
                                         <td>
 
@@ -1207,10 +1424,18 @@
                                                     FINALIZADO
 
                                                 </span>
+                                            @else
+                                                <span class="badge-enterprise">
+
+                                                    {{ $lote->estado }}
+
+                                                </span>
                                             @endif
 
                                         </td>
 
+
+                                        {{-- VER --}}
 
                                         <td class="text-right">
 
@@ -1225,13 +1450,21 @@
 
                                     </tr>
 
+
                                 @empty
 
                                     <tr>
 
-                                        <td colspan="6" class="text-center">
+                                        <td colspan="8" class="text-center py-4">
 
-                                            No existen operaciones registradas.
+                                            <i class="fas fa-inbox" style="font-size:25px;color:#94a3b8;">
+                                            </i>
+
+                                            <div style="margin-top:8px;">
+
+                                                No existen lotes registrados.
+
+                                            </div>
 
                                         </td>
 
@@ -1246,17 +1479,18 @@
 
                 </div>
 
+
             </div>
 
 
             {{-- ======================================================
-             COLUMNA DERECHA
+            COLUMNA DERECHA
         ======================================================= --}}
 
             <div class="col-lg-4">
 
 
-                {{-- PROGRESO --}}
+                {{-- INDICADORES --}}
 
                 <div class="enterprise-card">
 
@@ -1272,7 +1506,7 @@
 
                             <div class="enterprise-card-subtitle">
 
-                                Estado de las transferencias
+                                Estado real de las transferencias de los lotes
 
                             </div>
 
@@ -1292,13 +1526,13 @@
 
                                 <span class="progress-label">
 
-                                    Pendientes
+                                    Transferencias pendientes
 
                                 </span>
 
                                 <span class="progress-value">
 
-                                    {{ $transferenciasPendientes }}
+                                    {{ number_format($transferenciasPendientes) }}
 
                                 </span>
 
@@ -1308,7 +1542,7 @@
                             <div class="progress enterprise-progress">
 
                                 <div class="progress-bar progress-warning"
-                                    style="width: {{ $totalTransferencias > 0 ? ($transferenciasPendientes / $totalTransferencias) * 100 : 0 }}%">
+                                    style="width: {{ $totalTransferencias > 0 ? ($transferenciasPendientes / $totalTransferencias) * 100 : 0 }}%;">
                                 </div>
 
                             </div>
@@ -1316,7 +1550,7 @@
                         </div>
 
 
-                        {{-- PROCESO --}}
+                        {{-- EN PROCESO --}}
 
                         <div class="progress-item">
 
@@ -1324,13 +1558,13 @@
 
                                 <span class="progress-label">
 
-                                    En proceso
+                                    Transferencias en proceso
 
                                 </span>
 
                                 <span class="progress-value">
 
-                                    {{ $transferenciasEnProceso }}
+                                    {{ number_format($transferenciasEnProceso) }}
 
                                 </span>
 
@@ -1340,7 +1574,7 @@
                             <div class="progress enterprise-progress">
 
                                 <div class="progress-bar progress-blue"
-                                    style="width: {{ $totalTransferencias > 0 ? ($transferenciasEnProceso / $totalTransferencias) * 100 : 0 }}%">
+                                    style="width: {{ $totalTransferencias > 0 ? ($transferenciasEnProceso / $totalTransferencias) * 100 : 0 }}%;">
                                 </div>
 
                             </div>
@@ -1356,13 +1590,13 @@
 
                                 <span class="progress-label">
 
-                                    Finalizadas
+                                    Transferencias finalizadas
 
                                 </span>
 
                                 <span class="progress-value">
 
-                                    {{ $transferenciasFinalizadas }}
+                                    {{ number_format($transferenciasFinalizadas) }}
 
                                 </span>
 
@@ -1372,7 +1606,7 @@
                             <div class="progress enterprise-progress">
 
                                 <div class="progress-bar progress-green"
-                                    style="width: {{ $totalTransferencias > 0 ? ($transferenciasFinalizadas / $totalTransferencias) * 100 : 0 }}%">
+                                    style="width: {{ $totalTransferencias > 0 ? ($transferenciasFinalizadas / $totalTransferencias) * 100 : 0 }}%;">
                                 </div>
 
                             </div>
@@ -1383,32 +1617,59 @@
                         <hr>
 
 
-                        <div class="text-center">
+                        {{-- TOTAL UNIDADES --}}
 
-                            <div
-                                style="
-                            color:#94a3b8;
-                            font-size:9px;
-                            text-transform:uppercase;
-                            font-weight:700;
-                        ">
+                        <div class="summary-box">
 
-                                Unidades procesadas
+                            <span class="summary-label">
 
-                            </div>
+                                Total de unidades
 
+                            </span>
 
-                            <div
-                                style="
-                            color:#172033;
-                            font-size:25px;
-                            font-weight:750;
-                            margin-top:5px;
-                        ">
+                            <span class="summary-value">
 
                                 {{ number_format($totalUnidades) }}
 
-                            </div>
+                            </span>
+
+                        </div>
+
+
+                        {{-- UNIDADES FINALIZADAS --}}
+
+                        <div class="summary-box">
+
+                            <span class="summary-label">
+
+                                Unidades finalizadas
+
+                            </span>
+
+                            <span class="summary-value" style="color:#16a34a;">
+
+                                {{ number_format($unidadesFinalizadas) }}
+
+                            </span>
+
+                        </div>
+
+
+                        {{-- PORCENTAJE --}}
+
+                        <div class="summary-box">
+
+                            <span class="summary-label">
+
+                                Avance de unidades
+
+                            </span>
+
+                            <span class="summary-value">
+
+                                {{ $porcentajeUnidadesFinalizadas }}%
+
+                            </span>
 
                         </div>
 
@@ -1418,9 +1679,7 @@
                 </div>
 
 
-                {{-- ==================================================
-                 OPERACIONES QUE REQUIEREN ATENCIÓN
-            =================================================== --}}
+                {{-- ATENCIÓN --}}
 
                 <div class="enterprise-card">
 
@@ -1436,7 +1695,7 @@
 
                             <div class="enterprise-card-subtitle">
 
-                                Operaciones pendientes de acción
+                                Lotes que requieren acción
 
                             </div>
 
@@ -1458,45 +1717,38 @@
                                         <i class="fas fa-clock"></i>
 
                                     </div>
-
-                                    <div class="alert-info">
-
-                                        <div class="alert-title">
-
-                                            {{ $lote->numero_lote }}
-
-                                        </div>
-
-                                        <div class="alert-description">
-
-                                            Lote pendiente de iniciar
-
-                                        </div>
-
-                                    </div>
                                 @else
                                     <div class="alert-icon alert-process">
 
                                         <i class="fas fa-sync-alt"></i>
 
                                     </div>
+                                @endif
 
-                                    <div class="alert-info">
 
-                                        <div class="alert-title">
+                                <div class="alert-info">
 
-                                            {{ $lote->numero_lote }}
+                                    <div class="alert-title">
 
-                                        </div>
-
-                                        <div class="alert-description">
-
-                                            Lote en proceso
-
-                                        </div>
+                                        {{ $lote->numero_lote }}
 
                                     </div>
-                                @endif
+
+
+                                    <div class="alert-description">
+
+                                        @if ($lote->estado === 'GENERADO')
+                                            Pendiente de iniciar
+                                        @else
+                                            {{ $lote->transferencias_finalizadas }}
+                                            de
+                                            {{ $lote->cantidad_transferencias }}
+                                            transferencias finalizadas
+                                        @endif
+
+                                    </div>
+
+                                </div>
 
 
                                 <a href="{{ route('RedistribucionSugeridas.lote', ['id' => $lote->id]) }}"
@@ -1515,18 +1767,10 @@
 
                             <div class="text-center py-3">
 
-                                <i class="fas fa-check-circle"
-                                    style="
-                                   font-size:25px;
-                                   color:#16a34a;
-                               "></i>
+                                <i class="fas fa-check-circle" style="font-size:25px;color:#16a34a;">
+                                </i>
 
-                                <div
-                                    style="
-                                margin-top:8px;
-                                color:#64748b;
-                                font-size:10px;
-                            ">
+                                <div style="margin-top:8px;color:#64748b;font-size:10px;">
 
                                     No hay operaciones pendientes
 

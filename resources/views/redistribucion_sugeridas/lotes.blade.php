@@ -1,3 +1,4 @@
+@include('redistribucion_sugeridas.importar-remisiones')
 <style>
     :root {
         --corporate-primary: #2563eb;
@@ -42,9 +43,7 @@
 
     .content-wrapper {
         background: var(--corporate-bg) !important;
-        min-height: calc(100vh - 57px) !important;
     }
-
 
     /* =========================================================
        NAVBAR - NO TOCAR
@@ -1528,413 +1527,374 @@
         .dashboard-stat .icon {
             transition: none !important;
         }
+
+    }
+
+    .main-sidebar {
+        min-height: 250vh !important;
     }
 </style>
 
 @extends('layouts.app')
 
 @section('content')
-    <div class="content-header">
-        <section class="content-header">
-                <div class="row align-items-center">
-                    <div class="col-md-7">
-                        <div class="page-heading">
-                            <div class="page-heading-icon"><i class="fas fa-layer-group"></i></div>
-                            <div>
-                                <h1>Gestión de Lotes</h1>
-                                <small>Control y seguimiento de movimientos de redistribución</small>
-                            </div>
+    <section class="content-header">
+        <div class="container-fluid">
+            <div class="row align-items-center">
+
+                {{-- TÍTULO --}}
+                <div class="col-md-7">
+                    <div class="page-heading">
+
+                        <div class="page-heading-icon">
+                            <i class="fas fa-layer-group"></i>
                         </div>
+
+                        <div>
+                            <h1>Gestión de Lotes</h1>
+
+                            <small>
+                                Control y seguimiento de movimientos de redistribución
+                            </small>
+                        </div>
+
                     </div>
-                    <div class="col-md-5">
-                        <ol class="breadcrumb float-md-right">
-                            <li class="breadcrumb-item"><a
-                                    href="{{ route('RedistribucionSugeridas.index') }}">Redistribución Sugerida</a></li>
-                            <li class="breadcrumb-item active">Gestión de Lotes</li>
-                        </ol>
+                </div>
+
+
+                {{-- ACCIONES + BREADCRUMB --}}
+                <div class="col-md-5">
+
+                    {{-- BOTÓN IMPORTAR --}}
+                    @can('redistribucionsugerencia importarRemisiones')
+                        <div class="text-md-right mb-3">
+
+                            <button type="button" class="btn btn-import-remisiones" data-toggle="modal"
+                                data-target="#modalImportarRemisiones">
+
+                                <span class="import-btn-icon">
+                                    <i class="fas fa-file-import"></i>
+                                </span>
+
+                                <span>Importar remisiones</span>
+
+                            </button>
+                        </div>
+                    @endcan
+                    <style>
+                        .btn-import-remisiones {
+                            display: inline-flex;
+                            align-items: center;
+                            justify-content: center;
+                            gap: 9px;
+
+                            height: 40px;
+                            padding: 0 16px;
+
+                            background: #2563eb;
+                            border: 1px solid #2563eb;
+                            border-radius: 7px;
+
+                            color: #ffffff;
+
+                            font-size: 12px;
+                            font-weight: 600;
+
+                            box-shadow: 0 2px 5px rgba(37, 99, 235, .18);
+
+                            transition: all .2s ease;
+                        }
+
+                        .btn-import-remisiones:hover {
+                            color: #ffffff;
+
+                            background: #1d4ed8;
+                            border-color: #1d4ed8;
+
+                            box-shadow: 0 4px 9px rgba(37, 99, 235, .24);
+
+                            transform: translateY(-1px);
+                        }
+
+                        .btn-import-remisiones:active {
+                            color: #ffffff;
+
+                            transform: translateY(0);
+
+                            box-shadow: 0 2px 4px rgba(37, 99, 235, .15);
+                        }
+
+                        .btn-import-remisiones:focus {
+                            color: #ffffff;
+                            outline: none;
+
+                            box-shadow:
+                                0 0 0 3px rgba(37, 99, 235, .12),
+                                0 2px 5px rgba(37, 99, 235, .18);
+                        }
+
+                        .import-btn-icon {
+                            display: inline-flex;
+                            align-items: center;
+                            justify-content: center;
+
+                            width: 22px;
+                            height: 22px;
+
+                            border-radius: 5px;
+
+                            background: rgba(255, 255, 255, .14);
+
+                            font-size: 11px;
+                        }
+                    </style>
+
+
+                    {{-- BREADCRUMB --}}
+                    <ol class="breadcrumb float-md-right mb-0">
+
+                        <li class="breadcrumb-item">
+                            <a href="{{ route('RedistribucionSugeridas.index') }}">
+                                Redistribución Sugerida
+                            </a>
+                        </li>
+
+                        <li class="breadcrumb-item active">
+                            Gestión de Lotes
+                        </li>
+
+                    </ol>
+
+                </div>
+
+            </div>
+        </div>
+    </section>
+
+    <section class="content">
+        <div class="container-fluid">
+            <div class="row">
+                <div class="col-xl-3 col-md-6">
+                    <div class="small-box dashboard-stat stat-warning">
+                        <div class="inner">
+                            <h3>{{ $procesosPendientes->sum(function ($proceso) {return $proceso->detalles->count();}) }}
+                            </h3>
+                            <p>Movimientos pendientes</p>
+                            <div class="stat-label"><i class="fas fa-clock"></i> Requieren procesamiento</div>
+                        </div>
+                        <div class="icon"><i class="fas fa-clock"></i></div>
+                    </div>
+                </div>
+                <div class="col-xl-3 col-md-6">
+                    <div class="small-box dashboard-stat stat-info">
+                        <div class="inner">
+                            <h3>{{ $lotesGenerados->count() }}</h3>
+                            <p>Lotes generados</p>
+                            <div class="stat-label"><i class="fas fa-box"></i> Pendientes de iniciar</div>
+                        </div>
+                        <div class="icon"><i class="fas fa-box"></i></div>
+                    </div>
+                </div>
+                <div class="col-xl-3 col-md-6">
+                    <div class="small-box dashboard-stat stat-primary">
+                        <div class="inner">
+                            <h3>{{ $lotesEnProceso->count() }}</h3>
+                            <p>Lotes en proceso</p>
+                            <div class="stat-label"><i class="fas fa-cogs"></i> Operaciones activas</div>
+                        </div>
+                        <div class="icon"><i class="fas fa-cogs"></i></div>
+                    </div>
+                </div>
+                <div class="col-xl-3 col-md-6">
+                    <div class="small-box dashboard-stat stat-success">
+                        <div class="inner">
+                            <h3>{{ $lotesFinalizados->count() }}</h3>
+                            <p>Lotes finalizados</p>
+                            <div class="stat-label"><i class="fas fa-check-circle"></i> Procesos completados</div>
+                        </div>
+                        <div class="icon"><i class="fas fa-check-circle"></i></div>
                     </div>
                 </div>
             </div>
-        </section>
 
-        <section class="content">
-            <div class="container-fluid">
-                <div class="row">
-                    <div class="col-xl-3 col-md-6">
-                        <div class="small-box dashboard-stat stat-warning">
-                            <div class="inner">
-                                <h3>{{ $procesosPendientes->sum(function ($proceso) {return $proceso->detalles->count();}) }}
-                                </h3>
-                                <p>Movimientos pendientes</p>
-                                <div class="stat-label"><i class="fas fa-clock"></i> Requieren procesamiento</div>
-                            </div>
-                            <div class="icon"><i class="fas fa-clock"></i></div>
-                        </div>
+            <div class="dashboard-card">
+                <div class="dashboard-card-header">
+                    <div>
+                        <h3 class="dashboard-card-title">
+                            <span class="section-icon warning"><i class="fas fa-clock"></i></span>
+                            Movimientos pendientes de generar lote
+                        </h3>
+                        <span class="dashboard-card-subtitle">Procesos disponibles para consolidar en un nuevo
+                            lote</span>
                     </div>
-                    <div class="col-xl-3 col-md-6">
-                        <div class="small-box dashboard-stat stat-info">
-                            <div class="inner">
-                                <h3>{{ $lotesGenerados->count() }}</h3>
-                                <p>Lotes generados</p>
-                                <div class="stat-label"><i class="fas fa-box"></i> Pendientes de iniciar</div>
-                            </div>
-                            <div class="icon"><i class="fas fa-box"></i></div>
-                        </div>
-                    </div>
-                    <div class="col-xl-3 col-md-6">
-                        <div class="small-box dashboard-stat stat-primary">
-                            <div class="inner">
-                                <h3>{{ $lotesEnProceso->count() }}</h3>
-                                <p>Lotes en proceso</p>
-                                <div class="stat-label"><i class="fas fa-cogs"></i> Operaciones activas</div>
-                            </div>
-                            <div class="icon"><i class="fas fa-cogs"></i></div>
-                        </div>
-                    </div>
-                    <div class="col-xl-3 col-md-6">
-                        <div class="small-box dashboard-stat stat-success">
-                            <div class="inner">
-                                <h3>{{ $lotesFinalizados->count() }}</h3>
-                                <p>Lotes finalizados</p>
-                                <div class="stat-label"><i class="fas fa-check-circle"></i> Procesos completados</div>
-                            </div>
-                            <div class="icon"><i class="fas fa-check-circle"></i></div>
-                        </div>
+                    <div class="header-actions">
+                        <span class="status-counter"><i class="fas fa-layer-group"></i>
+                            {{ $procesosPendientes->count() }} procesos</span>
                     </div>
                 </div>
-
-                <div class="dashboard-card">
-                    <div class="dashboard-card-header">
-                        <div>
-                            <h3 class="dashboard-card-title">
-                                <span class="section-icon warning"><i class="fas fa-clock"></i></span>
-                                Movimientos pendientes de generar lote
-                            </h3>
-                            <span class="dashboard-card-subtitle">Procesos disponibles para consolidar en un nuevo
-                                lote</span>
+                <div class="card-body">
+                    @if ($procesosPendientes->count() == 0)
+                        <div class="empty-state">
+                            <div class="empty-icon"><i class="fas fa-check"></i></div>
+                            <h5>Todo está al día</h5>
+                            <p>No existen movimientos pendientes para generar lotes.</p>
                         </div>
-                        <div class="header-actions">
-                            <span class="status-counter"><i class="fas fa-layer-group"></i>
-                                {{ $procesosPendientes->count() }} procesos</span>
-                        </div>
-                    </div>
-                    <div class="card-body">
-                        @if ($procesosPendientes->count() == 0)
-                            <div class="empty-state">
-                                <div class="empty-icon"><i class="fas fa-check"></i></div>
-                                <h5>Todo está al día</h5>
-                                <p>No existen movimientos pendientes para generar lotes.</p>
-                            </div>
-                        @else
-                            @foreach ($procesosPendientes as $proceso)
-                                <div class="card process-card">
-                                    <div class="card-header process-header">
-                                        <div class="row align-items-center">
-                                            <div class="col-md-7">
-                                                <h3 class="process-title">
-                                                    <span class="process-id">PROCESO #{{ $proceso->id }}</span>
-                                                    @if (isset($proceso->fecha))
-                                                        <span class="process-date"><i
-                                                                class="far fa-calendar-alt mr-1"></i>{{ \Carbon\Carbon::parse($proceso->fecha)->format('d/m/Y') }}</span>
-                                                    @endif
-                                                </h3>
-                                            </div>
-                                            <div class="col-md-5">
-                                                <div class="process-actions">
-                                                    <span class="movement-badge"><i
-                                                            class="fas fa-exchange-alt"></i>{{ $proceso->detalles->count() }}
-                                                        movimientos</span>
-                                                    <form action="{{ route('RedistribucionSugeridas.generarLote') }}"
-                                                        method="POST" class="form-generar-lote m-0">
-                                                        @csrf
-                                                        <input type="hidden" name="proceso_id"
-                                                            value="{{ $proceso->id }}">
-                                                        @can('redistribucionsugerencia generarLote')
-                                                            <button type="submit" class="btn btn-generate"><i
-                                                                    class="fas fa-layer-group"></i> Generar lote</button>
-                                                        @endcan
-                                                    </form>
-                                                </div>
+                    @else
+                        @foreach ($procesosPendientes as $proceso)
+                            <div class="card process-card">
+                                <div class="card-header process-header">
+                                    <div class="row align-items-center">
+                                        <div class="col-md-7">
+                                            <h3 class="process-title">
+                                                <span class="process-id">PROCESO #{{ $proceso->id }}</span>
+                                                @if (isset($proceso->fecha))
+                                                    <span class="process-date"><i
+                                                            class="far fa-calendar-alt mr-1"></i>{{ \Carbon\Carbon::parse($proceso->fecha)->format('d/m/Y') }}</span>
+                                                @endif
+                                            </h3>
+                                        </div>
+                                        <div class="col-md-5">
+                                            <div class="process-actions">
+                                                <span class="movement-badge"><i
+                                                        class="fas fa-exchange-alt"></i>{{ $proceso->detalles->count() }}
+                                                    movimientos</span>
+                                                <form action="{{ route('RedistribucionSugeridas.generarLote') }}"
+                                                    method="POST" class="form-generar-lote m-0">
+                                                    @csrf
+                                                    <input type="hidden" name="proceso_id" value="{{ $proceso->id }}">
+                                                    @can('redistribucionsugerencia generarLote')
+                                                        <button type="submit" class="btn btn-generate"><i
+                                                                class="fas fa-layer-group"></i> Generar lote</button>
+                                                    @endcan
+                                                </form>
                                             </div>
                                         </div>
                                     </div>
-                                    <div class="card-body p-0">
-                                        <div class="table-responsive">
-                                            <table class="table table-hover">
-                                                <thead>
+                                </div>
+                                <div class="card-body p-0">
+                                    <div class="table-responsive">
+                                        <table class="table table-hover">
+                                            <thead>
+                                                <tr>
+                                                    <th width="55">#</th>
+                                                    <th>Producto</th>
+                                                    <th>Origen</th>
+                                                    <th>Destino</th>
+                                                    <th class="text-center">Cantidad</th>
+                                                    <th class="text-center">Estado</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                @foreach ($proceso->detalles as $detalle)
                                                     <tr>
-                                                        <th width="55">#</th>
-                                                        <th>Producto</th>
-                                                        <th>Origen</th>
-                                                        <th>Destino</th>
-                                                        <th class="text-center">Cantidad</th>
-                                                        <th class="text-center">Estado</th>
+                                                        <td><span class="text-muted">#{{ $detalle->id }}</span></td>
+                                                        <td>
+                                                            <span class="product-code">{{ $detalle->codigo ?? '-' }}</span>
+                                                            @if (isset($detalle->producto))
+                                                                <span class="product-name">{{ $detalle->producto }}</span>
+                                                            @endif
+                                                        </td>
+                                                        <td>
+                                                            <span class="location-cell"><i
+                                                                    class="fas fa-store"></i>{{ $detalle->origen->suc_descri ?? '-' }}</span>
+                                                        </td>
+                                                        <td>
+                                                            <span class="location-cell"><i
+                                                                    class="fas fa-store"></i>{{ $detalle->destino->suc_descri ?? '-' }}</span>
+                                                        </td>
+                                                        <td class="text-center"><span
+                                                                class="quantity">{{ $detalle->cantidad ?? 0 }}</span>
+                                                        </td>
+                                                        <td class="text-center"><span class="status-badge warning"><i
+                                                                    class="fas fa-clock"></i>{{ $detalle->estado }}</span>
+                                                        </td>
                                                     </tr>
-                                                </thead>
-                                                <tbody>
-                                                    @foreach ($proceso->detalles as $detalle)
-                                                        <tr>
-                                                            <td><span class="text-muted">#{{ $detalle->id }}</span></td>
-                                                            <td>
-                                                                <span
-                                                                    class="product-code">{{ $detalle->codigo ?? '-' }}</span>
-                                                                @if (isset($detalle->producto))
-                                                                    <span
-                                                                        class="product-name">{{ $detalle->producto }}</span>
-                                                                @endif
-                                                            </td>
-                                                            <td>
-                                                                <span class="location-cell"><i
-                                                                        class="fas fa-store"></i>{{ $detalle->origen->suc_descri ?? '-' }}</span>
-                                                            </td>
-                                                            <td>
-                                                                <span class="location-cell"><i
-                                                                        class="fas fa-store"></i>{{ $detalle->destino->suc_descri ?? '-' }}</span>
-                                                            </td>
-                                                            <td class="text-center"><span
-                                                                    class="quantity">{{ $detalle->cantidad ?? 0 }}</span>
-                                                            </td>
-                                                            <td class="text-center"><span class="status-badge warning"><i
-                                                                        class="fas fa-clock"></i>{{ $detalle->estado }}</span>
-                                                            </td>
-                                                        </tr>
-                                                    @endforeach
-                                                </tbody>
-                                            </table>
-                                        </div>
+                                                @endforeach
+                                            </tbody>
+                                        </table>
                                     </div>
                                 </div>
-                            @endforeach
-                        @endif
+                            </div>
+                        @endforeach
+                    @endif
+                </div>
+            </div>
+
+            <div class="dashboard-card">
+                <div class="dashboard-card-header">
+                    <div>
+                        <h3 class="dashboard-card-title">
+                            <span class="section-icon info"><i class="fas fa-box"></i></span>
+                            Lotes generados
+                        </h3>
+                        <span class="dashboard-card-subtitle">Lotes creados y pendientes de iniciar</span>
+                    </div>
+                    <div class="header-actions">
+                        <span class="status-counter"><i class="fas fa-box"></i> {{ $lotesGenerados->count() }}
+                            lotes</span>
                     </div>
                 </div>
-
-                <div class="dashboard-card">
-                    <div class="dashboard-card-header">
-                        <div>
-                            <h3 class="dashboard-card-title">
-                                <span class="section-icon info"><i class="fas fa-box"></i></span>
-                                Lotes generados
-                            </h3>
-                            <span class="dashboard-card-subtitle">Lotes creados y pendientes de iniciar</span>
+                <div class="card-body p-0">
+                    @if ($lotesGenerados->count() == 0)
+                        <div class="empty-state">
+                            <div class="empty-icon"><i class="fas fa-box-open"></i></div>
+                            <h5>No hay lotes pendientes</h5>
+                            <p>Los nuevos lotes generados aparecerán aquí.</p>
                         </div>
-                        <div class="header-actions">
-                            <span class="status-counter"><i class="fas fa-box"></i> {{ $lotesGenerados->count() }}
-                                lotes</span>
-                        </div>
-                    </div>
-                    <div class="card-body p-0">
-                        @if ($lotesGenerados->count() == 0)
-                            <div class="empty-state">
-                                <div class="empty-icon"><i class="fas fa-box-open"></i></div>
-                                <h5>No hay lotes pendientes</h5>
-                                <p>Los nuevos lotes generados aparecerán aquí.</p>
-                            </div>
-                        @else
-                            <div class="table-responsive">
-                                <table class="table table-hover">
-                                    <thead>
+                    @else
+                        <div class="table-responsive">
+                            <table class="table table-hover">
+                                <thead>
+                                    <tr>
+                                        <th>Lote</th>
+                                        <th>Fecha generación</th>
+                                        <th class="text-center">Movimientos</th>
+                                        <th class="text-center">Estado</th>
+                                        <th class="text-center">Acciones</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach ($lotesGenerados as $lote)
                                         <tr>
-                                            <th>Lote</th>
-                                            <th>Fecha generación</th>
-                                            <th class="text-center">Movimientos</th>
-                                            <th class="text-center">Estado</th>
-                                            <th class="text-center">Acciones</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        @foreach ($lotesGenerados as $lote)
-                                            <tr>
-                                                <td>
-                                                    <strong class="product-code">
-                                                        LOTE #{{ $lote->id }}
-                                                    </strong>
-                                                </td>
+                                            <td>
+                                                <strong class="product-code">
+                                                    LOTE #{{ $lote->id }}
+                                                </strong>
+                                            </td>
 
-                                                <td>
-                                                    <span class="location-cell">
-                                                        <i class="far fa-calendar-alt"></i>
-                                                        {{ \Carbon\Carbon::parse($lote->fecha_generacion)->format('d/m/Y H:i') }}
-                                                    </span>
-                                                </td>
+                                            <td>
+                                                <span class="location-cell">
+                                                    <i class="far fa-calendar-alt"></i>
+                                                    {{ \Carbon\Carbon::parse($lote->fecha_generacion)->format('d/m/Y H:i') }}
+                                                </span>
+                                            </td>
 
-                                                <td class="text-center">
-                                                    <span class="quantity">
-                                                        {{ $lote->detalles->count() }}
-                                                    </span>
-                                                </td>
+                                            <td class="text-center">
+                                                <span class="quantity">
+                                                    {{ $lote->detalles->count() }}
+                                                </span>
+                                            </td>
 
-                                                <td class="text-center">
-                                                    <span class="status-badge info">
-                                                        <i class="fas fa-box"></i>
-                                                        {{ $lote->estado }}
-                                                    </span>
-                                                </td>
+                                            <td class="text-center">
+                                                <span class="status-badge info">
+                                                    <i class="fas fa-box"></i>
+                                                    {{ $lote->estado }}
+                                                </span>
+                                            </td>
 
-                                                <td>
+                                            <td>
+                                                <div class="action-group">
+
                                                     <div class="action-group">
 
-                                                        <div class="action-group">
-
-                                                            {{-- VER LOTE --}}
-                                                            <a href="{{ route('RedistribucionSugeridas.lote', ['id' => $lote->id]) }}"
-                                                                class="btn btn-continue">
-                                                                <i class="fas fa-eye"></i>
-                                                                Ver lote
-                                                            </a>
-
-                                                            {{-- EXPORTAR PDF --}}
-                                                            <a href="{{ route('RedistribucionSugeridas.lote.pdf', ['id' => $lote->id]) }}"
-                                                                class="btn btn-pdf" target="_blank">
-                                                                <i class="fas fa-file-pdf"></i> PDF
-                                                            </a>
-
-                                                            <a href="{{ route('RedistribucionSugeridas.lote.excel', ['id' => $lote->id]) }}"
-                                                                class="btn btn-success">
-                                                                <i class="fas fa-file-excel"></i> Excel
-                                                            </a>
-
-                                                            {{-- INICIAR --}}
-                                                            @can('redistribucionsugerencia procesarLote')
-                                                                <button type="button" class="btn btn-start"
-                                                                    onclick="iniciarLote({{ $lote->id }})">
-                                                                    <i class="fas fa-play"></i>
-                                                                    Iniciar
-                                                                </button>
-                                                            @endcan
-
-                                                        </div>
-
-                                                    </div>
-                                                </td>
-                                            </tr>
-                                        @endforeach
-                                    </tbody>
-                                </table>
-                                <div class="p-3 d-flex justify-content-end">
-                                    {{ $lotesGenerados->links() }}
-                                </div>
-                            </div>
-                        @endif
-                    </div>
-                </div>
-
-                <div class="dashboard-card">
-                    <div class="dashboard-card-header">
-                        <div>
-                            <h3 class="dashboard-card-title">
-                                <span class="section-icon primary"><i class="fas fa-cogs"></i></span>
-                                Lotes en proceso
-                            </h3>
-                            <span class="dashboard-card-subtitle">Operaciones actualmente en ejecución</span>
-                        </div>
-                        <div class="header-actions">
-                            <span class="status-counter"><i class="fas fa-spinner"></i> {{ $lotesEnProceso->count() }}
-                                activos</span>
-                        </div>
-                    </div>
-                    <div class="card-body p-0">
-                        @if ($lotesEnProceso->count() == 0)
-                            <div class="empty-state">
-                                <div class="empty-icon"><i class="fas fa-check"></i></div>
-                                <h5>No hay lotes en proceso</h5>
-                                <p>No existen operaciones actualmente en ejecución.</p>
-                            </div>
-                        @else
-                            <div class="table-responsive">
-                                <table class="table table-hover">
-                                    <thead>
-                                        <tr>
-                                            <th>Lote</th>
-                                            <th>Fecha generación</th>
-                                            <th class="text-center">Movimientos</th>
-                                            <th class="text-center">Estado</th>
-                                            <th class="text-center">Acciones</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        @foreach ($lotesEnProceso as $lote)
-                                            <tr>
-                                                <td><strong class="product-code">LOTE #{{ $lote->id }}</strong></td>
-                                                <td><span class="location-cell"><i
-                                                            class="far fa-calendar-alt"></i>{{ \Carbon\Carbon::parse($lote->fecha_generacion)->format('d/m/Y H:i') }}</span>
-                                                </td>
-                                                <td class="text-center"><span
-                                                        class="quantity">{{ $lote->detalles->count() }}</span></td>
-                                                <td class="text-center"><span class="status-badge primary"><i
-                                                            class="fas fa-cogs"></i>{{ $lote->estado }}</span></td>
-                                                <td>
-                                                    <div class="action-group">
+                                                        {{-- VER LOTE --}}
                                                         <a href="{{ route('RedistribucionSugeridas.lote', ['id' => $lote->id]) }}"
-                                                            class="btn btn-continue"><i class="fas fa-eye"></i>
-                                                            Ver Lote</a>
-                                                        @can('redistribucionsugerencia finalizarLote')
-                                                            <button type="button" class="btn btn-finish"
-                                                                onclick="finalizarLote({{ $lote->id }})"><i
-                                                                    class="fas fa-check"></i> Finalizar</button>
-                                                        @endcan
-                                                    </div>
-                                                </td>
-                                            </tr>
-                                        @endforeach
-                                    </tbody>
-                                </table>
-                                <div class="p-3 d-flex justify-content-end">
-                                    {{ $lotesEnProceso->links() }}
-                                </div>
-                            </div>
-                        @endif
-                    </div>
-                </div>
+                                                            class="btn btn-continue">
+                                                            <i class="fas fa-eye"></i>
+                                                            Ver lote
+                                                        </a>
 
-                <div class="dashboard-card">
-                    <div class="dashboard-card-header">
-                        <div>
-                            <h3 class="dashboard-card-title">
-                                <span class="section-icon success"><i class="fas fa-check-circle"></i></span>
-                                Lotes finalizados
-                            </h3>
-                            <span class="dashboard-card-subtitle">Historial de operaciones completadas</span>
-                        </div>
-                        <div class="header-actions">
-                            <span class="status-counter"><i class="fas fa-check"></i> {{ $lotesFinalizados->total() }}
-                                completados</span>
-                        </div>
-                    </div>
-                    <div class="card-body p-0">
-                        @if ($lotesFinalizados->isEmpty())
-                            <div class="empty-state">
-                                <div class="empty-icon"><i class="fas fa-history"></i></div>
-                                <h5>Sin historial disponible</h5>
-                                <p>Los lotes finalizados aparecerán en esta sección.</p>
-                            </div>
-                        @else
-                            <div class="table-responsive">
-                                <table class="table table-hover">
-                                    <thead>
-                                        <tr>
-                                            <th>Lote</th>
-                                            <th>Fecha generación</th>
-                                            <th class="text-center">Movimientos</th>
-                                            <th class="text-center">Estado</th>
-                                            <th class="text-center">Acción</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        @foreach ($lotesFinalizados as $lote)
-                                            <tr>
-                                                <td><strong class="product-code">LOTE #{{ $lote->id }}</strong></td>
-                                                <td><span class="location-cell"><i
-                                                            class="far fa-calendar-alt"></i>{{ \Carbon\Carbon::parse($lote->fecha_generacion)->format('d/m/Y H:i') }}</span>
-                                                </td>
-                                                <td class="text-center"><span
-                                                        class="quantity">{{ $lote->detalles->count() }}</span></td>
-                                                <td class="text-center"><span class="status-badge success"><i
-                                                            class="fas fa-check-circle"></i>Finalizado</span></td>
-                                                <td>
-                                                    <div class="action-group">
-                                                        <a href="{{ route('RedistribucionSugeridas.lote', ['id' => $lote->id]) }}"
-                                                            class="btn btn-primary"><i class="fas fa-eye"></i> Ver</a>
+                                                        {{-- EXPORTAR PDF --}}
                                                         <a href="{{ route('RedistribucionSugeridas.lote.pdf', ['id' => $lote->id]) }}"
                                                             class="btn btn-pdf" target="_blank">
                                                             <i class="fas fa-file-pdf"></i> PDF
@@ -1944,22 +1904,195 @@
                                                             class="btn btn-success">
                                                             <i class="fas fa-file-excel"></i> Excel
                                                         </a>
+
+                                                        {{-- INICIAR --}}
+                                                        @can('redistribucionsugerencia procesarLote')
+                                                            <button type="button" class="btn btn-start"
+                                                                onclick="iniciarLote({{ $lote->id }})">
+                                                                <i class="fas fa-play"></i>
+                                                                Iniciar
+                                                            </button>
+                                                        @endcan
+
                                                     </div>
-                                                </td>
-                                            </tr>
-                                        @endforeach
-                                    </tbody>
-                                </table>
-                                <div class="p-3 d-flex justify-content-end">
-                                    {{ $lotesFinalizados->links() }}
-                                </div>
+
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    @endforeach
+                                </tbody>
+                            </table>
+                            <div class="p-3 d-flex justify-content-end">
+                                {{ $lotesGenerados->links() }}
                             </div>
-                        @endif
-                    </div>
+                        </div>
+                    @endif
                 </div>
             </div>
-        </section>
-    </div>
+
+            <div class="dashboard-card">
+                <div class="dashboard-card-header">
+                    <div>
+                        <h3 class="dashboard-card-title">
+                            <span class="section-icon primary"><i class="fas fa-cogs"></i></span>
+                            Lotes en proceso
+                        </h3>
+                        <span class="dashboard-card-subtitle">Operaciones actualmente en ejecución</span>
+                    </div>
+                    <div class="header-actions">
+                        <span class="status-counter"><i class="fas fa-spinner"></i> {{ $lotesEnProceso->count() }}
+                            activos</span>
+                    </div>
+                </div>
+                <div class="card-body p-0">
+                    @if ($lotesEnProceso->count() == 0)
+                        <div class="empty-state">
+                            <div class="empty-icon"><i class="fas fa-check"></i></div>
+                            <h5>No hay lotes en proceso</h5>
+                            <p>No existen operaciones actualmente en ejecución.</p>
+                        </div>
+                    @else
+                        <div class="table-responsive">
+                            <table class="table table-hover">
+                                <thead>
+                                    <tr>
+                                        <th>Lote</th>
+                                        <th>Fecha generación</th>
+                                        <th class="text-center">Movimientos</th>
+                                        <th class="text-center">Estado</th>
+                                        <th class="text-center">Acciones</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach ($lotesEnProceso as $lote)
+                                        <tr>
+                                            <td><strong class="product-code">LOTE #{{ $lote->id }}</strong></td>
+                                            <td><span class="location-cell"><i
+                                                        class="far fa-calendar-alt"></i>{{ \Carbon\Carbon::parse($lote->fecha_generacion)->format('d/m/Y H:i') }}</span>
+                                            </td>
+                                            <td class="text-center"><span
+                                                    class="quantity">{{ $lote->detalles->count() }}</span></td>
+                                            <td class="text-center"><span class="status-badge primary"><i
+                                                        class="fas fa-cogs"></i>{{ $lote->estado }}</span></td>
+                                            <td>
+                                                <div class="action-group">
+                                                    <div class="action-group">
+                                                        <a href="{{ route('RedistribucionSugeridas.lote', ['id' => $lote->id]) }}"
+                                                            class="btn btn-continue"><i class="fas fa-eye"></i>
+                                                            Ver Lote</a>
+                                                        {{-- EXPORTAR PDF --}}
+                                                        <a href="{{ route('RedistribucionSugeridas.lote.pdf', ['id' => $lote->id]) }}"
+                                                            class="btn btn-pdf" target="_blank">
+                                                            <i class="fas fa-file-pdf"></i> PDF
+                                                        </a>
+
+                                                        <a href="{{ route('RedistribucionSugeridas.lote.excel', ['id' => $lote->id]) }}"
+                                                            class="btn btn-success">
+                                                            <i class="fas fa-file-excel"></i> Excel
+                                                        </a>
+                                                        @can('redistribucionsugerencia finalizarLote')
+                                                            <button type="button" class="btn btn-finish"
+                                                                onclick="finalizarLote({{ $lote->id }})"><i
+                                                                    class="fas fa-check"></i> Finalizar</button>
+                                                        @endcan
+                                                    </div>
+                                            </td>
+                                        </tr>
+                                    @endforeach
+                                </tbody>
+                            </table>
+                            <div class="p-3 d-flex justify-content-end">
+                                {{ $lotesEnProceso->links() }}
+                            </div>
+                        </div>
+                    @endif
+                </div>
+            </div>
+
+            <div class="dashboard-card">
+                <div class="dashboard-card-header">
+                    <div>
+                        <h3 class="dashboard-card-title">
+                            <span class="section-icon success"><i class="fas fa-check-circle"></i></span>
+                            Lotes finalizados
+                        </h3>
+                        <span class="dashboard-card-subtitle">Historial de operaciones completadas</span>
+                    </div>
+                    <div class="header-actions">
+                        <span class="status-counter"><i class="fas fa-check"></i> {{ $lotesFinalizados->total() }}
+                            completados</span>
+                    </div>
+                </div>
+                <div class="card-body p-0">
+                    @if ($lotesFinalizados->isEmpty())
+                        <div class="empty-state">
+                            <div class="empty-icon"><i class="fas fa-history"></i></div>
+                            <h5>Sin historial disponible</h5>
+                            <p>Los lotes finalizados aparecerán en esta sección.</p>
+                        </div>
+                    @else
+                        <div class="table-responsive">
+                            <table class="table table-hover">
+                                <thead>
+                                    <tr>
+                                        <th>Lote</th>
+                                        <th>Fecha generación</th>
+                                        <th class="text-center">Movimientos</th>
+                                        <th class="text-center">Estado</th>
+                                        <th class="text-center">Acción</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach ($lotesFinalizados as $lote)
+                                        <tr>
+                                            <td>
+                                                <div class="action-group">
+
+                                                    {{-- VER LOTE --}}
+                                                    <a href="{{ route('RedistribucionSugeridas.lote', ['id' => $lote->id]) }}"
+                                                        class="btn btn-continue">
+                                                        <i class="fas fa-eye"></i>
+                                                        Ver lote
+                                                    </a>
+
+                                                    {{-- EXPORTAR PDF --}}
+                                                    <a href="{{ route('RedistribucionSugeridas.lote.pdf', ['id' => $lote->id]) }}"
+                                                        class="btn btn-pdf" target="_blank">
+                                                        <i class="fas fa-file-pdf"></i>
+                                                        PDF
+                                                    </a>
+
+                                                    {{-- EXPORTAR EXCEL --}}
+                                                    <a href="{{ route('RedistribucionSugeridas.lote.excel', ['id' => $lote->id]) }}"
+                                                        class="btn btn-success">
+                                                        <i class="fas fa-file-excel"></i>
+                                                        Excel
+                                                    </a>
+
+                                                    {{-- INICIAR --}}
+                                                    @can('redistribucionsugerencia procesarLote')
+                                                        <button type="button" class="btn btn-start"
+                                                            onclick="iniciarLote({{ $lote->id }})">
+                                                            <i class="fas fa-play"></i>
+                                                            Iniciar
+                                                        </button>
+                                                    @endcan
+
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    @endforeach
+                                </tbody>
+                            </table>
+                            <div class="p-3 d-flex justify-content-end">
+                                {{ $lotesFinalizados->links() }}
+                            </div>
+                        </div>
+                    @endif
+                </div>
+            </div>
+        </div>
+    </section>
 
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 

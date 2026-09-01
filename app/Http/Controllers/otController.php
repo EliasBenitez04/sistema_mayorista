@@ -10,6 +10,7 @@ use Maatwebsite\Excel\Facades\Excel;
 use Carbon\Carbon;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
+use App\Exports\OtLogisticaExport;
 
 class OtController extends Controller
 {
@@ -2560,6 +2561,621 @@ class OtController extends Controller
 
                 'fechaHasta'
             )
+        );
+    }
+
+    public function dashboardlogistica(Request $request)
+    {
+        /*
+    |--------------------------------------------------------------------------
+    | QUERY BASE
+    |--------------------------------------------------------------------------
+    |
+    | Relación:
+    |
+    | ot_logistica_detalle
+    |        ↓
+    | ot_trazabilidad
+    |        ↓
+    | ot
+    |
+    | IMPORTANTE:
+    |
+    | La fecha oficial para este dashboard es:
+    |
+    |     t.fecha_proceso
+    |
+    | NO usamos d.created_at para los filtros de fecha.
+    |
+    | Ejemplo:
+    |
+    | OT 30100
+    |
+    | 27/08/2026 -> trazabilidad A -> 279 prendas
+    | 28/08/2026 -> trazabilidad B -> 1 prenda
+    |
+    | El dashboard debe conservar ambos registros.
+    |
+    */
+
+        $baseQuery = DB::table('ot_logistica_detalle as d')
+
+            ->leftJoin(
+                'ot_trazabilidad as t',
+                't.id_trazabilidad',
+                '=',
+                'd.id_trazabilidad'
+            )
+
+            ->leftJoin(
+                'ot as o',
+                'o.id_ot',
+                '=',
+                'd.id_ot'
+            );
+
+
+        /*
+    |--------------------------------------------------------------------------
+    | FILTRO FECHA DESDE
+    |--------------------------------------------------------------------------
+    |
+    | La fecha corresponde a la trazabilidad/importación:
+    | t.fecha_proceso
+    |
+    */
+
+        if ($request->filled('fecha_desde')) {
+
+            $baseQuery->whereDate(
+                't.fecha_proceso',
+                '>=',
+                $request->fecha_desde
+            );
+        }
+
+
+        /*
+    |--------------------------------------------------------------------------
+    | FILTRO FECHA HASTA
+    |--------------------------------------------------------------------------
+    */
+
+        if ($request->filled('fecha_hasta')) {
+
+            $baseQuery->whereDate(
+                't.fecha_proceso',
+                '<=',
+                $request->fecha_hasta
+            );
+        }
+
+
+        /*
+    |--------------------------------------------------------------------------
+    | FILTRO SUCURSAL
+    |--------------------------------------------------------------------------
+    */
+
+        if ($request->filled('sucursal')) {
+
+            $sucursalesSeleccionadas = $request->input('sucursal', []);
+
+            $baseQuery->whereIn(
+                'd.sucursal',
+                $sucursalesSeleccionadas
+            );
+        }
+
+
+        /*
+    |--------------------------------------------------------------------------
+    | FILTRO N° OT
+    |--------------------------------------------------------------------------
+    */
+
+        if ($request->filled('busqueda')) {
+
+            $busqueda = trim($request->busqueda);
+
+            if (!ctype_digit($busqueda)) {
+
+                alert()->warning(
+                    'Dato inválido',
+                    'Ingrese solo números en el campo N° OT.'
+                );
+
+                return redirect()
+                    ->back()
+                    ->withInput();
+            }
+
+            if ((int) $busqueda > 2147483647) {
+
+                alert()->warning(
+                    'N° OT / Código inválido',
+                    'El número ingresado es demasiado grande.'
+                );
+
+                return redirect()
+                    ->back()
+                    ->withInput();
+            }
+
+            $baseQuery->where(
+                'o.nro_ot',
+                (int) $busqueda
+            );
+        }
+
+
+        /*
+    |--------------------------------------------------------------------------
+    | DETALLE
+    |--------------------------------------------------------------------------
+    |
+    | Orden:
+    |
+    | 1. Fecha de proceso DESC
+    | 2. N° OT ASC
+    | 3. Código ASC
+    | 4. Sucursal ASC
+    | 5. ID trazabilidad DESC
+    | 6. ID detalle DESC
+    |
+    | El ID de trazabilidad es importante porque permite distinguir
+    | diferentes envíos/importaciones de la misma OT.
+    |
+    */
+
+        $detalles = (clone $baseQuery)
+
+            ->select([
+                'd.id',
+                'd.id_ot',
+                'd.id_trazabilidad',
+                'd.sucursal',
+                'd.cantidad',
+                'd.created_at',
+
+                't.proceso',
+                't.resultado',
+                't.fecha_proceso',
+
+                'o.nro_ot',
+                'o.codigo',
+                'o.descripcion',
+                'o.cantidad_orden',
+                'o.estado',
+                'o.obs',
+            ])
+
+            /*
+        |--------------------------------------------------------------------------
+        | FECHA DE PROCESO
+        |--------------------------------------------------------------------------
+        */
+
+            ->orderByRaw(
+                't.fecha_proceso IS NULL ASC'
+            )
+
+            ->orderByDesc(
+                't.fecha_proceso'
+            )
+
+            /*
+        |--------------------------------------------------------------------------
+        | OT
+        |--------------------------------------------------------------------------
+        */
+
+            ->orderBy(
+                'o.nro_ot',
+                'asc'
+            )
+
+            /*
+        |--------------------------------------------------------------------------
+        | CÓDIGO
+        |--------------------------------------------------------------------------
+        */
+
+            ->orderBy(
+                'o.codigo',
+                'asc'
+            )
+
+            /*
+        |--------------------------------------------------------------------------
+        | SUCURSAL
+        |--------------------------------------------------------------------------
+        */
+
+            ->orderBy(
+                'd.sucursal',
+                'asc'
+            )
+
+            /*
+        |--------------------------------------------------------------------------
+        | TRAZABILIDAD
+        |--------------------------------------------------------------------------
+        |
+        | Esto ayuda a mantener juntos los registros pertenecientes
+        | a una misma importación/proceso.
+        |
+        */
+
+            ->orderByDesc(
+                'd.id_trazabilidad'
+            )
+
+            /*
+        |--------------------------------------------------------------------------
+        | ID DETALLE
+        |--------------------------------------------------------------------------
+        */
+
+            ->orderByDesc(
+                'd.id'
+            )
+
+            ->paginate(30)
+
+            ->withQueryString();
+
+
+        /*
+    |--------------------------------------------------------------------------
+    | TOTAL REGISTROS
+    |--------------------------------------------------------------------------
+    */
+
+        $totalRegistros = (clone $baseQuery)
+            ->count('d.id');
+
+
+        /*
+    |--------------------------------------------------------------------------
+    | TOTAL OT
+    |--------------------------------------------------------------------------
+    |
+    | Una OT puede tener varias trazabilidades.
+    |
+    | Ejemplo:
+    |
+    | OT 30100
+    |   27/08 -> trazabilidad 500
+    |   28/08 -> trazabilidad 501
+    |
+    | Sigue siendo UNA sola OT.
+    |
+    */
+
+        $totalOT = (clone $baseQuery)
+            ->distinct()
+            ->count('d.id_ot');
+
+
+        /*
+    |--------------------------------------------------------------------------
+    | TOTAL CANTIDAD
+    |--------------------------------------------------------------------------
+    |
+    | Suma todos los detalles que cumplen los filtros.
+    |
+    | Ejemplo:
+    |
+    | 27/08 -> 279
+    | 28/08 -> 1
+    |
+    | Total -> 280
+    |
+    */
+
+        $totalCantidad = (clone $baseQuery)
+            ->sum('d.cantidad');
+
+
+        /*
+    |--------------------------------------------------------------------------
+    | TOTAL SUCURSALES
+    |--------------------------------------------------------------------------
+    */
+
+        $totalSucursales = (clone $baseQuery)
+
+            ->whereNotNull(
+                'd.sucursal'
+            )
+
+            ->where(
+                'd.sucursal',
+                '<>',
+                ''
+            )
+
+            ->distinct()
+
+            ->count(
+                'd.sucursal'
+            );
+
+
+        /*
+    |--------------------------------------------------------------------------
+    | INFORMACIÓN DE HOY
+    |--------------------------------------------------------------------------
+    |
+    | HOY se determina mediante t.fecha_proceso.
+    |
+    */
+
+        $hoyQuery = clone $baseQuery;
+
+        $hoyQuery->whereDate(
+            't.fecha_proceso',
+            now()->toDateString()
+        );
+
+
+        /*
+    |--------------------------------------------------------------------------
+    | CANTIDAD DE HOY
+    |--------------------------------------------------------------------------
+    */
+
+        $cantidadHoy = (clone $hoyQuery)
+            ->sum('d.cantidad');
+
+
+        /*
+    |--------------------------------------------------------------------------
+    | OTs DE HOY
+    |--------------------------------------------------------------------------
+    */
+
+        $otHoy = (clone $hoyQuery)
+            ->distinct()
+            ->count('d.id_ot');
+
+
+        /*
+    |--------------------------------------------------------------------------
+    | REGISTROS DE HOY
+    |--------------------------------------------------------------------------
+    */
+
+        $registrosHoy = (clone $hoyQuery)
+            ->count('d.id');
+
+
+        /*
+    |--------------------------------------------------------------------------
+    | RESUMEN POR FECHA
+    |--------------------------------------------------------------------------
+    |
+    | USAMOS t.fecha_proceso.
+    |
+    | Esto significa:
+    |
+    | 27/08/2026 -> 279
+    | 28/08/2026 -> 1
+    |
+    | NO se mezclan por la fecha de created_at.
+    |
+    */
+
+        $porFecha = (clone $baseQuery)
+
+            ->select([
+                DB::raw(
+                    'DATE(t.fecha_proceso) as fecha_proceso'
+                ),
+
+                /*
+            |--------------------------------------------------------------------------
+            | OTs diferentes de ese día
+            |--------------------------------------------------------------------------
+            */
+
+                DB::raw(
+                    'COUNT(DISTINCT d.id_ot) as total_ot'
+                ),
+
+                /*
+            |--------------------------------------------------------------------------
+            | Registros de ese día
+            |--------------------------------------------------------------------------
+            */
+
+                DB::raw(
+                    'COUNT(d.id) as total_registros'
+                ),
+
+                /*
+            |--------------------------------------------------------------------------
+            | Cantidad de ese día
+            |--------------------------------------------------------------------------
+            */
+
+                DB::raw(
+                    'COALESCE(SUM(d.cantidad), 0) as total_cantidad'
+                ),
+            ])
+
+            ->whereNotNull(
+                't.fecha_proceso'
+            )
+
+            ->groupBy(
+                DB::raw(
+                    'DATE(t.fecha_proceso)'
+                )
+            )
+
+            ->orderByDesc(
+                DB::raw(
+                    'DATE(t.fecha_proceso)'
+                )
+            )
+
+            ->get();
+
+
+        /*
+    |--------------------------------------------------------------------------
+    | RESUMEN POR SUCURSAL
+    |--------------------------------------------------------------------------
+    |
+    | Respeta los filtros de fecha, OT y sucursal.
+    |
+    */
+
+        $porSucursal = (clone $baseQuery)
+
+            ->select([
+                'd.sucursal',
+
+                DB::raw('COUNT(DISTINCT o.nro_ot) as total_ot'),
+
+                DB::raw('COUNT(d.id) as total_registros'),
+
+                DB::raw('COALESCE(SUM(d.cantidad), 0) as total_cantidad'),
+            ])
+
+            ->whereNotNull('d.sucursal')
+
+            ->where('d.sucursal', '<>', '')
+
+            ->groupBy('d.sucursal')
+
+            ->orderByDesc('total_cantidad')
+
+            ->get();
+
+
+        /*
+    |--------------------------------------------------------------------------
+    | PROMEDIO DE CANTIDAD POR OT
+    |--------------------------------------------------------------------------
+    */
+
+        $promedioCantidadOT = $totalOT > 0
+
+            ? round(
+                $totalCantidad / $totalOT,
+                2
+            )
+
+            : 0;
+
+
+        /*
+    |--------------------------------------------------------------------------
+    | SUCURSALES PARA SELECT2
+    |--------------------------------------------------------------------------
+    |
+    | Obtenemos todas las sucursales disponibles.
+    |
+    */
+
+        $sucursales = DB::table(
+            'ot_logistica_detalle'
+        )
+
+            ->select(
+                'sucursal'
+            )
+
+            ->whereNotNull(
+                'sucursal'
+            )
+
+            ->where(
+                'sucursal',
+                '<>',
+                ''
+            )
+
+            ->distinct()
+
+            ->orderBy(
+                'sucursal'
+            )
+
+            ->pluck(
+                'sucursal'
+            );
+
+
+        /*
+    |--------------------------------------------------------------------------
+    | RETORNAR VISTA
+    |--------------------------------------------------------------------------
+    */
+
+        return view(
+            'dashboard.ot-logistica',
+            compact(
+                'detalles',
+
+                'totalRegistros',
+                'totalOT',
+                'totalCantidad',
+                'totalSucursales',
+
+                'cantidadHoy',
+                'otHoy',
+                'registrosHoy',
+
+                'promedioCantidadOT',
+
+                'porFecha',
+                'porSucursal',
+
+                'sucursales'
+            )
+        );
+    }
+
+
+    /**
+     * ============================================================
+     * EXPORTAR DASHBOARD LOGÍSTICA
+     * ============================================================
+     */
+    public function exportarDashboardLogistica(Request $request)
+    {
+        /*
+    |--------------------------------------------------------------------------
+    | NOMBRE DEL ARCHIVO
+    |--------------------------------------------------------------------------
+    */
+
+        $nombreArchivo =
+            'OT_Logistica_' .
+            now()->format('Ymd_His') .
+            '.xlsx';
+
+
+        /*
+    |--------------------------------------------------------------------------
+    | EXPORTAR
+    |--------------------------------------------------------------------------
+    */
+
+        return Excel::download(
+
+            new OtLogisticaExport(
+                $request->fecha_desde,
+                $request->fecha_hasta,
+                $request->sucursal,
+                $request->nro_ot
+            ),
+
+            $nombreArchivo
         );
     }
 }

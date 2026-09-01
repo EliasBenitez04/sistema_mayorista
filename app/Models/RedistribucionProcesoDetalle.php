@@ -22,10 +22,14 @@ class RedistribucionProcesoDetalle extends Model
         'estado',
         'observacion',
         'fecha',
+        'fecha_remision',
+        'fecha_recepcion',
     ];
 
     protected $casts = [
         'fecha' => 'datetime',
+        'fecha_remision' => 'datetime',
+        'fecha_recepcion' => 'datetime',
         'cantidad' => 'integer',
         'sucursal_origen' => 'integer',
         'sucursal_destino' => 'integer',
@@ -62,6 +66,14 @@ class RedistribucionProcesoDetalle extends Model
         return $this->belongsTo(
             RedistribucionLote::class,
             'lote_id'
+        );
+    }
+
+    public function remisiones()
+    {
+        return $this->hasMany(
+            RedistribucionRemision::class,
+            'detalle_id'
         );
     }
 }

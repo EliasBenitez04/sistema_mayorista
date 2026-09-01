@@ -770,3 +770,20 @@ Route::get(
     '/dashboard/ot-analisis',
     [OtController::class, 'dashboardOT']
 )->name('dashboard.otAnalisis');
+
+
+
+Route::post(
+    '/redistribucion-sugeridas/importar-remisiones',
+    [RedistribucionSugeridaController::class, 'importarRemisiones']
+)->name('RedistribucionSugeridas.importarRemisiones');
+
+Route::get(
+    '/dashboard/ot-logistica',
+    [OtController::class, 'dashboardlogistica']
+)->name('dashboard.ot-logistica');
+
+Route::get(
+    '/dashboard/logistica/exportar',
+    [OtController::class, 'exportarDashboardLogistica']
+)->name('dashboard.logistica.exportar');

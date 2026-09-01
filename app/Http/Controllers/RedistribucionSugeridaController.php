@@ -13,6 +13,7 @@ use Illuminate\Support\Facades\Log;
 use Barryvdh\DomPDF\Facade\Pdf;
 use App\Exports\LoteRedistribucionExport;
 use Maatwebsite\Excel\Facades\Excel;
+use App\Imports\RedistribucionRemisionImport;
 
 class RedistribucionSugeridaController extends Controller
 {
@@ -44,6 +45,7 @@ class RedistribucionSugeridaController extends Controller
                 'rechazar',
                 'procesarLote',
                 'finalizarLote',
+                'importarRemisiones',
             ]);
     }
 
@@ -130,18 +132,6 @@ class RedistribucionSugeridaController extends Controller
         );
     }
 
-
-    /*
-    |--------------------------------------------------------------------------
-    | ANALIZAR REDISTRIBUCIÓN
-    |--------------------------------------------------------------------------
-    */
-
-    /**
-     * =========================================================
-     * ANALIZAR REDISTRIBUCIÓN
-     * =========================================================
-     */
     /**
      * =========================================================
      * ANALIZAR REDISTRIBUCIÓN
@@ -779,7 +769,6 @@ class RedistribucionSugeridaController extends Controller
                 );
         }
     }
-
 
     /*
     |--------------------------------------------------------------------------
@@ -1919,36 +1908,10 @@ class RedistribucionSugeridaController extends Controller
     {
         try {
 
-            /*
-         * ============================================================
-         * OBTENER LOTE
-         * ============================================================
-         *
-         * Cargamos:
-         *
-         * lote
-         *   └── detalles
-         *         ├── origen
-         *         └── destino
-         */
-
             $lote = RedistribucionLote::with([
                 'detalles.origen',
                 'detalles.destino'
             ])->findOrFail($id);
-
-
-            /*
-         * ============================================================
-         * ORDENAR DETALLES
-         * ============================================================
-         *
-         * Primero:
-         *     Sucursal Origen
-         *
-         * Después:
-         *     Código
-         */
 
             $lote->setRelation(
                 'detalles',
@@ -1956,43 +1919,33 @@ class RedistribucionSugeridaController extends Controller
                     ->sortBy(function ($detalle) {
 
                         return [
-                            // 1. ORIGEN
                             strtoupper(
-                                trim($detalle->origen->suc_descri ?? '')
+                                trim(
+                                    $detalle->origen->suc_descri ?? ''
+                                )
                             ),
 
-                            // 2. DESTINO
                             strtoupper(
-                                trim($detalle->destino->suc_descri ?? '')
+                                trim(
+                                    $detalle->destino->suc_descri ?? ''
+                                )
                             ),
 
-                            // 3. CÓDIGO
                             strtoupper(
-                                trim($detalle->codigo ?? '')
+                                trim(
+                                    $detalle->codigo ?? ''
+                                )
                             )
                         ];
                     })
                     ->values()
             );
 
-
-            /*
-         * ============================================================
-         * EXPORTAR EXCEL
-         * ============================================================
-         */
-
             return Excel::download(
                 new LoteRedistribucionExport($lote),
                 'Lote-' . $lote->numero_lote . '.xlsx'
             );
         } catch (\Exception $e) {
-
-            /*
-         * ============================================================
-         * REGISTRAR ERROR
-         * ============================================================
-         */
 
             Log::error(
                 'Error exportando lote a Excel',
@@ -2003,13 +1956,6 @@ class RedistribucionSugeridaController extends Controller
                     'file'    => $e->getFile()
                 ]
             );
-
-
-            /*
-         * ============================================================
-         * VOLVER CON ERROR
-         * ============================================================
-         */
 
             return back()->with(
                 'error',
@@ -2073,5 +2019,37 @@ class RedistribucionSugeridaController extends Controller
             'success',
             'Sugerencia eliminada correctamente.'
         );
+    }
+
+    public function importarRemisiones(Request $request)
+    {
+        $request->validate([
+            'archivo' => 'required|file|mimes:xlsx,xls',
+        ]);
+
+        try {
+
+            Excel::import(
+                new RedistribucionRemisionImport(),
+                $request->file('archivo')
+            );
+
+            return back()->with(
+                'success',
+                'Las redistribuciones coincidentes fueron actualizadas automáticamente.'
+            );
+        } catch (\Exception $e) {
+
+            Log::error('ERROR IMPORTANDO REMISIONES', [
+                'error' => $e->getMessage(),
+                'line' => $e->getLine(),
+                'file' => $e->getFile(),
+            ]);
+
+            return back()->with(
+                'error',
+                'Error al importar el archivo: ' . $e->getMessage()
+            );
+        }
     }
 }

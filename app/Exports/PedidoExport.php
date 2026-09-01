@@ -4,9 +4,12 @@ namespace App\Exports;
 
 use Illuminate\Support\Facades\DB;
 use Maatwebsite\Excel\Concerns\FromArray;
+use Maatwebsite\Excel\Concerns\ShouldAutoSize;
 use Maatwebsite\Excel\Concerns\WithHeadings;
+use Maatwebsite\Excel\Concerns\WithMultipleSheets;
+use Maatwebsite\Excel\Concerns\WithTitle;
 
-class PedidoExport implements FromArray, WithHeadings
+class PedidoExport implements WithMultipleSheets
 {
     protected $id_pedido;
 
@@ -14,11 +17,6 @@ class PedidoExport implements FromArray, WithHeadings
     |--------------------------------------------------------------------------
     | SUCURSALES PRIORITARIAS
     |--------------------------------------------------------------------------
-    |
-    | Orden en el que se buscan las sucursales.
-    |
-    | 14 -> 8 -> 2 -> 9 -> 5 -> 1
-    |
     */
 
     protected $sucursalesPrioritarias = [
@@ -30,26 +28,96 @@ class PedidoExport implements FromArray, WithHeadings
         1,
     ];
 
+    /*
+    |--------------------------------------------------------------------------
+    | MÁXIMO DE SUCURSALES POR ARTÍCULO
+    |--------------------------------------------------------------------------
+    */
+
+    protected $maxSugerencias = 5;
+
+    /*
+    |--------------------------------------------------------------------------
+    | PEDIDOS AGRUPADOS POR SUCURSAL
+    |--------------------------------------------------------------------------
+    */
+
+    protected $pedidosPorSucursal = [];
+
+    /*
+    |--------------------------------------------------------------------------
+    | CONSTRUCTOR
+    |--------------------------------------------------------------------------
+    */
+
     public function __construct($id_pedido)
     {
         $this->id_pedido = $id_pedido;
     }
 
-    public function headings(): array
+    /*
+    |--------------------------------------------------------------------------
+    | HOJAS DEL EXCEL
+    |--------------------------------------------------------------------------
+    */
+
+    public function sheets(): array
     {
-        return [
-            'N° Pedido',
-            'Código Artículo',
-            'Descripción',
-            'Cantidad',
-            'Local',
-            'Motivo'
-        ];
+        /*
+        |--------------------------------------------------------------------------
+        | PROCESAR PEDIDO
+        |--------------------------------------------------------------------------
+        */
+
+        $resultado = $this->procesarPedido();
+
+        $sheets = [];
+
+        /*
+        |--------------------------------------------------------------------------
+        | PRIMERA HOJA: RESUMEN
+        |--------------------------------------------------------------------------
+        */
+
+        $sheets[] = new PedidoResumenSheet(
+            $resultado['resumen']
+        );
+
+        /*
+        |--------------------------------------------------------------------------
+        | HOJAS DE CADA SUCURSAL
+        |--------------------------------------------------------------------------
+        */
+
+        foreach (
+            $this->pedidosPorSucursal
+            as $codigoSucursal => $sucursal
+        ) {
+
+            $sheets[] = new PedidoSucursalSheet(
+                $sucursal['nombre'],
+                $sucursal['items']
+            );
+        }
+
+        return $sheets;
     }
 
-    public function array(): array
+    /*
+    |--------------------------------------------------------------------------
+    | PROCESAR PEDIDO
+    |--------------------------------------------------------------------------
+    */
+
+    protected function procesarPedido(): array
     {
-        $data = DB::table('detalle_pedido as d')
+        /*
+        |--------------------------------------------------------------------------
+        | OBTENER DETALLE DEL PEDIDO
+        |--------------------------------------------------------------------------
+        */
+
+        $items = DB::table('detalle_pedido as d')
             ->join(
                 'pedido_compras as p',
                 'p.id_pedido',
@@ -62,7 +130,10 @@ class PedidoExport implements FromArray, WithHeadings
                 '=',
                 'd.id_articulo'
             )
-            ->where('p.id_pedido', $this->id_pedido)
+            ->where(
+                'p.id_pedido',
+                $this->id_pedido
+            )
             ->select(
                 'p.nro_pedido',
                 'p.cod_suc',
@@ -72,375 +143,735 @@ class PedidoExport implements FromArray, WithHeadings
             )
             ->get();
 
-        return $data->map(function ($item) {
+        /*
+        |--------------------------------------------------------------------------
+        | RESUMEN
+        |--------------------------------------------------------------------------
+        */
 
-            $cantidadSolicitada = (float) $item->det_cantidad;
+        $resumen = [];
+
+        /*
+        |--------------------------------------------------------------------------
+        | PROCESAR CADA ARTÍCULO
+        |--------------------------------------------------------------------------
+        */
+
+        foreach ($items as $item) {
+
+            $cantidadSolicitada =
+                (int) $item->det_cantidad;
 
             /*
             |--------------------------------------------------------------------------
-            | TRAER TODO EL STOCK DEL ARTÍCULO
+            | OBTENER STOCK
             |--------------------------------------------------------------------------
             */
 
             $stocks = DB::table('stock_sucursales')
-                ->where('codigo', $item->art_codigo)
-                ->where('cantidad', '>', 0)
+                ->where(
+                    'codigo',
+                    $item->art_codigo
+                )
+                ->where(
+                    'cantidad',
+                    '>',
+                    0
+                )
                 ->get();
 
             /*
             |--------------------------------------------------------------------------
-            | NO HAY STOCK
+            | SIN STOCK
             |--------------------------------------------------------------------------
             */
 
             if ($stocks->isEmpty()) {
-                return [
+
+                $resumen[] = [
+
+                    'nro_pedido' =>
                     $item->nro_pedido,
+
+                    'codigo' =>
                     $item->art_codigo,
+
+                    'articulo' =>
                     $item->art_descripcion,
-                    $item->det_cantidad,
+
+                    'necesita' =>
+                    $cantidadSolicitada,
+
+                    'total_retirar' =>
+                    0,
+
+                    'pendiente' =>
+                    $cantidadSolicitada,
+
+                    'situacion' =>
                     'SIN STOCK',
-                    'No hay stock disponible en ninguna sucursal.'
+
+                    'observacion' =>
+                    'No hay unidades disponibles.',
+                ];
+
+                continue;
+            }
+
+            /*
+            |--------------------------------------------------------------------------
+            | PROCESAR STOCK
+            |--------------------------------------------------------------------------
+            */
+
+            $stocksProcesados = $stocks
+                ->map(function ($stock) {
+
+                    /*
+                    |--------------------------------------------------------------------------
+                    | EXTRAER CÓDIGO DE SUCURSAL
+                    |--------------------------------------------------------------------------
+                    */
+
+                    preg_match(
+                        '/Sucursal:\s*([0-9]+)/',
+                        $stock->sucursal ?? '',
+                        $matches
+                    );
+
+                    $stock->codigo_sucursal =
+                        isset($matches[1])
+                        ? (int) $matches[1]
+                        : null;
+
+                    $stock->cantidad =
+                        (int) $stock->cantidad;
+
+                    return $stock;
+                })
+                ->filter(function ($stock) {
+
+                    return
+                        $stock->codigo_sucursal !== null &&
+                        $stock->cantidad > 0;
+                })
+                ->values();
+
+            /*
+            |--------------------------------------------------------------------------
+            | NO HAY STOCK VÁLIDO
+            |--------------------------------------------------------------------------
+            */
+
+            if ($stocksProcesados->isEmpty()) {
+
+                $resumen[] = [
+
+                    'nro_pedido' =>
+                    $item->nro_pedido,
+
+                    'codigo' =>
+                    $item->art_codigo,
+
+                    'articulo' =>
+                    $item->art_descripcion,
+
+                    'necesita' =>
+                    $cantidadSolicitada,
+
+                    'total_retirar' =>
+                    0,
+
+                    'pendiente' =>
+                    $cantidadSolicitada,
+
+                    'situacion' =>
+                    'SIN STOCK',
+
+                    'observacion' =>
+                    'No se pudo identificar la sucursal.',
+                ];
+
+                continue;
+            }
+
+            /*
+            |--------------------------------------------------------------------------
+            | SUCURSALES PRIORITARIAS
+            |--------------------------------------------------------------------------
+            */
+
+            $prioritarias = $stocksProcesados
+                ->filter(function ($stock) {
+
+                    return in_array(
+                        $stock->codigo_sucursal,
+                        $this->sucursalesPrioritarias
+                    );
+                })
+                ->sortBy(function ($stock) {
+
+                    return array_search(
+                        $stock->codigo_sucursal,
+                        $this->sucursalesPrioritarias
+                    );
+                })
+                ->values();
+
+            /*
+            |--------------------------------------------------------------------------
+            | OTRAS SUCURSALES
+            |--------------------------------------------------------------------------
+            */
+
+            $otrasSucursales = $stocksProcesados
+                ->filter(function ($stock) {
+
+                    return !in_array(
+                        $stock->codigo_sucursal,
+                        $this->sucursalesPrioritarias
+                    );
+                })
+                ->sortByDesc('cantidad')
+                ->values();
+
+            /*
+            |--------------------------------------------------------------------------
+            | ORDEN FINAL
+            |--------------------------------------------------------------------------
+            */
+
+            $stocksOrdenados = $prioritarias
+                ->concat($otrasSucursales)
+                ->values();
+
+            /*
+            |--------------------------------------------------------------------------
+            | BUSCAR UNA PRIORITARIA CON TODO
+            |--------------------------------------------------------------------------
+            */
+
+            $sucursalCompleta = null;
+
+            foreach (
+                $this->sucursalesPrioritarias
+                as $codigoPrioritario
+            ) {
+
+                $encontrada =
+                    $stocksProcesados->first(
+                        function ($stock) use (
+                            $codigoPrioritario,
+                            $cantidadSolicitada
+                        ) {
+
+                            return
+                                $stock->codigo_sucursal ==
+                                $codigoPrioritario &&
+                                $stock->cantidad >=
+                                $cantidadSolicitada;
+                        }
+                    );
+
+                if ($encontrada) {
+
+                    $sucursalCompleta =
+                        $encontrada;
+
+                    break;
+                }
+            }
+
+            /*
+            |--------------------------------------------------------------------------
+            | ASIGNACIONES
+            |--------------------------------------------------------------------------
+            */
+
+            $asignaciones = [];
+
+            /*
+            |--------------------------------------------------------------------------
+            | UNA SUCURSAL TIENE TODO
+            |--------------------------------------------------------------------------
+            */
+
+            if ($sucursalCompleta) {
+
+                $asignaciones[] = [
+
+                    'sucursal' =>
+                    $sucursalCompleta->sucursal,
+
+                    'codigo_sucursal' =>
+                    $sucursalCompleta->codigo_sucursal,
+
+                    'cantidad' =>
+                    $cantidadSolicitada,
                 ];
             }
 
             /*
             |--------------------------------------------------------------------------
-            | OBTENER CÓDIGO DE SUCURSAL
+            | REPARTIR ENTRE VARIAS
             |--------------------------------------------------------------------------
-            */
+            */ else {
 
-            $stocksProcesados = $stocks->map(function ($stock) {
+                $restante =
+                    $cantidadSolicitada;
 
-                preg_match(
-                    '/Sucursal:\s*([0-9]+)/',
-                    $stock->sucursal ?? '',
-                    $matches
-                );
+                foreach (
+                    $stocksOrdenados
+                    as $stock
+                ) {
 
-                $stock->codigo_sucursal = isset($matches[1])
-                    ? (int) $matches[1]
-                    : null;
+                    if ($restante <= 0) {
+                        break;
+                    }
 
-                $stock->cantidad = (float) $stock->cantidad;
+                    /*
+                    |--------------------------------------------------------------------------
+                    | CANTIDAD A TOMAR
+                    |--------------------------------------------------------------------------
+                    */
 
-                return $stock;
-            });
+                    $cantidadTomar =
+                        min(
+                            $stock->cantidad,
+                            $restante
+                        );
+
+                    if ($cantidadTomar <= 0) {
+                        continue;
+                    }
+
+                    /*
+                    |--------------------------------------------------------------------------
+                    | ASIGNACIÓN
+                    |--------------------------------------------------------------------------
+                    */
+
+                    $asignaciones[] = [
+
+                        'sucursal' =>
+                        $stock->sucursal,
+
+                        'codigo_sucursal' =>
+                        $stock->codigo_sucursal,
+
+                        'cantidad' =>
+                        $cantidadTomar,
+                    ];
+
+                    /*
+                    |--------------------------------------------------------------------------
+                    | RESTANTE
+                    |--------------------------------------------------------------------------
+                    */
+
+                    $restante -=
+                        $cantidadTomar;
+
+                    /*
+                    |--------------------------------------------------------------------------
+                    | MÁXIMO
+                    |--------------------------------------------------------------------------
+                    */
+
+                    if (
+                        count($asignaciones)
+                        >= $this->maxSugerencias
+                    ) {
+                        break;
+                    }
+                }
+            }
 
             /*
             |--------------------------------------------------------------------------
-            | 1. BUSCAR CANTIDAD COMPLETA EN LAS SUCURSALES PRIORITARIAS
+            | TOTAL RETIRADO
             |--------------------------------------------------------------------------
-            |
-            | Ejemplo:
-            |
-            | Pedido = 3
-            |
-            | Sucursal 14 = 5
-            |
-            | Entonces se pide directamente de 14.
-            |
             */
 
-            foreach ($this->sucursalesPrioritarias as $codigoSucursal) {
+            $totalRetirar = 0;
 
-                $stockCompleto = $stocksProcesados->first(
-                    function ($stock) use (
-                        $codigoSucursal,
-                        $cantidadSolicitada
-                    ) {
+            foreach (
+                $asignaciones
+                as $asignacion
+            ) {
 
-                        return
-                            $stock->codigo_sucursal !== null &&
-                            $stock->codigo_sucursal == $codigoSucursal &&
-                            $stock->cantidad >= $cantidadSolicitada;
-                    }
+                $totalRetirar +=
+                    (int) $asignacion['cantidad'];
+            }
+
+            /*
+            |--------------------------------------------------------------------------
+            | PENDIENTE
+            |--------------------------------------------------------------------------
+            */
+
+            $pendiente =
+                max(
+                    0,
+                    $cantidadSolicitada -
+                        $totalRetirar
                 );
 
-                if ($stockCompleto) {
+            /*
+            |--------------------------------------------------------------------------
+            | SITUACIÓN
+            |--------------------------------------------------------------------------
+            */
 
-                    return [
+            if ($pendiente === 0) {
+
+                $situacion =
+                    'COMPLETO';
+
+                $observacion =
+                    'Pedido completo.';
+            } elseif ($totalRetirar > 0) {
+
+                $situacion =
+                    'PARCIAL';
+
+                $observacion =
+                    'Faltan ' .
+                    $pendiente .
+                    ' unidad(es).';
+            } else {
+
+                $situacion =
+                    'SIN STOCK';
+
+                $observacion =
+                    'No hay unidades disponibles.';
+            }
+
+            /*
+            |--------------------------------------------------------------------------
+            | AGREGAR AL RESUMEN
+            |--------------------------------------------------------------------------
+            */
+
+            $resumen[] = [
+
+                'nro_pedido' =>
+                $item->nro_pedido,
+
+                'codigo' =>
+                $item->art_codigo,
+
+                'articulo' =>
+                $item->art_descripcion,
+
+                'necesita' =>
+                $cantidadSolicitada,
+
+                'total_retirar' =>
+                $totalRetirar,
+
+                'pendiente' =>
+                $pendiente,
+
+                'situacion' =>
+                $situacion,
+
+                'observacion' =>
+                $observacion,
+            ];
+
+            /*
+            |--------------------------------------------------------------------------
+            | AGRUPAR POR SUCURSAL
+            |--------------------------------------------------------------------------
+            */
+
+            foreach (
+                $asignaciones
+                as $asignacion
+            ) {
+
+                $codigoSucursal =
+                    $asignacion['codigo_sucursal'];
+
+                $nombreSucursal =
+                    $asignacion['sucursal'];
+
+                /*
+                |--------------------------------------------------------------------------
+                | CREAR SUCURSAL
+                |--------------------------------------------------------------------------
+                */
+
+                if (
+                    !isset(
+                        $this->pedidosPorSucursal[$codigoSucursal]
+                    )
+                ) {
+
+                    $this->pedidosPorSucursal[$codigoSucursal] = [
+
+                        'nombre' =>
+                        $this->limpiarNombreHoja(
+                            $nombreSucursal
+                        ),
+
+                        'items' => [],
+                    ];
+                }
+
+                /*
+                |--------------------------------------------------------------------------
+                | CLAVE ÚNICA DEL ARTÍCULO
+                |--------------------------------------------------------------------------
+                */
+
+                $clave =
+                    $item->nro_pedido .
+                    '|' .
+                    $item->art_codigo;
+
+                /*
+                |--------------------------------------------------------------------------
+                | BUSCAR SI YA EXISTE
+                |--------------------------------------------------------------------------
+                */
+
+                $indiceExistente = null;
+
+                foreach (
+                    $this->pedidosPorSucursal[$codigoSucursal]['items']
+                    as $indice => $existente
+                ) {
+
+                    if (
+                        $existente['clave'] ===
+                        $clave
+                    ) {
+
+                        $indiceExistente =
+                            $indice;
+
+                        break;
+                    }
+                }
+
+                /*
+                |--------------------------------------------------------------------------
+                | SUMAR SI YA EXISTE
+                |--------------------------------------------------------------------------
+                */
+
+                if (
+                    $indiceExistente !== null
+                ) {
+
+                    $this->pedidosPorSucursal[$codigoSucursal]['items'][$indiceExistente]['cantidad'] +=
+                        $asignacion['cantidad'];
+                }
+
+                /*
+                |--------------------------------------------------------------------------
+                | NUEVO ARTÍCULO
+                |--------------------------------------------------------------------------
+                */ else {
+
+                    $this->pedidosPorSucursal[$codigoSucursal]['items'][] = [
+
+                        'clave' =>
+                        $clave,
+
+                        'nro_pedido' =>
                         $item->nro_pedido,
+
+                        'codigo' =>
                         $item->art_codigo,
+
+                        'articulo' =>
                         $item->art_descripcion,
-                        $item->det_cantidad,
-                        $stockCompleto->sucursal,
-                        ''
+
+                        'cantidad' =>
+                        $asignacion['cantidad'],
                     ];
                 }
             }
+        }
 
-            /*
-            |--------------------------------------------------------------------------
-            | 2. BUSCAR STOCK PARCIAL EN LAS SUCURSALES PRIORITARIAS
-            |--------------------------------------------------------------------------
-            |
-            | IMPORTANTE:
-            |
-            | Si pedido = 3
-            | Sucursal 7 = 2
-            |
-            | Debe mostrar:
-            |
-            | Cantidad disponible: 2 de 3
-            | Falta: 1
-            |
-            */
+        /*
+        |--------------------------------------------------------------------------
+        | RETORNAR RESULTADO
+        |--------------------------------------------------------------------------
+        */
 
-            foreach ($this->sucursalesPrioritarias as $codigoSucursal) {
+        return [
+            'resumen' =>
+            $resumen,
+        ];
+    }
 
-                $stockParcial = $stocksProcesados->first(
-                    function ($stock) use (
-                        $codigoSucursal,
-                        $cantidadSolicitada
-                    ) {
+    /*
+    |--------------------------------------------------------------------------
+    | LIMPIAR NOMBRE DE HOJA
+    |--------------------------------------------------------------------------
+    */
 
-                        return
-                            $stock->codigo_sucursal !== null &&
-                            $stock->codigo_sucursal == $codigoSucursal &&
-                            $stock->cantidad > 0 &&
-                            $stock->cantidad < $cantidadSolicitada;
-                    }
-                );
+    private function limpiarNombreHoja(
+        $nombre
+    ): string {
 
-                if (!$stockParcial) {
-                    continue;
-                }
+        $nombre = preg_replace(
+            '/[\/\\\\\?\*\[\]:]/',
+            '',
+            $nombre
+        );
 
-                $cantidadDisponible = (float) $stockParcial->cantidad;
+        $nombre = mb_substr(
+            trim($nombre),
+            0,
+            31
+        );
 
-                $faltante = $cantidadSolicitada - $cantidadDisponible;
+        if ($nombre === '') {
+            $nombre = 'SUCURSAL';
+        }
 
-                /*
-                |--------------------------------------------------------------------------
-                | BUSCAR OTRAS SUCURSALES QUE PUEDAN COMPLETAR
-                |--------------------------------------------------------------------------
-                */
+        return $nombre;
+    }
+}
 
-                $sucursalesParaCompletar = $stocksProcesados
-                    ->filter(function ($stock) use (
-                        $stockParcial,
-                        $cantidadSolicitada
-                    ) {
 
-                        return
-                            $stock->id != $stockParcial->id &&
-                            $stock->codigo_sucursal !== null &&
-                            $stock->cantidad > 0 &&
-                            $stock->cantidad < $cantidadSolicitada;
-                    })
-                    ->sortByDesc('cantidad')
-                    ->values();
+/*
+|--------------------------------------------------------------------------
+| HOJA RESUMEN
+|--------------------------------------------------------------------------
+*/
 
-                /*
-                |--------------------------------------------------------------------------
-                | ARMAR SUGERENCIAS
-                |--------------------------------------------------------------------------
-                */
+class PedidoResumenSheet implements
+    FromArray,
+    WithHeadings,
+    WithTitle,
+    ShouldAutoSize
+{
+    protected $data;
 
-                $sugerencias = [];
+    public function __construct(array $data)
+    {
+        $this->data = $data;
+    }
 
-                foreach ($sucursalesParaCompletar as $otraSucursal) {
+    public function title(): string
+    {
+        return 'RESUMEN';
+    }
 
-                    $sugerencias[] =
-                        $otraSucursal->sucursal .
-                        ' (' .
-                        (float) $otraSucursal->cantidad .
-                        ' disponible)';
-                }
+    public function headings(): array
+    {
+        return [
 
-                /*
-                |--------------------------------------------------------------------------
-                | ARMAR MOTIVO
-                |--------------------------------------------------------------------------
-                */
+            'N° Pedido',
+            'Código',
+            'Artículo',
+            'Se necesitan',
+            'Total a retirar',
+            'Queda pendiente',
+            'Situación',
+            'Observación',
+        ];
+    }
 
-                $motivo =
-                    'Cantidad disponible: ' .
-                    $cantidadDisponible .
-                    ' de ' .
-                    $cantidadSolicitada .
-                    '. Falta: ' .
-                    $faltante .
-                    '.';
+    public function array(): array
+    {
+        $data = [];
 
-                /*
-                |--------------------------------------------------------------------------
-                | SI HAY OTRAS SUCURSALES
-                |--------------------------------------------------------------------------
-                */
+        foreach ($this->data as $item) {
 
-                if (!empty($sugerencias)) {
+            $data[] = [
 
-                    $motivo .=
-                        ' Sugerir completar desde: ' .
-                        implode(', ', $sugerencias);
-                } else {
+                $item['nro_pedido'],
 
-                    $motivo .=
-                        ' No se encontró otra sucursal con stock para completar.';
-                }
+                $item['codigo'],
 
-                return [
-                    $item->nro_pedido,
-                    $item->art_codigo,
-                    $item->art_descripcion,
-                    $item->det_cantidad,
-                    $stockParcial->sucursal,
-                    $motivo
-                ];
-            }
+                $item['articulo'],
 
-            /*
-            |--------------------------------------------------------------------------
-            | 3. SI NO HAY EN LAS PRIORITARIAS
-            |--------------------------------------------------------------------------
-            |
-            | Buscar una sucursal cualquiera que tenga TODO el pedido.
-            |
-            | Se elige la que tenga MAYOR STOCK.
-            |
-            */
+                $item['necesita'],
 
-            $stockAlternativo = $stocksProcesados
-                ->filter(function ($stock) use ($cantidadSolicitada) {
+                $item['total_retirar'],
 
-                    return
-                        $stock->codigo_sucursal !== null &&
-                        !in_array(
-                            $stock->codigo_sucursal,
-                            $this->sucursalesPrioritarias
-                        ) &&
-                        $stock->cantidad >= $cantidadSolicitada;
-                })
-                ->sortByDesc('cantidad')
-                ->first();
+                $item['pendiente'],
 
-            if ($stockAlternativo) {
+                $item['situacion'],
 
-                return [
-                    $item->nro_pedido,
-                    $item->art_codigo,
-                    $item->art_descripcion,
-                    $item->det_cantidad,
-                    $stockAlternativo->sucursal,
-                    'No hay disponible en sucursales cercanas. ' .
-                        'Se recomienda solicitar a esta sucursal por tener ' .
-                        (float) $stockAlternativo->cantidad .
-                        ' unidades disponibles.'
-                ];
-            }
-
-            /*
-            |--------------------------------------------------------------------------
-            | 4. BUSCAR EL MAYOR STOCK PARCIAL EN OTRAS SUCURSALES
-            |--------------------------------------------------------------------------
-            */
-
-            $stockParcialAlternativo = $stocksProcesados
-                ->filter(function ($stock) use ($cantidadSolicitada) {
-
-                    return
-                        $stock->codigo_sucursal !== null &&
-                        !in_array(
-                            $stock->codigo_sucursal,
-                            $this->sucursalesPrioritarias
-                        ) &&
-                        $stock->cantidad > 0 &&
-                        $stock->cantidad < $cantidadSolicitada;
-                })
-                ->sortByDesc('cantidad')
-                ->first();
-
-            if ($stockParcialAlternativo) {
-
-                $cantidadDisponible =
-                    (float) $stockParcialAlternativo->cantidad;
-
-                $faltante =
-                    $cantidadSolicitada - $cantidadDisponible;
-
-                /*
-                |--------------------------------------------------------------------------
-                | BUSCAR OTRAS SUCURSALES PARA COMPLETAR
-                |--------------------------------------------------------------------------
-                */
-
-                $sugerencias = $stocksProcesados
-                    ->filter(function ($stock) use (
-                        $stockParcialAlternativo
-                    ) {
-
-                        return
-                            $stock->id != $stockParcialAlternativo->id &&
-                            $stock->codigo_sucursal !== null &&
-                            $stock->cantidad > 0;
-                    })
-                    ->sortByDesc('cantidad')
-                    ->values();
-
-                $listaSugerencias = [];
-
-                foreach ($sugerencias as $otraSucursal) {
-
-                    $listaSugerencias[] =
-                        $otraSucursal->sucursal .
-                        ' (' .
-                        (float) $otraSucursal->cantidad .
-                        ' disponible)';
-                }
-
-                /*
-                |--------------------------------------------------------------------------
-                | MOTIVO
-                |--------------------------------------------------------------------------
-                */
-
-                $motivo =
-                    'No hay disponible en sucursales cercanas. ' .
-                    'Cantidad disponible: ' .
-                    $cantidadDisponible .
-                    ' de ' .
-                    $cantidadSolicitada .
-                    '. Falta: ' .
-                    $faltante .
-                    '.';
-
-                if (!empty($listaSugerencias)) {
-
-                    $motivo .=
-                        ' Sugerir completar desde: ' .
-                        implode(', ', $listaSugerencias);
-                } else {
-
-                    $motivo .=
-                        ' No se encontró otra sucursal con stock disponible.';
-                }
-
-                return [
-                    $item->nro_pedido,
-                    $item->art_codigo,
-                    $item->art_descripcion,
-                    $item->det_cantidad,
-                    $stockParcialAlternativo->sucursal,
-                    $motivo
-                ];
-            }
-
-            /*
-            |--------------------------------------------------------------------------
-            | 5. SIN STOCK
-            |--------------------------------------------------------------------------
-            */
-
-            return [
-                $item->nro_pedido,
-                $item->art_codigo,
-                $item->art_descripcion,
-                $item->det_cantidad,
-                'SIN STOCK',
-                'No hay stock disponible en ninguna sucursal.'
+                $item['observacion'],
             ];
-        })->toArray();
+        }
+
+        return $data;
+    }
+}
+
+
+/*
+|--------------------------------------------------------------------------
+| HOJA DE CADA SUCURSAL
+|--------------------------------------------------------------------------
+*/
+
+class PedidoSucursalSheet implements
+    FromArray,
+    WithHeadings,
+    WithTitle,
+    ShouldAutoSize
+{
+    protected $nombreSucursal;
+    protected $items;
+
+    public function __construct(
+        $nombreSucursal,
+        array $items
+    ) {
+
+        $this->nombreSucursal =
+            $nombreSucursal;
+
+        $this->items =
+            $items;
+    }
+
+    public function title(): string
+    {
+        return $this->nombreSucursal;
+    }
+
+    public function headings(): array
+    {
+        return [
+
+            'N° Pedido',
+            'Código',
+            'Artículo',
+            'Cantidad a retirar',
+        ];
+    }
+
+    public function array(): array
+    {
+        $data = [];
+
+        foreach ($this->items as $item) {
+
+            $data[] = [
+
+                $item['nro_pedido'],
+
+                $item['codigo'],
+
+                $item['articulo'],
+
+                $item['cantidad'],
+            ];
+        }
+
+        return $data;
     }
 }

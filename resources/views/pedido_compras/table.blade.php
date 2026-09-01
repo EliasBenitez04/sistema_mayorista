@@ -14,7 +14,7 @@
             </div>
 
             <div>
-                <h3>Pedidos de compra</h3>
+                <h3>Pedidos de mayoristas</h3>
                 <span>Gestión y seguimiento de pedidos registrados</span>
             </div>
 
@@ -25,6 +25,12 @@
             <div class="summary-item">
                 <span>Total</span>
                 <strong>{{ $pedido_compras->total() }}</strong>
+            </div>
+            <div class="col-sm-6">
+                <a href="{{ route('pedido_compras.create') }}" class="btn btn-primary float-right shadow-sm px-4 py-2"
+                    style="border-radius: 8px; font-weight: 600;">
+                    Nuevo Pedido
+                </a>
             </div>
 
         </div>
@@ -85,314 +91,275 @@
             <tbody>
 
                 @forelse ($pedido_compras as $pedido)
+                    <tr>
 
-                <tr>
+                        {{-- PEDIDO --}}
+                        <td>
 
-                    {{-- PEDIDO --}}
-                    <td>
+                            <div class="order-number">
 
-                        <div class="order-number">
+                                <div class="order-icon">
+                                    <i class="fas fa-file-invoice"></i>
+                                </div>
 
-                            <div class="order-icon">
-                                <i class="fas fa-file-invoice"></i>
+                                <div>
+                                    <strong>
+                                        #{{ $pedido->nro_pedido }}
+                                    </strong>
+
+                                    <small>
+                                        ID {{ $pedido->id_pedido }}
+                                    </small>
+                                </div>
+
                             </div>
 
-                            <div>
+                        </td>
+
+
+                        {{-- FECHA --}}
+                        <td>
+                            <div class="date-cell">
                                 <strong>
-                                    #{{ $pedido->nro_pedido }}
+                                    {{ \Carbon\Carbon::parse($pedido->ped_fecha)->format('d/m/Y') }}
                                 </strong>
-
-                                <small>
-                                    ID {{ $pedido->id_pedido }}
-                                </small>
                             </div>
-
-                        </div>
-
-                    </td>
+                        </td>
 
 
-                    {{-- FECHA --}}
-                    <td>
+                        {{-- CLIENTE --}}
+                        <td>
 
-                        <div class="date-cell">
+                            <div class="client-cell">
 
-                            <strong>
-                                {{ \Carbon\Carbon::parse($pedido->ped_fecha)->format('d/m/Y') }}
-                            </strong>
+                                <div class="client-avatar">
+                                    <i class="fas fa-user"></i>
+                                </div>
 
-                            <small>
-                                {{ \Carbon\Carbon::parse($pedido->ped_fecha)->format('H:i') }}
-                            </small>
+                                <div>
 
-                        </div>
+                                    <strong>
+                                        {{ $pedido->cliente }}
+                                    </strong>
 
-                    </td>
+                                    <small>
+                                        Cliente
+                                    </small>
 
-
-                    {{-- CLIENTE --}}
-                    <td>
-
-                        <div class="client-cell">
-
-                            <div class="client-avatar">
-                                <i class="fas fa-user"></i>
-                            </div>
-
-                            <div>
-
-                                <strong>
-                                    {{ $pedido->cliente }}
-                                </strong>
-
-                                <small>
-                                    Cliente
-                                </small>
+                                </div>
 
                             </div>
 
-                        </div>
-
-                    </td>
+                        </td>
 
 
-                    {{-- CANTIDAD --}}
-                    <td class="text-center">
+                        {{-- CANTIDAD --}}
+                        <td class="text-center">
 
-                        <span class="quantity-badge">
+                            <span class="quantity-badge">
 
-                            <i class="fas fa-boxes"></i>
+                                <i class="fas fa-boxes"></i>
 
-                            {{ number_format($pedido->total_cantidad, 0, ',', '.') }}
+                                {{ number_format($pedido->total_cantidad, 0, ',', '.') }}
 
-                        </span>
-
-                    </td>
-
-
-                    {{-- TOTAL --}}
-                    <td class="text-right">
-
-                        <div class="amount-cell">
-
-                            <small>Gs.</small>
-
-                            <strong>
-                                {{ number_format($pedido->ped_total, 0, ',', '.') }}
-                            </strong>
-
-                        </div>
-
-                    </td>
-
-
-                    {{-- USUARIO --}}
-                    <td>
-
-                        <div class="user-cell">
-
-                            <div class="user-avatar">
-                                <i class="fas fa-user-tie"></i>
-                            </div>
-
-                            <span>
-                                {{ $pedido->usuario }}
                             </span>
 
-                        </div>
-
-                    </td>
+                        </td>
 
 
-                    {{-- ESTADO --}}
-                    <td class="text-center">
+                        {{-- TOTAL --}}
+                        <td class="text-right">
 
-                        @if ($pedido->ped_estado === 'CONFIRMADO')
+                            <div class="amount-cell">
 
-                        <span class="enterprise-status status-success">
-                            <span></span>
-                            Confirmado
-                        </span>
+                                <small>Gs.</small>
 
-                        @elseif ($pedido->ped_estado === 'ANULADO')
+                                <strong>
+                                    {{ number_format($pedido->ped_total, 0, ',', '.') }}
+                                </strong>
 
-                        <span class="enterprise-status status-danger">
-                            <span></span>
-                            Anulado
-                        </span>
+                            </div>
 
-                        @else
-
-                        <span class="enterprise-status status-warning">
-                            <span></span>
-                            Pendiente
-                        </span>
-
-                        @endif
-
-                    </td>
+                        </td>
 
 
-                    {{-- OBS --}}
-                    <td>
+                        {{-- USUARIO --}}
+                        <td>
 
-                        @if ($pedido->obs)
+                            <div class="user-cell">
 
-                        <div class="observation-cell"
-                            title="{{ $pedido->obs }}">
+                                <div class="user-avatar">
+                                    <i class="fas fa-user-tie"></i>
+                                </div>
 
-                            <i class="fas fa-comment-alt"></i>
+                                <span>
+                                    {{ $pedido->usuario }}
+                                </span>
 
-                            <span>
-                                {{ \Illuminate\Support\Str::limit($pedido->obs, 35) }}
-                            </span>
+                            </div>
 
-                        </div>
-
-                        @else
-
-                        <span class="no-observation">
-                            Sin observación
-                        </span>
-
-                        @endif
-
-                    </td>
+                        </td>
 
 
-                    {{-- ACCIONES --}}
-                    <td class="text-center">
+                        {{-- ESTADO --}}
+                        <td class="text-center">
 
-                        <div class="enterprise-actions">
-
-
-                            {{-- CONFIRMAR --}}
-                            @if ($pedido->ped_estado === 'PENDIENTE')
-
-                            {!! Form::open([
-                            'route' => ['pedido_compras.confirm', $pedido->id_pedido],
-                            'method' => 'patch',
-                            'id' => 'confirm-form-' . $pedido->id_pedido,
-                            'class' => 'd-inline',
-                            ]) !!}
-
-                            {!! Form::button(
-                            '<i class="fas fa-check"></i>',
-                            [
-                            'type' => 'button',
-                            'class' => 'action-btn action-confirm alert-confirm',
-                            'data-id' => $pedido->id_pedido,
-                            'title' => 'Confirmar pedido',
-                            ],
-                            ) !!}
-
-                            {!! Form::close() !!}
-
-                            @endif
-
-
-                            {{-- IMPRIMIR --}}
                             @if ($pedido->ped_estado === 'CONFIRMADO')
-
-                            <a href="{{ route('pedido_compras.imprimir', [$pedido->id_pedido]) }}"
-                                class="action-btn action-print"
-                                title="Imprimir pedido">
-
-                                <i class="fas fa-print"></i>
-
-                            </a>
-
-
-                            {{-- EXCEL --}}
-                            <a href="{{ route('pedido.export', [$pedido->id_pedido]) }}"
-                                class="action-btn action-excel"
-                                title="Exportar Excel">
-
-                                <i class="fas fa-file-excel"></i>
-
-                            </a>
-
+                                <span class="enterprise-status status-success">
+                                    <span></span>
+                                    Confirmado
+                                </span>
+                            @elseif ($pedido->ped_estado === 'ANULADO')
+                                <span class="enterprise-status status-danger">
+                                    <span></span>
+                                    Anulado
+                                </span>
+                            @else
+                                <span class="enterprise-status status-warning">
+                                    <span></span>
+                                    Pendiente
+                                </span>
                             @endif
 
+                        </td>
 
-                            {{-- EDITAR --}}
-                            @if (!in_array(trim($pedido->ped_estado), ['CONFIRMADO', 'ANULADO']))
 
-                            <a href="{{ route('pedido_compras.edit', [$pedido->id_pedido]) }}"
-                                class="action-btn action-edit"
-                                title="Editar pedido">
+                        {{-- OBS --}}
+                        <td>
 
-                                <i class="fas fa-pen"></i>
+                            @if ($pedido->obs)
+                                <div class="observation-cell" title="{{ $pedido->obs }}">
 
-                            </a>
+                                    <i class="fas fa-comment-alt"></i>
 
+                                    <span>
+                                        {{ \Illuminate\Support\Str::limit($pedido->obs, 35) }}
+                                    </span>
+
+                                </div>
+                            @else
+                                <span class="no-observation">
+                                    Sin observación
+                                </span>
                             @endif
 
-
-                            {{-- VER --}}
-                            <a href="{{ route('pedido_compras.show', [$pedido->id_pedido]) }}"
-                                class="action-btn action-view"
-                                title="Ver detalles">
-
-                                <i class="fas fa-eye"></i>
-
-                            </a>
+                        </td>
 
 
-                            {{-- ANULAR --}}
-                            @if ($pedido->ped_estado !== 'ANULADO')
+                        {{-- ACCIONES --}}
+                        <td class="text-center">
 
-                            {!! Form::open([
-                            'route' => ['pedido_compras.destroy', $pedido->id_pedido],
-                            'method' => 'delete',
-                            'class' => 'd-inline',
-                            'id' => 'delete-form-' . $pedido->id_pedido,
-                            ]) !!}
+                            <div class="enterprise-actions">
 
-                            {!! Form::button(
-                            '<i class="fas fa-trash"></i>',
-                            [
-                            'type' => 'button',
-                            'class' => 'action-btn action-delete alert-delete',
-                            'data-id' => $pedido->id_pedido,
-                            'title' => 'Anular pedido',
-                            ],
-                            ) !!}
 
-                            {!! Form::close() !!}
+                                {{-- CONFIRMAR --}}
+                                @if ($pedido->ped_estado === 'PENDIENTE')
+                                    {!! Form::open([
+                                        'route' => ['pedido_compras.confirm', $pedido->id_pedido],
+                                        'method' => 'patch',
+                                        'id' => 'confirm-form-' . $pedido->id_pedido,
+                                        'class' => 'd-inline',
+                                    ]) !!}
 
-                            @endif
+                                    {!! Form::button('<i class="fas fa-check"></i>', [
+                                        'type' => 'button',
+                                        'class' => 'action-btn action-confirm alert-confirm',
+                                        'data-id' => $pedido->id_pedido,
+                                        'title' => 'Confirmar pedido',
+                                    ]) !!}
 
-                        </div>
+                                    {!! Form::close() !!}
+                                @endif
 
-                    </td>
 
-                </tr>
+                                {{-- IMPRIMIR --}}
+                                @if ($pedido->ped_estado === 'CONFIRMADO')
+                                    <a href="{{ route('pedido_compras.imprimir', [$pedido->id_pedido]) }}"
+                                        class="action-btn action-print" title="Imprimir pedido">
+
+                                        <i class="fas fa-print"></i>
+
+                                    </a>
+
+
+                                    {{-- EXCEL --}}
+                                    <a href="{{ route('pedido.export', [$pedido->id_pedido]) }}"
+                                        class="action-btn action-excel" title="Exportar Excel">
+
+                                        <i class="fas fa-file-excel"></i>
+
+                                    </a>
+                                @endif
+
+
+                                {{-- EDITAR --}}
+                                @if (!in_array(trim($pedido->ped_estado), ['CONFIRMADO', 'ANULADO']))
+                                    <a href="{{ route('pedido_compras.edit', [$pedido->id_pedido]) }}"
+                                        class="action-btn action-edit" title="Editar pedido">
+
+                                        <i class="fas fa-pen"></i>
+
+                                    </a>
+                                @endif
+
+
+                                {{-- VER --}}
+                                <a href="{{ route('pedido_compras.show', [$pedido->id_pedido]) }}"
+                                    class="action-btn action-view" title="Ver detalles">
+
+                                    <i class="fas fa-eye"></i>
+
+                                </a>
+
+
+                                {{-- ANULAR --}}
+                                @if ($pedido->ped_estado !== 'ANULADO')
+                                    {!! Form::open([
+                                        'route' => ['pedido_compras.destroy', $pedido->id_pedido],
+                                        'method' => 'delete',
+                                        'class' => 'd-inline',
+                                        'id' => 'delete-form-' . $pedido->id_pedido,
+                                    ]) !!}
+
+                                    {!! Form::button('<i class="fas fa-trash"></i>', [
+                                        'type' => 'button',
+                                        'class' => 'action-btn action-delete alert-delete',
+                                        'data-id' => $pedido->id_pedido,
+                                        'title' => 'Anular pedido',
+                                    ]) !!}
+
+                                    {!! Form::close() !!}
+                                @endif
+
+                            </div>
+
+                        </td>
+
+                    </tr>
 
                 @empty
 
-                <tr>
+                    <tr>
 
-                    <td colspan="9">
+                        <td colspan="9">
 
-                        <div class="enterprise-empty">
+                            <div class="enterprise-empty">
 
-                            <div class="empty-icon">
-                                <i class="fas fa-inbox"></i>
+                                <div class="empty-icon">
+                                    <i class="fas fa-inbox"></i>
+                                </div>
+
+                                <h4>No hay pedidos registrados</h4>
+
+                                <p>
+                                    No se encontraron pedidos para mostrar.
+                                </p>
+
                             </div>
 
-                            <h4>No hay pedidos registrados</h4>
+                        </td>
 
-                            <p>
-                                No se encontraron pedidos para mostrar.
-                            </p>
-
-                        </div>
-
-                    </td>
-
-                </tr>
-
+                    </tr>
                 @endforelse
 
             </tbody>
@@ -404,33 +371,31 @@
 
     {{-- FOOTER --}}
     @if ($pedido_compras->total() > 0)
+        <div class="enterprise-table-footer">
 
-    <div class="enterprise-table-footer">
+            <div class="records-info">
 
-        <div class="records-info">
+                <i class="fas fa-database"></i>
 
-            <i class="fas fa-database"></i>
+                <span>
+                    Mostrando
+                    <strong>{{ $pedido_compras->firstItem() }}</strong>
+                    -
+                    <strong>{{ $pedido_compras->lastItem() }}</strong>
+                    de
+                    <strong>{{ $pedido_compras->total() }}</strong>
+                    registros
+                </span>
 
-            <span>
-                Mostrando
-                <strong>{{ $pedido_compras->firstItem() }}</strong>
-                -
-                <strong>{{ $pedido_compras->lastItem() }}</strong>
-                de
-                <strong>{{ $pedido_compras->total() }}</strong>
-                registros
-            </span>
+            </div>
+
+            <div class="enterprise-pagination">
+
+                {{ $pedido_compras->links() }}
+
+            </div>
 
         </div>
-
-        <div class="enterprise-pagination">
-
-            {{ $pedido_compras->links() }}
-
-        </div>
-
-    </div>
-
     @endif
 
 </div>
@@ -1015,8 +980,8 @@
 
     .enterprise-status>span {
 
-        width: 6px;
-        height: 6px;
+        width: 8px;
+        height: 8px;
 
         border-radius: 50%;
 
@@ -1043,7 +1008,7 @@
 
     .status-warning {
 
-        color: #92400e;
+        color: #000000;
 
         background: #fffbeb;
 
@@ -1061,7 +1026,7 @@
 
     .status-danger {
 
-        color: #991b1b;
+        color: #e40d0d;
 
         background: #fef2f2;
 
@@ -1091,7 +1056,7 @@
 
         max-width: 190px;
 
-        color: #64748b;
+        color: #030303;
 
         font-size: 10px;
 
@@ -1156,8 +1121,8 @@
 
     .action-btn {
 
-        width: 29px;
-        height: 29px;
+        width: 32px;
+        height: 32px;
 
         display: inline-flex;
 
@@ -1188,27 +1153,27 @@
 
     .action-view {
 
-        background: #eff6ff;
+        background: #1268d8;
 
-        color: #2563eb;
+        color: #ffffff;
 
     }
 
 
     .action-view:hover {
 
-        background: #dbeafe;
+        background: #ffffff;
 
-        color: #1d4ed8;
+        color: #1268d8;
 
     }
 
 
     .action-edit {
 
-        background: #f5f3ff;
+        background: #ffd900;
 
-        color: #7c3aed;
+        color: #000000;
 
     }
 
@@ -1217,16 +1182,16 @@
 
         background: #ede9fe;
 
-        color: #6d28d9;
+        color: #ffd900;
 
     }
 
 
     .action-confirm {
 
-        background: #f0fdf4;
+        background: #29e46e;
 
-        color: #16a34a;
+        color: #ffffff;
 
     }
 
@@ -1235,61 +1200,61 @@
 
         background: #dcfce7;
 
-        color: #15803d;
+        color: #29e46e;
 
     }
 
 
     .action-print {
 
-        background: #fff7ed;
+        background: #c72121;
 
-        color: #ea580c;
+        color: #ffffff;
 
     }
 
 
     .action-print:hover {
 
-        background: #ffedd5;
+        background: #ffffff;
 
-        color: #c2410c;
+        color: #c72121;
 
     }
 
 
     .action-excel {
 
-        background: #f0fdf4;
+        background: #18bb54;
 
-        color: #15803d;
+        color: #ffffff;
 
     }
 
 
     .action-excel:hover {
 
-        background: #dcfce7;
+        background: #ffffff;
 
-        color: #166534;
+        color: #18bb54;
 
     }
 
 
     .action-delete {
 
-        background: #fef2f2;
+        background: #ff0000;
 
-        color: #dc2626;
+        color: #ffffff;
 
     }
 
 
     .action-delete:hover {
 
-        background: #fee2e2;
+        background: #ffffff;
 
-        color: #b91c1c;
+        color: #ff0000;
 
     }
 
@@ -1432,7 +1397,7 @@
 
         background: #ffffff !important;
 
-        font-size: 10px !important;
+        font-size: 12px !important;
 
         min-width: 30px;
 

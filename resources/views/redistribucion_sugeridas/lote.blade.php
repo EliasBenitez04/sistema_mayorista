@@ -65,6 +65,10 @@
                                 {{ $lote->estado }}
                             </span>
                     @endswitch
+                    <a href="{{ route('RedistribucionSugeridas.lotes') }}" class="btn btn-primary lote-btn">
+                        <i class="fas fa-arrow-left"></i>
+                        Volver
+                    </a>
 
                 </div>
 
@@ -1119,18 +1123,18 @@
             }
 
             .detail-badge.process {
-                background: #e8f4ff;
-                color: #1671c5;
+                background: #0076e4;
+                color: #ffffff;
             }
 
             .detail-badge.finished {
-                background: #eaf8ef;
-                color: #16803c;
+                background: #07c74a;
+                color: #ffffff;
             }
 
             .detail-badge.default {
-                background: #f3f4f6;
-                color: #6b7280;
+                background: #f5de0e;
+                color: #0c0c0b;
             }
 
 

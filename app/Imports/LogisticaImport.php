@@ -14,6 +14,7 @@ use Maatwebsite\Excel\Concerns\WithHeadingRow;
 class LogisticaImport implements ToCollection, WithHeadingRow
 {
     private $fechaProceso;
+
     public function __construct($fechaProceso)
     {
         $this->fechaProceso = $fechaProceso;
@@ -24,207 +25,591 @@ class LogisticaImport implements ToCollection, WithHeadingRow
         set_time_limit(0);
 
         foreach ($rows as $index => $row) {
-            // DB::beginTransaction();
+
+            DB::beginTransaction();
+
             try {
-                // =========================
-                // DATOS EXCEL
-                // =========================
 
-                $codigo = trim($row['codigo'] ?? '');
-                $nroOtExcel = trim($row['nro_ot'] ?? '');
-                $resultado = (int)($row['resultado'] ?? 0);
+                // =========================================================
+                // DATOS DEL EXCEL
+                // =========================================================
 
-                if (empty($codigo)) {
+                $codigo = trim((string) ($row['codigo'] ?? ''));
+                $nroOtExcel = trim((string) ($row['nro_ot'] ?? ''));
+
+                /*
+                 * IMPORTANTE:
+                 *
+                 * El resultado SÍ viene del Excel y SÍ se debe guardar
+                 * en ot_trazabilidad.resultado.
+                 *
+                 * Ejemplo:
+                 *
+                 * resultado = 144
+                 * resultado = 223
+                 * resultado = 1
+                 */
+
+                $resultado = (int) ($row['resultado'] ?? 0);
+
+
+                // =========================================================
+                // VALIDAR CÓDIGO
+                // =========================================================
+
+                if ($codigo === '') {
+
+                    DB::rollBack();
+
+                    Log::warning('FILA SIN CODIGO', [
+                        'fila' => $index + 2,
+                    ]);
+
                     continue;
                 }
 
-                // =========================
-                // BUSCAR OT
-                // =========================
 
-                $ot = Ot::where('codigo', $codigo)->first();
+                // =========================================================
+                // BUSCAR OT
+                // =========================================================
+
+                $ot = null;
+
+                /*
+                 * Primero buscamos por:
+                 *
+                 * N° OT + código
+                 */
+
+                if ($nroOtExcel !== '') {
+
+                    $ot = Ot::where('nro_ot', $nroOtExcel)
+                        ->where('codigo', $codigo)
+                        ->first();
+                }
+
+
+                /*
+                 * Si no encontramos, buscamos solamente por código.
+                 */
 
                 if (!$ot) {
-                    Log::warning('CODIGO NO ENCONTRADO', [
+
+                    $ot = Ot::where('codigo', $codigo)
+                        ->first();
+                }
+
+
+                // =========================================================
+                // OT NO ENCONTRADA
+                // =========================================================
+
+                if (!$ot) {
+
+                    Log::warning('CODIGO / OT NO ENCONTRADO', [
+
+                        'fila' => $index + 2,
                         'codigo' => $codigo,
-                        'nro_ot' => $nroOtExcel
+                        'nro_ot' => $nroOtExcel,
+
                     ]);
+
+                    DB::rollBack();
 
                     continue;
                 }
 
-                // =========================
-                // VALIDAR PRODUCTO TERMINADO
-                // =========================
 
-                $productoTerminado = OtTrazabilidad::where('id_ot', $ot->id_ot)
-                    ->where('proceso', 'TERMINACION - PRODUCTO TERMINADO')
-                    ->first();
+                // =========================================================
+                // VALIDAR PRODUCTO TERMINADO
+                // =========================================================
+
+                $productoTerminado = OtTrazabilidad::where(
+                    'id_ot',
+                    $ot->id_ot
+                )
+                    ->where(
+                        'proceso',
+                        'TERMINACION - PRODUCTO TERMINADO'
+                    )
+                    ->exists();
+
 
                 if (!$productoTerminado) {
-                    Log::warning('NO TIENE PRODUCTO TERMINADO', [
-                        'codigo' => $codigo
+
+                    Log::warning('OT SIN PRODUCTO TERMINADO', [
+
+                        'fila' => $index + 2,
+                        'codigo' => $codigo,
+                        'nro_ot' => $ot->nro_ot,
+                        'id_ot' => $ot->id_ot,
+
                     ]);
+
+                    DB::rollBack();
 
                     continue;
                 }
 
-                // =========================
-                // BUSCAR ULTIMA LOGISTICA
-                // =========================
 
-                $ultimoRegistro = OtTrazabilidad::where('id_ot', $ot->id_ot)
-                    ->where('proceso', 'LOGISTICA - LOGISTICA Y DISTRIBUCION')
-                    ->orderBy('id_trazabilidad', 'desc')
+                // =========================================================
+                // BUSCAR TRAZABILIDAD DE ESTA DISTRIBUCIÓN
+                // =========================================================
+                //
+                // La identificación correcta es:
+                //
+                // OT + PROCESO + FECHA
+                //
+                // NO usamos resultado para buscarla.
+                //
+                // Esto permite tener:
+                //
+                // OT 29809 - 12/03/2026 - resultado 144
+                // OT 29809 - 13/03/2026 - resultado 223
+                // OT 29809 - 09/06/2026 - resultado 1
+                //
+                // como tres distribuciones independientes.
+                // =========================================================
+
+                $trazabilidad = OtTrazabilidad::where(
+                    'id_ot',
+                    $ot->id_ot
+                )
+                    ->where(
+                        'proceso',
+                        'LOGISTICA - LOGISTICA Y DISTRIBUCION'
+                    )
+                    ->where(
+                        'fecha_proceso',
+                        $this->fechaProceso
+                    )
                     ->first();
 
-                // =========================
-                // EVITAR DUPLICADO
-                // =========================
 
-                if (
-                    $ultimoRegistro &&
-                    (int)$ultimoRegistro->resultado === $resultado
-                ) {
-                    Log::info('LOGISTICA YA EXISTE', [
-                        'codigo' => $codigo,
-                        'resultado' => $resultado
-                    ]);
-                    continue;
-                }
-
-                // =========================
+                // =========================================================
                 // CREAR TRAZABILIDAD
-                // =========================
+                // =========================================================
 
-                $trazabilidad = OtTrazabilidad::create([
-                    'id_ot' => $ot->id_ot,
-                    'proceso' => 'LOGISTICA - LOGISTICA Y DISTRIBUCION',
-                    'resultado' => $resultado,
-                    'fecha_proceso' => $this->fechaProceso,
-                ]);
+                if (!$trazabilidad) {
 
-                Log::info('TRAZABILIDAD CREADA', [
-                    'id' => $trazabilidad->id_trazabilidad,
-                    'exists' => $trazabilidad->exists,
-                    'atributos' => $trazabilidad->getAttributes(),
-                ]);
+                    $trazabilidad = OtTrazabilidad::create([
 
-                if (!$trazabilidad || !$trazabilidad->id_trazabilidad) {
+                        'id_ot' => $ot->id_ot,
 
-                    Log::warning('NO SE PUDO CREAR LA TRAZABILIDAD', [
-                        'codigo' => $codigo,
-                        'ot' => $ot->nro_ot
+                        'proceso' =>
+                            'LOGISTICA - LOGISTICA Y DISTRIBUCION',
+
+                        /*
+                         * EL RESULTADO DEL EXCEL SE GUARDA.
+                         */
+                        'resultado' => $resultado,
+
+                        'fecha_proceso' => $this->fechaProceso,
+
                     ]);
 
-                    continue;
+
+                    Log::info('TRAZABILIDAD CREADA', [
+
+                        'id_trazabilidad' =>
+                            $trazabilidad->id_trazabilidad,
+
+                        'id_ot' => $ot->id_ot,
+
+                        'nro_ot' => $ot->nro_ot,
+
+                        'codigo' => $codigo,
+
+                        'resultado' => $resultado,
+
+                        'fecha' => $this->fechaProceso,
+
+                    ]);
                 }
+
+
+                // =========================================================
+                // SI YA EXISTE
+                // =========================================================
+                //
+                // Si volvemos a importar la misma OT + fecha:
+                //
+                // NO creamos otra trazabilidad.
+                //
+                // Actualizamos el resultado con el valor del Excel.
+                // =========================================================
+
+                else {
+
+                    $trazabilidad->resultado = $resultado;
+
+                    $trazabilidad->save();
+
+
+                    Log::info('TRAZABILIDAD ACTUALIZADA', [
+
+                        'id_trazabilidad' =>
+                            $trazabilidad->id_trazabilidad,
+
+                        'id_ot' => $ot->id_ot,
+
+                        'nro_ot' => $ot->nro_ot,
+
+                        'codigo' => $codigo,
+
+                        'resultado' => $resultado,
+
+                        'fecha' => $this->fechaProceso,
+
+                    ]);
+                }
+
+
+                // =========================================================
+                // SUCURSALES
+                // =========================================================
 
                 $sucursales = [
 
-                    'SL' => $row['sl'] ?? 0,
-                    'Bonanza' => $row['bonanza'] ?? 0,
-                    'Shopp' => $row['shopp'] ?? 0,
-                    'Luque' => $row['luque'] ?? 0,
-                    'Rural' => $row['rural'] ?? 0,
-                    'Mall' => $row['mall'] ?? 0,
-                    'Ayala' => $row['ayala'] ?? 0,
-                    'Mariano' => $row['mariano'] ?? 0,
-                    'Ñemby' => $row['nemby'] ?? 0,
-                    'Pinedo' => $row['pinedo'] ?? 0,
-                    'L06' => $row['l06'] ?? 0,
-                    'Multi' => $row['multi'] ?? 0,
-                    'Los Jardines' => $row['los_jardines'] ?? 0,
-                    'Modelo Muestra' => $row['modelo_muestra'] ?? 0,
+                    'SL' =>
+                        $row['sl'] ?? 0,
+
+                    'Bonanza' =>
+                        $row['bonanza'] ?? 0,
+
+                    'Shopp' =>
+                        $row['shopp'] ?? 0,
+
+                    'Luque' =>
+                        $row['luque'] ?? 0,
+
+                    'Rural' =>
+                        $row['rural'] ?? 0,
+
+                    'Mall' =>
+                        $row['mall'] ?? 0,
+
+                    'Ayala' =>
+                        $row['ayala'] ?? 0,
+
+                    'Mariano' =>
+                        $row['mariano'] ?? 0,
+
+                    'Ñemby' =>
+                        $row['nemby'] ?? 0,
+
+                    'Pinedo' =>
+                        $row['pinedo'] ?? 0,
+
+                    'L06' =>
+                        $row['l06'] ?? 0,
+
+                    'Multi' =>
+                        $row['multi'] ?? 0,
+
+                    'Los Jardines' =>
+                        $row['los_jardines'] ?? 0,
+
+                    'Modelo Muestra' =>
+                        $row['modelo_muestra'] ?? 0,
 
                 ];
+
+
+                // =========================================================
+                // GUARDAR DETALLES
+                // =========================================================
 
                 foreach ($sucursales as $sucursal => $cantidad) {
 
                     $cantidad = (int) $cantidad;
 
+
+                    /*
+                     * No guardamos cantidades 0.
+                     */
+
                     if ($cantidad <= 0) {
+
                         continue;
                     }
 
-                    $detalle = OtLogisticaDetalle::where('id_ot', $ot->id_ot)
-                        ->where('sucursal', $sucursal)
+
+                    // =====================================================
+                    // BUSCAR DETALLE
+                    // =====================================================
+                    //
+                    // Buscamos:
+                    //
+                    // OT
+                    // +
+                    // TRAZABILIDAD
+                    // +
+                    // SUCURSAL
+                    //
+                    // De esta manera cada distribución mantiene
+                    // sus propios detalles.
+                    // =====================================================
+
+                    $detalle = OtLogisticaDetalle::where(
+                        'id_ot',
+                        $ot->id_ot
+                    )
+                        ->where(
+                            'id_trazabilidad',
+                            $trazabilidad->id_trazabilidad
+                        )
+                        ->where(
+                            'sucursal',
+                            $sucursal
+                        )
                         ->first();
+
+
+                    // =====================================================
+                    // ACTUALIZAR DETALLE EXISTENTE
+                    // =====================================================
 
                     if ($detalle) {
 
-                        $cantidadAnterior = (int) $detalle->cantidad;
+                        /*
+                         * IMPORTANTE:
+                         *
+                         * Si volvemos a importar el mismo Excel,
+                         * actualizamos la cantidad.
+                         *
+                         * NO sumamos.
+                         */
 
-                        $detalle->cantidad = $cantidadAnterior + $cantidad;
-                        $detalle->id_trazabilidad = $trazabilidad->id_trazabilidad;
+                        $detalle->cantidad = $cantidad;
+
                         $detalle->save();
 
-                        Log::info('LOGISTICA SUMADA', [
-                            'ot' => $ot->nro_ot,
-                            'sucursal' => $sucursal,
-                            'cantidad_anterior' => $cantidadAnterior,
-                            'cantidad_agregada' => $cantidad,
-                            'cantidad_actual' => $detalle->cantidad,
-                            'trazabilidad' => $trazabilidad->id_trazabilidad,
-                        ]);
-                    } else {
 
-                        $detalle = OtLogisticaDetalle::create([
-                            'id_ot' => $ot->id_ot,
-                            'id_trazabilidad' => $trazabilidad->id_trazabilidad,
-                            'sucursal' => $sucursal,
-                            'cantidad' => $cantidad,
-                        ]);
+                        Log::info(
+                            'DETALLE LOGISTICA ACTUALIZADO',
+                            [
 
-                        Log::info('LOGISTICA CREADA', [
-                            'ot' => $ot->nro_ot,
-                            'sucursal' => $sucursal,
-                            'cantidad' => $cantidad,
-                            'trazabilidad' => $trazabilidad->id_trazabilidad,
-                        ]);
+                                'id' => $detalle->id,
+
+                                'ot' => $ot->nro_ot,
+
+                                'id_ot' => $ot->id_ot,
+
+                                'trazabilidad' =>
+                                    $trazabilidad->id_trazabilidad,
+
+                                'sucursal' => $sucursal,
+
+                                'cantidad' => $cantidad,
+
+                            ]
+                        );
+                    }
+
+
+                    // =====================================================
+                    // CREAR DETALLE
+                    // =====================================================
+
+                    else {
+
+                        $detalle =
+                            OtLogisticaDetalle::create([
+
+                                'id_ot' =>
+                                    $ot->id_ot,
+
+                                'id_trazabilidad' =>
+                                    $trazabilidad->id_trazabilidad,
+
+                                'sucursal' =>
+                                    $sucursal,
+
+                                'cantidad' =>
+                                    $cantidad,
+
+                            ]);
+
+
+                        Log::info(
+                            'DETALLE LOGISTICA CREADO',
+                            [
+
+                                'id' => $detalle->id,
+
+                                'ot' => $ot->nro_ot,
+
+                                'id_ot' => $ot->id_ot,
+
+                                'trazabilidad' =>
+                                    $trazabilidad->id_trazabilidad,
+
+                                'sucursal' => $sucursal,
+
+                                'cantidad' => $cantidad,
+
+                            ]
+                        );
                     }
                 }
 
-                $detalle = OtLogisticaDetalle::where('id_trazabilidad', $trazabilidad->id_trazabilidad)
-                    ->get();
 
-                Log::info('DETALLES DESPUES DEL PROCESO', [
-                    'cantidad' => $detalle->count(),
-                    'datos' => $detalle->toArray(),
-                ]);
+                // =========================================================
+                // TOTAL REAL DISTRIBUIDO
+                // =========================================================
+                //
+                // ESTE VALOR NO SE GUARDA.
+                //
+                // Se calcula directamente desde los detalles.
+                //
+                // Si tenés:
+                //
+                // Multi = 51
+                // Multi = 1
+                //
+                // el total será 52.
+                //
+                // =========================================================
 
-                Log::info('TOTAL TRAZABILIDADES', [
-                    'cantidad' => DB::table('ot_trazabilidad')->count(),
-                    'ultima' => DB::table('ot_trazabilidad')->max('id_trazabilidad'),
-                ]);
+                $totalDistribuido =
+                    OtLogisticaDetalle::where(
+                        'id_trazabilidad',
+                        $trazabilidad->id_trazabilidad
+                    )->sum('cantidad');
 
-                $traza = DB::table('ot_trazabilidad')
-                    ->where('id_trazabilidad', $trazabilidad->id_trazabilidad)
-                    ->first();
 
-                $detalles = DB::table('ot_logistica_detalle')
-                    ->where('id_trazabilidad', $trazabilidad->id_trazabilidad)
-                    ->count();
+                // =========================================================
+                // VERIFICACIÓN
+                // =========================================================
 
-                Log::info('POST PROCESO', [
-                    'id_trazabilidad' => $trazabilidad->id_trazabilidad,
-                    'trazabilidad_en_bd' => $traza ? 'SI' : 'NO',
-                    'cantidad_detalles' => $detalles,
-                ]);
+                $detallesGuardados =
+                    OtLogisticaDetalle::where(
+                        'id_trazabilidad',
+                        $trazabilidad->id_trazabilidad
+                    )->get();
 
-                Log::info('LOGISTICA CARGADA', [
-                    'codigo' => $codigo,
-                    'ot' => $ot->nro_ot,
-                    'total_movimiento' => $resultado,
-                    'trazabilidad' => $trazabilidad->id_trazabilidad,
-                ]);
-            } catch (\Exception $e) {
-                Log::error('ERROR AL PROCESAR LOGISTICA', [
-                    'codigo' => $codigo,
-                    'nro_ot' => $nroOtExcel,
-                    'error' => $e->getMessage(),
-                    'line' => $e->getLine(),
-                ]);
+
+                Log::info(
+                    'VERIFICACION IMPORTACION LOGISTICA',
+                    [
+
+                        'ot' =>
+                            $ot->nro_ot,
+
+                        'codigo' =>
+                            $codigo,
+
+                        'id_ot' =>
+                            $ot->id_ot,
+
+                        'id_trazabilidad' =>
+                            $trazabilidad->id_trazabilidad,
+
+                        'fecha_proceso' =>
+                            $trazabilidad->fecha_proceso,
+
+                        /*
+                         * ESTE ES EL RESULTADO DEL EXCEL.
+                         */
+                        'resultado' =>
+                            $trazabilidad->resultado,
+
+                        /*
+                         * ESTE ES EL TOTAL CALCULADO.
+                         */
+                        'total_distribuido' =>
+                            $totalDistribuido,
+
+                        'cantidad_detalles' =>
+                            $detallesGuardados->count(),
+
+                        'detalles' =>
+                            $detallesGuardados->toArray(),
+
+                    ]
+                );
+
+
+                // =========================================================
+                // COMMIT
+                // =========================================================
+
+                DB::commit();
+
+
+                Log::info(
+                    'LOGISTICA CARGADA CORRECTAMENTE',
+                    [
+
+                        'fila' =>
+                            $index + 2,
+
+                        'codigo' =>
+                            $codigo,
+
+                        'ot' =>
+                            $ot->nro_ot,
+
+                        'id_ot' =>
+                            $ot->id_ot,
+
+                        /*
+                         * RESULTADO IMPORTADO DESDE EXCEL.
+                         */
+                        'resultado' =>
+                            $resultado,
+
+                        'fecha_proceso' =>
+                            $this->fechaProceso,
+
+                        'trazabilidad' =>
+                            $trazabilidad->id_trazabilidad,
+
+                        /*
+                         * TOTAL CALCULADO DESDE DETALLES.
+                         */
+                        'total_distribuido' =>
+                            $totalDistribuido,
+
+                    ]
+                );
+            }
+
+
+            // =============================================================
+            // ERROR
+            // =============================================================
+
+            catch (\Throwable $e) {
+
+                DB::rollBack();
+
+
+                Log::error(
+                    'ERROR AL PROCESAR LOGISTICA',
+                    [
+
+                        'fila' =>
+                            $index + 2,
+
+                        'codigo' =>
+                            $codigo ?? null,
+
+                        'nro_ot' =>
+                            $nroOtExcel ?? null,
+
+                        'error' =>
+                            $e->getMessage(),
+
+                        'line' =>
+                            $e->getLine(),
+
+                        'file' =>
+                            $e->getFile(),
+
+                    ]
+                );
             }
         }
     }

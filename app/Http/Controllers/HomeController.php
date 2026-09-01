@@ -16,123 +16,297 @@ class HomeController extends Controller
 
     public function index()
     {
-        // ==========================================================
-        // LOTES
-        // ==========================================================
+        /*
+        |--------------------------------------------------------------------------
+        | LOTES
+        |--------------------------------------------------------------------------
+        */
 
         $totalLotes = RedistribucionLote::count();
 
-        $lotesGenerados = RedistribucionLote::where(
-            'estado',
-            'GENERADO'
-        )->count();
+        $lotesGenerados = RedistribucionLote::where('estado', 'GENERADO')
+            ->count();
 
-        $lotesEnProceso = RedistribucionLote::where(
-            'estado',
-            'EN PROCESO'
-        )->count();
+        $lotesEnProceso = RedistribucionLote::where('estado', 'EN PROCESO')
+            ->count();
 
-        $lotesFinalizados = RedistribucionLote::where(
-            'estado',
-            'FINALIZADO'
-        )->count();
+        $lotesFinalizados = RedistribucionLote::where('estado', 'FINALIZADO')
+            ->count();
 
 
-        // ==========================================================
-        // TRANSFERENCIAS
-        // ==========================================================
+        /*
+        |--------------------------------------------------------------------------
+        | DETALLES DE TRANSFERENCIAS
+        |--------------------------------------------------------------------------
+        |
+        | IMPORTANTE:
+        | El dashboard considera solamente detalles que pertenecen a un lote.
+        |
+        */
 
-        $totalTransferencias = RedistribucionProcesoDetalle::count();
-
-        $transferenciasPendientes = RedistribucionProcesoDetalle::where(
-            'estado',
-            'PENDIENTE'
-        )->count();
-
-        $transferenciasEnProceso = RedistribucionProcesoDetalle::where(
-            'estado',
-            'EN PROCESO'
-        )->count();
-
-        $transferenciasFinalizadas = RedistribucionProcesoDetalle::where(
-            'estado',
-            'FINALIZADO'
-        )->count();
+        $detallesLote = RedistribucionProcesoDetalle::whereNotNull('lote_id');
 
 
-        // ==========================================================
-        // UNIDADES
-        // ==========================================================
+        /*
+        |--------------------------------------------------------------------------
+        | TRANSFERENCIAS
+        |--------------------------------------------------------------------------
+        */
 
-        $totalUnidades = RedistribucionLote::sum('total_unidades');
+        $totalTransferencias = (clone $detallesLote)->count();
+
+        $transferenciasPendientes = (clone $detallesLote)
+            ->where('estado', 'PENDIENTE')
+            ->count();
+
+        $transferenciasEnProceso = (clone $detallesLote)
+            ->where('estado', 'EN PROCESO')
+            ->count();
+
+        $transferenciasFinalizadas = (clone $detallesLote)
+            ->where('estado', 'FINALIZADO')
+            ->count();
 
 
-        // ==========================================================
-        // PORCENTAJE DE FINALIZACIÓN
-        // ==========================================================
+        /*
+        |--------------------------------------------------------------------------
+        | UNIDADES
+        |--------------------------------------------------------------------------
+        */
 
-        $porcentajeFinalizacion = $totalLotes > 0
-            ? round(($lotesFinalizados / $totalLotes) * 100)
+        $totalUnidades = (clone $detallesLote)
+            ->sum('cantidad');
+
+        $unidadesPendientes = (clone $detallesLote)
+            ->where('estado', 'PENDIENTE')
+            ->sum('cantidad');
+
+        $unidadesEnProceso = (clone $detallesLote)
+            ->where('estado', 'EN PROCESO')
+            ->sum('cantidad');
+
+        $unidadesFinalizadas = (clone $detallesLote)
+            ->where('estado', 'FINALIZADO')
+            ->sum('cantidad');
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | PORCENTAJE DE FINALIZACIÓN
+        |--------------------------------------------------------------------------
+        |
+        | Se calcula sobre las transferencias de los detalles,
+        | no sobre el total de lotes.
+        |
+        */
+
+        $porcentajeFinalizacion = $totalTransferencias > 0
+            ? round(($transferenciasFinalizadas / $totalTransferencias) * 100, 1)
             : 0;
 
 
-        // ==========================================================
-        // ÚLTIMOS LOTES
-        // ==========================================================
+        /*
+        |--------------------------------------------------------------------------
+        | PORCENTAJE DE UNIDADES FINALIZADAS
+        |--------------------------------------------------------------------------
+        */
 
-        $ultimosLotes = RedistribucionLote::with('detalles')
+        $porcentajeUnidadesFinalizadas = $totalUnidades > 0
+            ? round(($unidadesFinalizadas / $totalUnidades) * 100, 1)
+            : 0;
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | ÚLTIMOS LOTES
+        |--------------------------------------------------------------------------
+        |
+        | Se cargan los detalles de cada lote.
+        |
+        */
+
+        $ultimosLotes = RedistribucionLote::with([
+            'detalles' => function ($query) {
+                $query->select(
+                    'id',
+                    'lote_id',
+                    'codigo',
+                    'sucursal_origen',
+                    'sucursal_destino',
+                    'cantidad',
+                    'estado',
+                    'fecha',
+                    'fecha_remision',
+                    'fecha_recepcion'
+                );
+            }
+        ])
             ->orderBy('fecha_generacion', 'desc')
             ->limit(5)
             ->get();
 
 
-        // ==========================================================
-        // ÚLTIMO LOTE
-        // ==========================================================
+        /*
+        |--------------------------------------------------------------------------
+        | CALCULAR INFORMACIÓN REAL DE CADA LOTE
+        |--------------------------------------------------------------------------
+        |
+        | Esto permite que la vista muestre:
+        |
+        | - cantidad de transferencias
+        | - unidades
+        | - unidades finalizadas
+        | - transferencias finalizadas
+        |
+        */
 
-        $ultimoLote = RedistribucionLote::orderBy(
-            'fecha_generacion',
-            'desc'
-        )->first();
+        foreach ($ultimosLotes as $lote) {
+
+            $detalles = $lote->detalles;
+
+            $lote->cantidad_transferencias = $detalles->count();
+
+            $lote->cantidad_unidades = $detalles->sum('cantidad');
+
+            $lote->transferencias_finalizadas = $detalles
+                ->where('estado', 'FINALIZADO')
+                ->count();
+
+            $lote->unidades_finalizadas = $detalles
+                ->where('estado', 'FINALIZADO')
+                ->sum('cantidad');
+
+            $lote->transferencias_pendientes = $detalles
+                ->where('estado', 'PENDIENTE')
+                ->count();
+
+            $lote->transferencias_en_proceso = $detalles
+                ->where('estado', 'EN PROCESO')
+                ->count();
+
+            /*
+             * Porcentaje real de avance del lote
+             */
+
+            $lote->porcentaje_avance = $lote->cantidad_transferencias > 0
+                ? round(
+                    ($lote->transferencias_finalizadas /
+                        $lote->cantidad_transferencias) * 100,
+                    1
+                )
+                : 0;
+        }
 
 
-        // ==========================================================
-        // LOTES PENDIENTES DE ATENCIÓN
-        // ==========================================================
+        /*
+        |--------------------------------------------------------------------------
+        | ÚLTIMO LOTE
+        |--------------------------------------------------------------------------
+        */
 
-        $lotesAtencion = RedistribucionLote::whereIn(
-            'estado',
-            [
+        $ultimoLote = RedistribucionLote::with('detalles')
+            ->orderBy('fecha_generacion', 'desc')
+            ->first();
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | LOTES QUE REQUIEREN ATENCIÓN
+        |--------------------------------------------------------------------------
+        */
+
+        $lotesAtencion = RedistribucionLote::with('detalles')
+            ->whereIn('estado', [
                 'GENERADO',
                 'EN PROCESO'
-            ]
-        )
+            ])
             ->orderBy('fecha_generacion', 'asc')
             ->limit(5)
             ->get();
 
 
+        /*
+        |--------------------------------------------------------------------------
+        | INFORMACIÓN DE ATENCIÓN POR LOTE
+        |--------------------------------------------------------------------------
+        */
+
+        foreach ($lotesAtencion as $lote) {
+
+            $detalles = $lote->detalles;
+
+            $lote->cantidad_transferencias = $detalles->count();
+
+            $lote->cantidad_unidades = $detalles->sum('cantidad');
+
+            $lote->transferencias_finalizadas = $detalles
+                ->where('estado', 'FINALIZADO')
+                ->count();
+
+            $lote->unidades_finalizadas = $detalles
+                ->where('estado', 'FINALIZADO')
+                ->sum('cantidad');
+
+            $lote->porcentaje_avance = $lote->cantidad_transferencias > 0
+                ? round(
+                    ($lote->transferencias_finalizadas /
+                        $lote->cantidad_transferencias) * 100,
+                    1
+                )
+                : 0;
+        }
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | RESUMEN POR ESTADO
+        |--------------------------------------------------------------------------
+        */
+
+        $resumenEstados = [
+            'pendientes' => $transferenciasPendientes,
+            'proceso' => $transferenciasEnProceso,
+            'finalizadas' => $transferenciasFinalizadas,
+        ];
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | RETORNAR VISTA
+        |--------------------------------------------------------------------------
+        */
+
         return view('home', compact(
 
+            // LOTES
             'totalLotes',
-
             'lotesGenerados',
             'lotesEnProceso',
             'lotesFinalizados',
 
+            // TRANSFERENCIAS
             'totalTransferencias',
             'transferenciasPendientes',
             'transferenciasEnProceso',
             'transferenciasFinalizadas',
 
+            // UNIDADES
             'totalUnidades',
+            'unidadesPendientes',
+            'unidadesEnProceso',
+            'unidadesFinalizadas',
 
+            // PORCENTAJES
             'porcentajeFinalizacion',
+            'porcentajeUnidadesFinalizadas',
 
+            // LOTES
             'ultimosLotes',
             'ultimoLote',
-            'lotesAtencion'
+            'lotesAtencion',
 
+            // RESUMEN
+            'resumenEstados'
         ));
     }
 }
