@@ -1,403 +1,289 @@
 @extends('layouts.app')
-
 @section('content')
-
     <div class="container-fluid py-3">
-
         {{-- ========================================================= --}}
         {{-- HEADER --}}
         {{-- ========================================================= --}}
-
         <div class="d-flex justify-content-between align-items-center mb-4">
-
             <div>
-
                 <h1 class="h3 font-weight-bold mb-1">
-
                     <i class="fas fa-truck-loading text-primary mr-2"></i>
-
                     Dashboard Logística
-
                 </h1>
-
                 <p class="text-muted mb-0">
-
                     Control y seguimiento de distribución de OTs
-
                 </p>
-
             </div>
-
             <div>
-
                 <a href="{{ route('dashboard.ot-logistica', request()->query()) }}" class="btn btn-outline-secondary">
-
                     <i class="fas fa-sync-alt mr-1"></i>
-
                     Actualizar
-
                 </a>
-
             </div>
-
         </div>
-
-
         {{-- ========================================================= --}}
         {{-- FILTROS --}}
         {{-- ========================================================= --}}
-
         <div class="card shadow-sm border-0 mb-4">
-
             <div class="card-header bg-white border-0">
-
                 <div class="d-flex justify-content-between align-items-center">
-
                     <div>
-
                         <h5 class="mb-0 font-weight-bold">
-
                             <i class="fas fa-filter text-primary mr-2"></i>
-
                             Filtros
-
                         </h5>
-
                         <small class="text-muted">
-
                             Filtrá la información del dashboard por fecha de proceso,
                             sucursal u OT.
-
                         </small>
-
                     </div>
-
                 </div>
-
             </div>
 
-
             <div class="card-body">
-
                 <form method="GET" action="{{ route('dashboard.ot-logistica') }}">
-
                     <div class="row">
-
                         {{-- ================================================= --}}
                         {{-- FECHA DESDE --}}
                         {{-- ================================================= --}}
-
                         <div class="col-md-3 mb-3">
-
                             <label for="fecha_desde" class="font-weight-bold">
-
                                 Fecha desde
-
                             </label>
-
                             <div class="input-group">
-
                                 <div class="input-group-prepend">
-
                                     <span class="input-group-text">
-
                                         <i class="fas fa-calendar-alt"></i>
-
                                     </span>
-
                                 </div>
-
                                 <input type="date" name="fecha_desde" id="fecha_desde" class="form-control"
                                     value="{{ request('fecha_desde') }}">
-
                             </div>
-
                             <small class="text-muted">
-
                                 Fecha del proceso de trazabilidad
-
                             </small>
-
                         </div>
-
-
                         {{-- ================================================= --}}
                         {{-- FECHA HASTA --}}
                         {{-- ================================================= --}}
-
                         <div class="col-md-3 mb-3">
-
                             <label for="fecha_hasta" class="font-weight-bold">
-
                                 Fecha hasta
-
                             </label>
-
                             <div class="input-group">
-
                                 <div class="input-group-prepend">
-
                                     <span class="input-group-text">
-
                                         <i class="fas fa-calendar-check"></i>
-
                                     </span>
-
                                 </div>
-
                                 <input type="date" name="fecha_hasta" id="fecha_hasta" class="form-control"
                                     value="{{ request('fecha_hasta') }}">
-
                             </div>
-
                             <small class="text-muted">
-
                                 Fecha del proceso de trazabilidad
-
                             </small>
-
                         </div>
-
-
                         {{-- ================================================= --}}
                         {{-- SUCURSAL --}}
                         {{-- ================================================= --}}
-
                         <div class="col-md-3 mb-3">
-
                             <label for="sucursal" class="font-weight-bold">
                                 <i class="fas fa-store text-primary mr-1"></i>
                                 Sucursales
                             </label>
-
                             <select name="sucursal[]" id="sucursal" class="form-control select2" multiple
                                 style="width: 100%;">
-
                                 @foreach ($sucursales as $sucursal)
                                     <option value="{{ $sucursal }}"
                                         {{ in_array($sucursal, request('sucursal', [])) ? 'selected' : '' }}>
                                         {{ $sucursal }}
                                     </option>
                                 @endforeach
-
                             </select>
-
                         </div>
-
-
                         {{-- ================================================= --}}
                         {{-- OT --}}
                         {{-- ================================================= --}}
-
                         <div class="col-md-3 mb-3">
-
                             <label for="busqueda" class="font-weight-bold">
                                 N° OT / Código
                             </label>
-
                             <input type="text" name="busqueda" id="busqueda" class="form-control"
                                 placeholder="Ej: 30120 o 060617" value="{{ request('busqueda') }}">
-
                         </div>
                     </div>
                     @include('sweetalert::alert')
-
-
                     {{-- ================================================= --}}
                     {{-- BOTONES --}}
                     {{-- ================================================= --}}
-
                     <div class="d-flex justify-content-end">
-
                         <a href="{{ route('dashboard.ot-logistica') }}" class="btn btn-light border mr-2">
-
                             <i class="fas fa-eraser mr-1"></i>
-
                             Limpiar
-
                         </a>
-
                         <button type="submit" class="btn btn-primary">
-
                             <i class="fas fa-search mr-1"></i>
-
                             Aplicar filtros
-
                         </button>
-
                     </div>
-
                 </form>
-
             </div>
-
         </div>
-
-
         {{-- ========================================================= --}}
         {{-- INDICADORES --}}
         {{-- ========================================================= --}}
-
         <div class="row">
-
             {{-- REGISTROS --}}
-
-            <div class="col-xl-3 col-md-6 mb-4">
-
+            {{-- <div class="col-xl-3 col-md-6 mb-4">
                 <div class="card dashboard-card border-left-primary shadow-sm h-100">
-
                     <div class="card-body">
-
                         <div class="row align-items-center">
-
                             <div class="col">
-
                                 <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">
-
                                     Registros
-
                                 </div>
-
                                 <div class="h3 mb-0 font-weight-bold">
-
                                     {{ number_format($totalRegistros, 0, ',', '.') }}
-
                                 </div>
-
                                 <small class="text-muted">
-
                                     Detalles registrados
-
                                 </small>
-
                             </div>
-
                             <div class="col-auto">
-
                                 <div class="icon-dashboard bg-primary">
-
                                     <i class="fas fa-list"></i>
-
                                 </div>
-
                             </div>
-
                         </div>
-
                     </div>
-
                 </div>
-
-            </div>
-
-
+            </div> --}}
             {{-- OTS --}}
-
+            {{-- ==========================================================
+     CANTIDAD ORDENADA
+========================================================== --}}
             <div class="col-xl-3 col-md-6 mb-4">
-
-                <div class="card dashboard-card border-left-success shadow-sm h-100">
-
-                    <div class="card-body">
-
-                        <div class="row align-items-center">
-
-                            <div class="col">
-
-                                <div class="text-xs font-weight-bold text-success text-uppercase mb-1">
-
-                                    OTs
-
-                                </div>
-
-                                <div class="h3 mb-0 font-weight-bold">
-
-                                    {{ number_format($totalOT, 0, ',', '.') }}
-
-                                </div>
-
-                                <small class="text-muted">
-
-                                    OTs diferentes
-
-                                </small>
-
-                            </div>
-
-                            <div class="col-auto">
-
-                                <div class="icon-dashboard bg-success">
-
-                                    <i class="fas fa-file-invoice"></i>
-
-                                </div>
-
-                            </div>
-
-                        </div>
-
-                    </div>
-
-                </div>
-
-            </div>
-
-
-            {{-- CANTIDAD --}}
-
-            <div class="col-xl-3 col-md-6 mb-4">
-
-                <div class="card dashboard-card border-left-warning shadow-sm h-100">
-
-                    <div class="card-body">
-
-                        <div class="row align-items-center">
-
-                            <div class="col">
-
-                                <div class="text-xs font-weight-bold text-warning text-uppercase mb-1">
-
-                                    Cantidad
-
-                                </div>
-
-                                <div class="h3 mb-0 font-weight-bold">
-
-                                    {{ number_format($totalCantidad, 0, ',', '.') }}
-
-                                </div>
-
-                                <small class="text-muted">
-
-                                    Unidades a distribuir
-
-                                </small>
-
-                            </div>
-
-                            <div class="col-auto">
-
-                                <div class="icon-dashboard bg-warning">
-
-                                    <i class="fas fa-boxes"></i>
-
-                                </div>
-
-                            </div>
-
-                        </div>
-
-                    </div>
-
-                </div>
-
-            </div>
-
-
-            {{-- SUCURSALES --}}
-
-            <div class="col-xl-3 col-md-6 mb-4">
-
                 <div class="card dashboard-card border-left-info shadow-sm h-100">
+                    <div class="card-body">
+                        <div class="row align-items-center">
+                            <div class="col">
+                                <div class="text-xs font-weight-bold text-info text-uppercase mb-1">
+                                    Cantidad Ordenada
+                                </div>
+                                <div class="h3 mb-0 font-weight-bold">
+                                    {{ number_format($totalCantidadOrdenada, 0, ',', '.') }}
+                                </div>
+                                <small class="text-muted">
+                                    Unidades de las OTs
+                                </small>
+                            </div>
+                            <div class="col-auto">
+                                <div class="icon-dashboard bg-info">
+                                    <i class="fas fa-file-invoice"></i>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+
+            {{-- ==========================================================
+     CANTIDAD CORTADA
+========================================================== --}}
+
+            {{-- <div class="col-xl-3 col-md-6 mb-4">
+                <div class="card dashboard-card border-left-primary shadow-sm h-100">
+                    <div class="card-body">
+                        <div class="row align-items-center">
+                            <div class="col">
+                                <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">
+                                    Cantidad Cortada
+                                </div>
+                                <div class="h3 mb-0 font-weight-bold">
+                                    {{ number_format($totalCantidadCortada, 0, ',', '.') }}
+                                </div>
+                                <small class="text-muted">
+                                    Unidades cortadas
+                                </small>
+                            </div>
+                            <div class="col-auto">
+                                <div class="icon-dashboard bg-primary">
+                                    <i class="fas fa-cut"></i>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div> --}}
+
+            {{-- ==========================================================
+     CANTIDAD ENVIADA
+========================================================== --}}
+
+            <div class="col-xl-3 col-md-6 mb-4">
+                <div class="card dashboard-card border-left-success shadow-sm h-100">
+                    <div class="card-body">
+                        <div class="row align-items-center">
+                            <div class="col">
+                                <div class="text-xs font-weight-bold text-success text-uppercase mb-1">
+                                    Cantidad Enviada
+                                </div>
+                                <div class="h3 mb-0 font-weight-bold">
+                                    {{ number_format($totalCantidadEnviada, 0, ',', '.') }}
+                                </div>
+                                <small class="text-muted">
+                                    Unidades enviadas
+                                </small>
+                            </div>
+                            <div class="col-auto">
+                                <div class="icon-dashboard bg-success">
+                                    <i class="fas fa-truck"></i>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-xl-3 col-md-6 mb-4">
+                <div class="card dashboard-card border-left-warning shadow-sm h-100">
+                    <div class="card-body">
+                        <div class="row align-items-center">
+                            <div class="col">
+                                <div class="text-xs font-weight-bold text-warning text-uppercase mb-1">
+                                    Cantidad Pendiente
+                                </div>
+
+                                <div class="h3 mb-0 font-weight-bold">
+                                    {{ number_format($totalCantidadOrdenada - $totalCantidadEnviada, 0, ',', '.') }}
+                                </div>
+
+                                <small class="text-muted">
+                                    Unidades pendientes de envío
+                                </small>
+                            </div>
+
+                            <div class="col-auto">
+                                <div class="icon-dashboard bg-warning">
+                                    <i class="fas fa-box-open"></i>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            @php
+                $diferenciaOrdenadaCortada = $totalCantidadOrdenada - $totalCantidadCortada;
+                $diferenciaCortadaEnviada = $totalCantidadCortada - $totalCantidadEnviada;
+            @endphp
+            {{-- ==========================================================
+     DIFERENCIA ORDENADA - CORTADA
+========================================================== --}}
+
+            {{-- <div class="col-xl-3 col-md-6 mb-4">
+                <div
+                    class="card dashboard-card border-left-{{ $diferenciaOrdenadaCortada != 0 ? 'danger' : 'success' }} shadow-sm h-100">
 
                     <div class="card-body">
 
@@ -405,31 +291,29 @@
 
                             <div class="col">
 
-                                <div class="text-xs font-weight-bold text-info text-uppercase mb-1">
-
-                                    Sucursales
-
+                                <div
+                                    class="text-xs font-weight-bold text-{{ $diferenciaOrdenadaCortada != 0 ? 'danger' : 'success' }} text-uppercase mb-1">
+                                    Diferencia Ordenada - Cortada
                                 </div>
 
-                                <div class="h3 mb-0 font-weight-bold">
-
-                                    {{ number_format($totalSucursales, 0, ',', '.') }}
-
+                                <div
+                                    class="h3 mb-0 font-weight-bold text-{{ $diferenciaOrdenadaCortada != 0 ? 'danger' : 'dark' }}">
+                                    {{ number_format($diferenciaOrdenadaCortada, 0, ',', '.') }}
                                 </div>
 
                                 <small class="text-muted">
-
-                                    Locales involucrados
-
+                                    {{ $diferenciaOrdenadaCortada != 0 ? 'Existe diferencia' : 'Sin diferencia' }}
                                 </small>
 
                             </div>
 
                             <div class="col-auto">
 
-                                <div class="icon-dashboard bg-info">
+                                <div
+                                    class="icon-dashboard bg-{{ $diferenciaOrdenadaCortada != 0 ? 'danger' : 'success' }}">
 
-                                    <i class="fas fa-store"></i>
+                                    <i
+                                        class="fas {{ $diferenciaOrdenadaCortada != 0 ? 'fa-exclamation-triangle' : 'fa-check' }}"></i>
 
                                 </div>
 
@@ -440,9 +324,57 @@
                     </div>
 
                 </div>
+            </div> --}}
 
-            </div>
 
+            {{-- ==========================================================
+     DIFERENCIA CORTADA - ENVIADA
+========================================================== --}}
+
+            {{-- <div class="col-xl-3 col-md-6 mb-4">
+                <div
+                    class="card dashboard-card border-left-{{ $diferenciaCortadaEnviada != 0 ? 'danger' : 'success' }} shadow-sm h-100">
+
+                    <div class="card-body">
+
+                        <div class="row align-items-center">
+
+                            <div class="col">
+
+                                <div
+                                    class="text-xs font-weight-bold text-{{ $diferenciaCortadaEnviada != 0 ? 'danger' : 'success' }} text-uppercase mb-1">
+                                    Diferencia Cortada - Enviada
+                                </div>
+
+                                <div
+                                    class="h3 mb-0 font-weight-bold text-{{ $diferenciaCortadaEnviada != 0 ? 'danger' : 'dark' }}">
+                                    {{ number_format($diferenciaCortadaEnviada, 0, ',', '.') }}
+                                </div>
+
+                                <small class="text-muted">
+                                    {{ $diferenciaCortadaEnviada != 0 ? 'Existe diferencia' : 'Sin diferencia' }}
+                                </small>
+
+                            </div>
+
+                            <div class="col-auto">
+
+                                <div
+                                    class="icon-dashboard bg-{{ $diferenciaCortadaEnviada != 0 ? 'danger' : 'success' }}">
+
+                                    <i
+                                        class="fas {{ $diferenciaCortadaEnviada != 0 ? 'fa-exclamation-triangle' : 'fa-check' }}"></i>
+
+                                </div>
+
+                            </div>
+
+                        </div>
+
+                    </div>
+
+                </div>
+            </div> --}}
         </div>
 
         {{-- ========================================================= --}}
@@ -1364,8 +1296,8 @@
 
 
             /* =========================================================
-                               FECHA
-                               ========================================================= */
+                                                           FECHA
+                                                           ========================================================= */
 
             .fecha-column {
 
@@ -1413,8 +1345,8 @@
 
 
             /* =========================================================
-                               OT
-                               ========================================================= */
+                                                           OT
+                                                           ========================================================= */
 
             .ot-badge {
 
@@ -1426,8 +1358,8 @@
 
 
             /* =========================================================
-                               CODIGO
-                               ========================================================= */
+                                                           CODIGO
+                                                           ========================================================= */
 
             .codigo-text {
 
@@ -1439,8 +1371,8 @@
 
 
             /* =========================================================
-                               ARTICULO
-                               ========================================================= */
+                                                           ARTICULO
+                                                           ========================================================= */
 
             .articulo-column {
 
@@ -1452,8 +1384,8 @@
 
 
             /* =========================================================
-                               SUCURSAL
-                               ========================================================= */
+                                                           SUCURSAL
+                                                           ========================================================= */
 
             .sucursal-badge {
 
@@ -1465,8 +1397,8 @@
 
 
             /* =========================================================
-                               CANTIDAD
-                               ========================================================= */
+                                                           CANTIDAD
+                                                           ========================================================= */
 
             .cantidad-cell {
 
@@ -1478,8 +1410,8 @@
 
 
             /* =========================================================
-                               PROCESO
-                               ========================================================= */
+                                                           PROCESO
+                                                           ========================================================= */
 
             .proceso-badge {
 
@@ -1501,8 +1433,8 @@
 
 
             /* =========================================================
-                               TABLA
-                               ========================================================= */
+                                                           TABLA
+                                                           ========================================================= */
 
             .table-striped tbody tr:nth-of-type(odd) {
 
@@ -1519,8 +1451,8 @@
 
 
             /* =========================================================
-                               BADGES
-                               ========================================================= */
+                                                           BADGES
+                                                           ========================================================= */
 
             .badge {
 
@@ -1530,8 +1462,8 @@
 
 
             /* =========================================================
-                               SELECT2
-                               ========================================================= */
+                                                           SELECT2
+                                                           ========================================================= */
 
             .select2-container {
 

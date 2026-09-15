@@ -20,7 +20,7 @@
         .sidebar-dark-darkest {
             background-color: #000000;
             /* casi negro */
-            color: #c2c7d0;
+            color: #f9fbff;
         }
 
         .sidebar-dark-darkest .nav-sidebar .nav-link.active {

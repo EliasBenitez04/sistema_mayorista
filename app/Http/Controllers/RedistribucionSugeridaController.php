@@ -140,10 +140,1339 @@ class RedistribucionSugeridaController extends Controller
     public function analizar(Request $request)
     {
         $request->validate([
-            'periodo'     => 'required',
-            'grupo_plan'  => 'nullable',
-            'linea'       => 'nullable',
-            'temporada'   => 'nullable',
+            'periodo'    => 'required',
+            'grupo_plan' => 'nullable',
+            'linea'      => 'nullable',
+            'temporada'  => 'nullable',
+        ]);
+
+        DB::beginTransaction();
+
+        try {
+
+            /*
+        |--------------------------------------------------------------------------
+        | 1. ELIMINAR SUGERENCIAS PENDIENTES GENERADAS HOY
+        |--------------------------------------------------------------------------
+        */
+
+            RedistribucionSugerida::whereDate(
+                'fecha_generacion',
+                now()->toDateString()
+            )
+                ->where('estado', 'PENDIENTE')
+                ->delete();
+
+
+            /*
+        |--------------------------------------------------------------------------
+        | 2. LOCALES ORIGEN
+        |--------------------------------------------------------------------------
+        | Orden de prioridad para entregar stock.
+        |--------------------------------------------------------------------------
+        */
+
+            $localesOrigen = [
+                22, // Jardines Luque
+                6,  // La Rural
+                3,  // Luque
+                4,  // Mall
+                7,  // Bonanza
+                5,  // L06 San Lo2
+            ];
+
+
+            /*
+        |--------------------------------------------------------------------------
+        | 3. LOCALES DESTINO
+        |--------------------------------------------------------------------------
+        | Orden de prioridad para recibir stock.
+        |--------------------------------------------------------------------------
+        */
+
+            $localesDestino = [
+                9,  // Multiplaza
+                8,  // Shop San Lo3
+                14, // Pinedo
+                16, // Shopping Mariano
+                2,  // San Lorenzo
+                15, // Ñemby
+            ];
+
+
+            /*
+        |--------------------------------------------------------------------------
+        | 4. CONSULTAR STOCK Y VENTAS
+        |--------------------------------------------------------------------------
+        */
+
+            $query = StockVentasSucursal::where(
+                'periodo',
+                $request->periodo
+            );
+
+            if ($request->filled('grupo_plan')) {
+                $query->where(
+                    'grupo_plan',
+                    $request->grupo_plan
+                );
+            }
+
+            if ($request->filled('linea')) {
+                $query->where(
+                    'linea',
+                    $request->linea
+                );
+            }
+
+            if ($request->filled('temporada')) {
+                $query->where(
+                    'temporada',
+                    $request->temporada
+                );
+            }
+
+            $datos = $query->get();
+
+
+            /*
+        |--------------------------------------------------------------------------
+        | 5. VALIDAR DATOS
+        |--------------------------------------------------------------------------
+        */
+
+            if ($datos->isEmpty()) {
+
+                DB::rollBack();
+
+                return redirect()
+                    ->route('RedistribucionSugeridas.index')
+                    ->with(
+                        'warning',
+                        'No se encontraron datos para analizar.'
+                    );
+            }
+
+
+            /*
+        |--------------------------------------------------------------------------
+        | 6. CÓDIGOS BLOQUEADOS
+        |--------------------------------------------------------------------------
+        */
+
+            $codigosBloqueados = collect();
+
+
+            /*
+        |--------------------------------------------------------------------------
+        | 7. REDISTRIBUCIONES PENDIENTES / EN PROCESO
+        |--------------------------------------------------------------------------
+        */
+
+            $codigosPendientes = RedistribucionProcesoDetalle::whereIn(
+                'estado',
+                [
+                    'PENDIENTE',
+                    'EN PROCESO'
+                ]
+            )
+                ->pluck('codigo')
+                ->filter()
+                ->unique();
+
+            $codigosBloqueados = $codigosBloqueados
+                ->merge($codigosPendientes);
+
+
+            /*
+        |--------------------------------------------------------------------------
+        | 8. REDISTRIBUCIONES FINALIZADAS RECIENTES
+        |--------------------------------------------------------------------------
+        */
+
+            $codigosFinalizados = RedistribucionProcesoDetalle::where(
+                'redistribucion_proceso_detalle.estado',
+                'FINALIZADO'
+            )
+                ->join(
+                    'redistribucion_lote',
+                    'redistribucion_lote.id',
+                    '=',
+                    'redistribucion_proceso_detalle.lote_id'
+                )
+                ->where(
+                    'redistribucion_lote.fecha_finalizacion',
+                    '>=',
+                    now()->subDays(30)
+                )
+                ->pluck(
+                    'redistribucion_proceso_detalle.codigo'
+                )
+                ->filter()
+                ->unique();
+
+
+            $codigosBloqueados = $codigosBloqueados
+                ->merge($codigosFinalizados)
+                ->unique()
+                ->values();
+
+
+            /*
+        |--------------------------------------------------------------------------
+        | 9. AGRUPAR POR CÓDIGO
+        |--------------------------------------------------------------------------
+        */
+
+            $datosPorCodigo = $datos->groupBy('codigo');
+
+
+            /*
+        |--------------------------------------------------------------------------
+        | 10. PREPARAR SUGERENCIAS
+        |--------------------------------------------------------------------------
+        */
+
+            $sugerencias = [];
+
+            $cantidadSugerencias = 0;
+
+            /*
+        | Total de unidades transferidas.
+        | Esto sirve para saber cuánto stock realmente se redistribuyó.
+        */
+
+            $totalUnidadesTransferidas = 0;
+
+
+            /*
+        |--------------------------------------------------------------------------
+        | 11. ANALIZAR CADA CÓDIGO
+        |--------------------------------------------------------------------------
+        */
+
+            foreach ($datosPorCodigo as $codigo => $items) {
+
+                /*
+            |--------------------------------------------------------------------------
+            | BLOQUEO DE CÓDIGOS
+            |--------------------------------------------------------------------------
+            |
+            | Actualmente sigue desactivado, igual que en tu código.
+            |
+            */
+
+                /*
+            if ($codigosBloqueados->contains($codigo)) {
+                continue;
+            }
+            */
+
+
+                $origenes = [];
+
+                $destinos = [];
+
+
+                /*
+            |--------------------------------------------------------------------------
+            | 12. ANALIZAR CADA SUCURSAL
+            |--------------------------------------------------------------------------
+            */
+
+                foreach ($items as $item) {
+
+                    $sucursalId = (int) $item->sucursal_id;
+
+                    $venta = (int) $item->cant_vta;
+
+                    $stock = (int) $item->stock_actual;
+
+
+                    /*
+                |--------------------------------------------------------------------------
+                | ORIGEN
+                |--------------------------------------------------------------------------
+                |
+                | EL ORIGEN CONSERVA SOLAMENTE EL 5% DE SUS VENTAS.
+                |
+                | Esto libera bastante stock para redistribuir.
+                |
+                */
+
+                    $stockObjetivoOrigen = (int) ceil(
+                        $venta * 0.05
+                    );
+
+
+                    /*
+                |--------------------------------------------------------------------------
+                | EXCESO DEL ORIGEN
+                |--------------------------------------------------------------------------
+                */
+
+                    $exceso = $stock - $stockObjetivoOrigen;
+
+
+                    /*
+                |--------------------------------------------------------------------------
+                | DESTINO
+                |--------------------------------------------------------------------------
+                |
+                | IMPORTANTE:
+                |
+                | El destino ahora busca llegar al 200% de sus ventas.
+                |
+                | Ejemplo:
+                |
+                | Venta = 100
+                | Stock = 20
+                |
+                | Objetivo anterior:
+                | 100
+                |
+                | Necesidad:
+                | 100 - 20 = 80
+                |
+                |
+                | Objetivo nuevo:
+                | 200
+                |
+                | Necesidad:
+                | 200 - 20 = 180
+                |
+                | Esto permite absorber mucho más stock.
+                |
+                */
+
+                    $stockObjetivoDestino = (int) ceil(
+                        $venta * 2.00
+                    );
+
+                    $necesidad = $stockObjetivoDestino - $stock;
+
+
+                    /*
+                |--------------------------------------------------------------------------
+                | 13. DESTINO
+                |--------------------------------------------------------------------------
+                */
+
+                    if (
+                        in_array(
+                            $sucursalId,
+                            $localesDestino
+                        )
+                        &&
+                        $venta >= 0
+                        &&
+                        $necesidad >= 0
+                    ) {
+
+                        $destinos[] = [
+
+                            'sucursal_id'   => $sucursalId,
+
+                            'venta'         => $venta,
+
+                            'stock'         => $stock,
+
+                            'stockObjetivo' => $stockObjetivoDestino,
+
+                            'necesidad'     => $necesidad,
+                        ];
+                    }
+
+
+                    /*
+                |--------------------------------------------------------------------------
+                | 14. ORIGEN
+                |--------------------------------------------------------------------------
+                */
+
+                    if (
+                        in_array(
+                            $sucursalId,
+                            $localesOrigen
+                        )
+                        &&
+                        $exceso >= 0
+                    ) {
+
+                        $origenes[] = [
+
+                            'sucursal_id'   => $sucursalId,
+
+                            'venta'         => $venta,
+
+                            'stock'         => $stock,
+
+                            'stockObjetivo' => $stockObjetivoOrigen,
+
+                            'exceso'        => $exceso,
+                        ];
+                    }
+                }
+
+
+                /*
+            |--------------------------------------------------------------------------
+            | 15. ORDENAR DESTINOS
+            |--------------------------------------------------------------------------
+            */
+
+                usort(
+                    $destinos,
+                    function ($a, $b) use ($localesDestino) {
+
+                        $posA = array_search(
+                            $a['sucursal_id'],
+                            $localesDestino
+                        );
+
+                        $posB = array_search(
+                            $b['sucursal_id'],
+                            $localesDestino
+                        );
+
+                        return $posA <=> $posB;
+                    }
+                );
+
+
+                /*
+            |--------------------------------------------------------------------------
+            | 16. ORDENAR ORÍGENES
+            |--------------------------------------------------------------------------
+            */
+
+                usort(
+                    $origenes,
+                    function ($a, $b) use ($localesOrigen) {
+
+                        $posA = array_search(
+                            $a['sucursal_id'],
+                            $localesOrigen
+                        );
+
+                        $posB = array_search(
+                            $b['sucursal_id'],
+                            $localesOrigen
+                        );
+
+                        return $posA <=> $posB;
+                    }
+                );
+
+
+                /*
+            |--------------------------------------------------------------------------
+            | 17. REDISTRIBUIR
+            |--------------------------------------------------------------------------
+            */
+
+                foreach ($destinos as $destino) {
+
+                    /*
+                |--------------------------------------------------------------------------
+                | EL DESTINO PUEDE RECIBIR TODA SU NECESIDAD
+                |--------------------------------------------------------------------------
+                */
+
+                    $pendienteTransferir =
+                        (int) $destino['necesidad'];
+
+
+                    /*
+                |--------------------------------------------------------------------------
+                | BUSCAR ORIGEN POR ORDEN DE PRIORIDAD
+                |--------------------------------------------------------------------------
+                */
+
+                    foreach ($origenes as &$origen) {
+
+                        if ($pendienteTransferir <= 0) {
+                            break;
+                        }
+
+
+                        /*
+                    |--------------------------------------------------------------------------
+                    | NO TRANSFERIR A LA MISMA SUCURSAL
+                    |--------------------------------------------------------------------------
+                    */
+
+                        if (
+                            $origen['sucursal_id'] ===
+                            $destino['sucursal_id']
+                        ) {
+                            continue;
+                        }
+
+
+                        /*
+                    |--------------------------------------------------------------------------
+                    | CANTIDAD A TRANSFERIR
+                    |--------------------------------------------------------------------------
+                    */
+
+                        $cantidad = min(
+                            $pendienteTransferir,
+                            $origen['exceso']
+                        );
+
+
+                        if ($cantidad <= 0) {
+                            continue;
+                        }
+
+
+                        /*
+                    |--------------------------------------------------------------------------
+                    | MOTIVO
+                    |--------------------------------------------------------------------------
+                    */
+
+                        $motivo =
+                            'Redistribución automática: ' .
+                            'origen con exceso de stock y destino con necesidad. ' .
+                            'Origen conserva 5% de ventas y destino busca alcanzar 200% de ventas.';
+
+
+                        /*
+                    |--------------------------------------------------------------------------
+                    | CREAR SUGERENCIA
+                    |--------------------------------------------------------------------------
+                    */
+
+                        $sugerencias[] = [
+
+                            'codigo' =>
+                            $codigo,
+
+                            'sucursal_origen' =>
+                            $origen['sucursal_id'],
+
+                            'sucursal_destino' =>
+                            $destino['sucursal_id'],
+
+                            'cantidad' =>
+                            $cantidad,
+
+                            'stock_origen' =>
+                            $origen['stock'],
+
+                            'stock_destino' =>
+                            $destino['stock'],
+
+                            'venta_origen' =>
+                            $origen['venta'],
+
+                            'venta_destino' =>
+                            $destino['venta'],
+
+                            'motivo' =>
+                            $motivo,
+
+                            'estado' =>
+                            'PENDIENTE',
+
+                            'fecha_generacion' =>
+                            now(),
+                        ];
+
+
+                        /*
+                    |--------------------------------------------------------------------------
+                    | DESCONTAR DEL EXCESO DEL ORIGEN
+                    |--------------------------------------------------------------------------
+                    */
+
+                        $origen['exceso'] -= $cantidad;
+
+
+                        /*
+                    |--------------------------------------------------------------------------
+                    | DESCONTAR LA NECESIDAD DEL DESTINO
+                    |--------------------------------------------------------------------------
+                    */
+
+                        $pendienteTransferir -= $cantidad;
+
+
+                        /*
+                    |--------------------------------------------------------------------------
+                    | CONTAR SUGERENCIA
+                    |--------------------------------------------------------------------------
+                    */
+
+                        $cantidadSugerencias++;
+
+
+                        /*
+                    |--------------------------------------------------------------------------
+                    | CONTAR UNIDADES REALES TRANSFERIDAS
+                    |--------------------------------------------------------------------------
+                    */
+
+                        $totalUnidadesTransferidas += $cantidad;
+                    }
+
+                    unset($origen);
+                }
+            }
+
+
+            /*
+        |--------------------------------------------------------------------------
+        | 18. INSERTAR EN BLOQUES DE 1000
+        |--------------------------------------------------------------------------
+        */
+
+            if (!empty($sugerencias)) {
+
+                foreach (
+                    array_chunk(
+                        $sugerencias,
+                        1000
+                    ) as $chunk
+                ) {
+
+                    RedistribucionSugerida::insert(
+                        $chunk
+                    );
+                }
+            }
+
+
+            /*
+        |--------------------------------------------------------------------------
+        | 19. CONFIRMAR TRANSACCIÓN
+        |--------------------------------------------------------------------------
+        */
+
+            DB::commit();
+
+
+            /*
+        |--------------------------------------------------------------------------
+        | 20. RESULTADO SIN SUGERENCIAS
+        |--------------------------------------------------------------------------
+        */
+
+            if ($cantidadSugerencias === 0) {
+
+                return redirect()
+                    ->route(
+                        'RedistribucionSugeridas.index'
+                    )
+                    ->with(
+                        'warning',
+                        'El análisis terminó, pero no se encontraron redistribuciones necesarias.'
+                    );
+            }
+
+
+            /*
+        |--------------------------------------------------------------------------
+        | 21. RESULTADO FINAL
+        |--------------------------------------------------------------------------
+        */
+
+            return redirect()
+                ->route(
+                    'RedistribucionSugeridas.index'
+                )
+                ->with(
+                    'success',
+                    'Análisis realizado correctamente. Se generaron '
+                        . $cantidadSugerencias
+                        . ' sugerencias con '
+                        . $totalUnidadesTransferidas
+                        . ' unidades de stock para redistribuir.'
+                );
+        } catch (\Throwable $e) {
+
+            DB::rollBack();
+
+
+            /*
+        |--------------------------------------------------------------------------
+        | REGISTRAR ERROR
+        |--------------------------------------------------------------------------
+        */
+
+            Log::error(
+                'Error al analizar redistribución sugerida',
+                [
+                    'error' =>
+                    $e->getMessage(),
+
+                    'line' =>
+                    $e->getLine(),
+
+                    'file' =>
+                    $e->getFile(),
+
+                    'trace' =>
+                    $e->getTraceAsString(),
+                ]
+            );
+
+
+            return redirect()
+                ->route(
+                    'RedistribucionSugeridas.index'
+                )
+                ->with(
+                    'error',
+                    'Ocurrió un error al realizar el análisis: '
+                        . $e->getMessage()
+                );
+        }
+    }
+
+
+    // public function analizar(Request $request)
+    // {
+    //     $request->validate([
+    //         'periodo'     => 'required',
+    //         'grupo_plan'  => 'nullable',
+    //         'linea'       => 'nullable',
+    //         'temporada'   => 'nullable',
+    //     ]);
+
+    //     DB::beginTransaction();
+
+    //     try {
+
+    //         $fechaGeneracion = now();
+
+    //         /**
+    //          * =====================================================
+    //          * 1. ELIMINAR SUGERENCIAS PENDIENTES GENERADAS HOY
+    //          * =====================================================
+    //          *
+    //          * Esto NO elimina:
+    //          *
+    //          * - APROBADAS
+    //          * - RECHAZADAS
+    //          *
+    //          * Las rechazadas quedan históricamente registradas,
+    //          * pero NO bloquean futuros análisis.
+    //          */
+    //         $inicioDia = $fechaGeneracion->copy()->startOfDay();
+    //         $finDia    = $fechaGeneracion->copy()->endOfDay();
+
+    //         RedistribucionSugerida::whereBetween(
+    //             'fecha_generacion',
+    //             [$inicioDia, $finDia]
+    //         )
+    //             ->where('estado', 'PENDIENTE')
+    //             ->delete();
+
+
+    //         /**
+    //          * =====================================================
+    //          * 2. OBTENER STOCK Y VENTAS
+    //          * =====================================================
+    //          */
+    //         $query = StockVentasSucursal::query()
+    //             ->where('periodo', $request->periodo);
+
+    //         if ($request->filled('grupo_plan')) {
+    //             $query->where(
+    //                 'grupo_plan',
+    //                 $request->grupo_plan
+    //             );
+    //         }
+
+    //         if ($request->filled('linea')) {
+    //             $query->where(
+    //                 'linea',
+    //                 $request->linea
+    //             );
+    //         }
+
+    //         if ($request->filled('temporada')) {
+    //             $query->where(
+    //                 'temporada',
+    //                 $request->temporada
+    //             );
+    //         }
+
+    //         $datos = $query->get();
+
+
+    //         /**
+    //          * =====================================================
+    //          * 3. VALIDAR DATOS
+    //          * =====================================================
+    //          */
+    //         if ($datos->isEmpty()) {
+
+    //             DB::rollBack();
+
+    //             return back()
+    //                 ->withInput()
+    //                 ->with(
+    //                     'error',
+    //                     'No existen datos para los filtros seleccionados.'
+    //                 );
+    //         }
+
+
+    //         /**
+    //          * =====================================================
+    //          * 4. CÓDIGOS BLOQUEADOS
+    //          * =====================================================
+    //          *
+    //          * REGLA DEL NEGOCIO:
+    //          *
+    //          * A) PENDIENTE
+    //          *    -> BLOQUEADO
+    //          *
+    //          * B) EN PROCESO
+    //          *    -> BLOQUEADO
+    //          *
+    //          * C) FINALIZADO MENOS DE 30 DÍAS
+    //          *    -> BLOQUEADO
+    //          *
+    //          * D) FINALIZADO HACE 30 DÍAS O MÁS
+    //          *    -> DISPONIBLE NUEVAMENTE
+    //          *
+    //          * E) RECHAZADA
+    //          *    -> NUNCA BLOQUEA
+    //          *
+    //          * F) APROBADA
+    //          *    -> No se utiliza directamente para bloquear.
+    //          *       Una aprobada ya genera un detalle de proceso,
+    //          *       por lo que el bloqueo se controla mediante
+    //          *       RedistribucionProcesoDetalle.
+    //          */
+
+
+    //         /**
+    //          * =====================================================
+    //          * 4.1 CÓDIGOS EN PROCESOS ACTIVOS
+    //          * =====================================================
+    //          *
+    //          * PENDIENTE:
+    //          * Ya fue aprobado y está esperando lote.
+    //          *
+    //          * EN PROCESO:
+    //          * Está siendo procesado.
+    //          */
+    //         $codigosActivos = RedistribucionProcesoDetalle::query()
+    //             ->whereIn('estado', [
+    //                 'PENDIENTE',
+    //                 'EN PROCESO'
+    //             ])
+    //             ->pluck('codigo')
+    //             ->unique()
+    //             ->values();
+
+
+    //         $fechaLimite = now()->subDays(30);
+
+    //         $codigosFinalizadosRecientes =
+    //             RedistribucionProcesoDetalle::query()
+    //             ->join(
+    //                 'redistribucion_lote',
+    //                 'redistribucion_proceso_detalle.lote_id',
+    //                 '=',
+    //                 'redistribucion_lote.id'
+    //             )
+    //             ->where(
+    //                 'redistribucion_lote.estado',
+    //                 'FINALIZADO'
+    //             )
+    //             ->whereNotNull(
+    //                 'redistribucion_lote.fecha_finalizacion'
+    //             )
+    //             ->where(
+    //                 'redistribucion_lote.fecha_finalizacion',
+    //                 '>=',
+    //                 $fechaLimite
+    //             )
+    //             ->pluck(
+    //                 'redistribucion_proceso_detalle.codigo'
+    //             )
+    //             ->unique()
+    //             ->values();
+
+
+    //         /**
+    //          * =====================================================
+    //          * 4.3 UNIFICAR BLOQUEADOS
+    //          * =====================================================
+    //          */
+    //         $codigosBloqueados = $codigosActivos
+    //             ->merge($codigosFinalizadosRecientes)
+    //             ->unique()
+    //             ->values();
+
+
+    //         /**
+    //          * =====================================================
+    //          * 5. EXCLUIR CÓDIGOS BLOQUEADOS
+    //          * =====================================================
+    //          *
+    //          * IMPORTANTE:
+    //          *
+    //          * NO buscamos RECHAZADAS.
+    //          *
+    //          * Por lo tanto una sugerencia rechazada queda libre
+    //          * automáticamente para un nuevo análisis.
+    //          */
+    //         if ($codigosBloqueados->isNotEmpty()) {
+
+    //             $datos = $datos
+    //                 ->reject(function ($item) use ($codigosBloqueados) {
+
+    //                     return $codigosBloqueados->contains(
+    //                         $item->codigo
+    //                     );
+    //                 })
+    //                 ->values();
+    //         }
+
+
+    //         /**
+    //          * =====================================================
+    //          * 6. VALIDAR SI QUEDARON PRODUCTOS
+    //          * =====================================================
+    //          */
+    //         if ($datos->isEmpty()) {
+
+    //             DB::rollBack();
+
+    //             return redirect()
+    //                 ->route(
+    //                     'RedistribucionSugeridas.index'
+    //                 )
+    //                 ->with(
+    //                     'warning',
+    //                     'No existen prendas disponibles para analizar. Las prendas actualmente están pendientes, en proceso o fueron finalizadas hace menos de 30 días.'
+    //                 );
+    //         }
+
+
+    //         /**
+    //          * =====================================================
+    //          * 7. AGRUPAR POR PRODUCTO
+    //          * =====================================================
+    //          */
+    //         $productos = $datos->groupBy('codigo');
+
+
+    //         /**
+    //          * =====================================================
+    //          * 8. ACUMULADORES
+    //          * =====================================================
+    //          */
+    //         $insertar = [];
+
+    //         $totalSugerencias = 0;
+
+
+    //         /**
+    //          * =====================================================
+    //          * 9. ANALIZAR CADA PRODUCTO
+    //          * =====================================================
+    //          */
+    //         foreach ($productos as $codigo => $sucursales) {
+
+    //             /**
+    //              * Ordenar sucursales por mayor venta.
+    //              */
+    //             $sucursales = $sucursales
+    //                 ->sortByDesc('cant_vta')
+    //                 ->values();
+
+    //             $destinos = [];
+    //             $origenes = [];
+
+
+    //             /**
+    //              * =================================================
+    //              * 9.1 IDENTIFICAR ORÍGENES Y DESTINOS
+    //              * =================================================
+    //              */
+    //             foreach ($sucursales as $item) {
+
+    //                 $venta = (int) $item->cant_vta;
+    //                 $stock = (int) $item->stock_actual;
+
+
+    //                 /**
+    //                  * Stock objetivo = venta.
+    //                  */
+    //                 $stockObjetivo = $venta;
+
+
+    //                 /**
+    //                  * Necesidad.
+    //                  */
+    //                 $necesidad =
+    //                     $stockObjetivo - $stock;
+
+
+    //                 /**
+    //                  * Exceso.
+    //                  */
+    //                 $exceso =
+    //                     $stock - $stockObjetivo;
+
+
+    //                 /**
+    //                  * =============================================
+    //                  * DESTINO
+    //                  * =============================================
+    //                  *
+    //                  * Solamente se consideran destinos con:
+    //                  *
+    //                  * venta > 2
+    //                  * y stock menor que venta.
+    //                  */
+    //                 if (
+    //                     $venta > 2 &&
+    //                     $necesidad > 0
+    //                 ) {
+
+    //                     $destinos[] = [
+
+    //                         'sucursal_id' =>
+    //                         $item->sucursal_id,
+
+    //                         'stock' =>
+    //                         $stock,
+
+    //                         'venta' =>
+    //                         $venta,
+
+    //                         'necesidad' =>
+    //                         $necesidad,
+    //                     ];
+    //                 }
+
+
+    //                 /**
+    //                  * =============================================
+    //                  * ORIGEN
+    //                  * =============================================
+    //                  */
+    //                 if ($exceso > 0) {
+
+    //                     $origenes[] = [
+
+    //                         'sucursal_id' =>
+    //                         $item->sucursal_id,
+
+    //                         'stock' =>
+    //                         $stock,
+
+    //                         'venta' =>
+    //                         $venta,
+
+    //                         'exceso' =>
+    //                         $exceso,
+    //                     ];
+    //                 }
+    //             }
+
+
+    //             /**
+    //              * =================================================
+    //              * 9.2 ORDENAR ORÍGENES
+    //              * =================================================
+    //              *
+    //              * Primero la sucursal con mayor exceso.
+    //              */
+    //             usort(
+    //                 $origenes,
+    //                 function ($a, $b) {
+
+    //                     return
+    //                         $b['exceso']
+    //                         <=>
+    //                         $a['exceso'];
+    //                 }
+    //             );
+
+
+    //             /**
+    //              * =================================================
+    //              * 9.3 ORDENAR DESTINOS
+    //              * =================================================
+    //              *
+    //              * Primero la sucursal con mayor venta.
+    //              */
+    //             usort(
+    //                 $destinos,
+    //                 function ($a, $b) {
+
+    //                     return
+    //                         $b['venta']
+    //                         <=>
+    //                         $a['venta'];
+    //                 }
+    //             );
+
+
+    //             /**
+    //              * =================================================
+    //              * 9.4 GENERAR TRANSFERENCIAS
+    //              * =================================================
+    //              */
+    //             foreach ($destinos as &$destino) {
+
+    //                 if (
+    //                     $destino['necesidad'] <= 0
+    //                 ) {
+    //                     continue;
+    //                 }
+
+
+    //                 /**
+    //                  * =================================================
+    //                  * LÍMITE DE TRANSFERENCIA
+    //                  * =================================================
+    //                  *
+    //                  * Máximo 50% de la necesidad.
+    //                  */
+    //                 $maximoTransferirDestino =
+    //                     (int) ceil(
+    //                         $destino['necesidad'] * 0.50
+    //                     );
+
+
+    //                 $pendienteTransferir =
+    //                     $maximoTransferirDestino;
+
+
+    //                 /**
+    //                  * =================================================
+    //                  * BUSCAR ORIGEN
+    //                  * =================================================
+    //                  */
+    //                 foreach ($origenes as &$origen) {
+
+    //                     if (
+    //                         $origen['exceso'] <= 0
+    //                     ) {
+    //                         continue;
+    //                     }
+
+
+    //                     /**
+    //                      * Nunca transferir a la misma sucursal.
+    //                      */
+    //                     if (
+    //                         $origen['sucursal_id']
+    //                         ==
+    //                         $destino['sucursal_id']
+    //                     ) {
+    //                         continue;
+    //                     }
+
+
+    //                     /**
+    //                      * Cantidad a transferir.
+    //                      */
+    //                     $cantidad = min(
+    //                         $pendienteTransferir,
+    //                         $origen['exceso']
+    //                     );
+
+
+    //                     if ($cantidad <= 0) {
+    //                         continue;
+    //                     }
+
+
+    //                     /**
+    //                      * Motivo.
+    //                      */
+    //                     $motivo =
+    //                         'Transferencia por exceso de stock y mayor demanda.';
+
+
+    //                     /**
+    //                      * =================================================
+    //                      * PREPARAR INSERT
+    //                      * =================================================
+    //                      */
+    //                     $insertar[] = [
+
+    //                         'codigo' =>
+    //                         $codigo,
+
+    //                         'sucursal_origen' =>
+    //                         $origen['sucursal_id'],
+
+    //                         'sucursal_destino' =>
+    //                         $destino['sucursal_id'],
+
+    //                         'cantidad' =>
+    //                         $cantidad,
+
+    //                         'stock_origen' =>
+    //                         $origen['stock'],
+
+    //                         'stock_destino' =>
+    //                         $destino['stock'],
+
+    //                         'venta_origen' =>
+    //                         $origen['venta'],
+
+    //                         'venta_destino' =>
+    //                         $destino['venta'],
+
+    //                         'motivo' =>
+    //                         $motivo,
+
+    //                         'estado' =>
+    //                         'PENDIENTE',
+
+    //                         'fecha_generacion' =>
+    //                         $fechaGeneracion,
+    //                     ];
+
+
+    //                     /**
+    //                      * =================================================
+    //                      * ACTUALIZAR RESTANTES
+    //                      * =================================================
+    //                      */
+    //                     $pendienteTransferir -=
+    //                         $cantidad;
+
+    //                     $origen['exceso'] -=
+    //                         $cantidad;
+
+    //                     $totalSugerencias++;
+
+
+    //                     /**
+    //                      * Ya llegó al límite del destino.
+    //                      */
+    //                     if (
+    //                         $pendienteTransferir <= 0
+    //                     ) {
+    //                         break;
+    //                     }
+    //                 }
+
+    //                 unset($origen);
+    //             }
+
+    //             unset($destino);
+    //         }
+
+
+    //         /**
+    //          * =====================================================
+    //          * 10. INSERT MASIVO
+    //          * =====================================================
+    //          */
+    //         if (!empty($insertar)) {
+
+    //             foreach (
+    //                 array_chunk(
+    //                     $insertar,
+    //                     1000
+    //                 ) as $chunk
+    //             ) {
+
+    //                 RedistribucionSugerida::insert(
+    //                     $chunk
+    //                 );
+    //             }
+    //         }
+
+
+    //         /**
+    //          * =====================================================
+    //          * 11. CONFIRMAR
+    //          * =====================================================
+    //          */
+    //         DB::commit();
+
+
+    //         /**
+    //          * =====================================================
+    //          * 12. SIN RESULTADOS
+    //          * =====================================================
+    //          */
+    //         if (
+    //             $totalSugerencias === 0
+    //         ) {
+
+    //             return redirect()
+    //                 ->route(
+    //                     'RedistribucionSugeridas.index'
+    //                 )
+    //                 ->with(
+    //                     'warning',
+    //                     'El análisis terminó, pero no se encontraron redistribuciones necesarias.'
+    //                 );
+    //         }
+
+
+    //         /**
+    //          * =====================================================
+    //          * 13. RESULTADO
+    //          * =====================================================
+    //          */
+    //         return redirect()
+    //             ->route(
+    //                 'RedistribucionSugeridas.index'
+    //             )
+    //             ->with(
+    //                 'success',
+    //                 'Análisis realizado correctamente. Se generaron '
+    //                     . $totalSugerencias
+    //                     . ' sugerencias.'
+    //             );
+    //     } catch (\Exception $e) {
+
+    //         DB::rollBack();
+
+    //         Log::error(
+    //             'Error redistribucion',
+    //             [
+    //                 'error' =>
+    //                 $e->getMessage(),
+
+    //                 'line' =>
+    //                 $e->getLine(),
+
+    //                 'file' =>
+    //                 $e->getFile(),
+
+    //                 'trace' =>
+    //                 $e->getTraceAsString(),
+    //             ]
+    //         );
+
+    //         return back()
+    //             ->withInput()
+    //             ->with(
+    //                 'error',
+    //                 'Error al analizar redistribución: '
+    //                     . $e->getMessage()
+    //             );
+    //     }
+    // }
+
+    public function analizar2(Request $request)
+    {
+        $request->validate([
+            'periodo'    => 'required',
+            'grupo_plan' => 'nullable',
+            'linea'      => 'nullable',
+            'temporada'  => 'nullable',
         ]);
 
         DB::beginTransaction();
@@ -152,19 +1481,19 @@ class RedistribucionSugeridaController extends Controller
 
             $fechaGeneracion = now();
 
-            /**
-             * =====================================================
-             * 1. ELIMINAR SUGERENCIAS PENDIENTES GENERADAS HOY
-             * =====================================================
-             *
-             * Esto NO elimina:
-             *
-             * - APROBADAS
-             * - RECHAZADAS
-             *
-             * Las rechazadas quedan históricamente registradas,
-             * pero NO bloquean futuros análisis.
-             */
+            /*
+        |--------------------------------------------------------------------------
+        | 1. ELIMINAR SUGERENCIAS PENDIENTES GENERADAS HOY
+        |--------------------------------------------------------------------------
+        |
+        | Las sugerencias:
+        |
+        | PENDIENTE  -> se pueden regenerar
+        | APROBADA   -> se conserva
+        | RECHAZADA  -> se conserva como histórico y NO bloquea
+        |
+        */
+
             $inicioDia = $fechaGeneracion->copy()->startOfDay();
             $finDia    = $fechaGeneracion->copy()->endOfDay();
 
@@ -176,11 +1505,39 @@ class RedistribucionSugeridaController extends Controller
                 ->delete();
 
 
-            /**
-             * =====================================================
-             * 2. OBTENER STOCK Y VENTAS
-             * =====================================================
-             */
+            /*
+        |--------------------------------------------------------------------------
+        | 2. CONFIGURACIÓN DEL ANÁLISIS
+        |--------------------------------------------------------------------------
+        |
+        | Según el informe ejecutivo:
+        |
+        | RECEPTORES:
+        | 9 = Multiplaza
+        | 8  = Shop San Lo3
+        | 14  = Pinedo Shopping
+        | 16 = Shopping Mariano
+        | 2 = San Lorenzo
+        | 15  = Ñemby
+        |
+        */
+
+            $sucursalesReceptoras = [
+                9,
+                8,
+                14,
+                16,
+                2,
+                15,
+            ];
+
+
+            /*
+        |--------------------------------------------------------------------------
+        | 3. OBTENER STOCK Y VENTAS
+        |--------------------------------------------------------------------------
+        */
+
             $query = StockVentasSucursal::query()
                 ->where('periodo', $request->periodo);
 
@@ -208,11 +1565,12 @@ class RedistribucionSugeridaController extends Controller
             $datos = $query->get();
 
 
-            /**
-             * =====================================================
-             * 3. VALIDAR DATOS
-             * =====================================================
-             */
+            /*
+        |--------------------------------------------------------------------------
+        | 4. VALIDAR DATOS
+        |--------------------------------------------------------------------------
+        */
+
             if ($datos->isEmpty()) {
 
                 DB::rollBack();
@@ -226,47 +1584,57 @@ class RedistribucionSugeridaController extends Controller
             }
 
 
-            /**
-             * =====================================================
-             * 4. CÓDIGOS BLOQUEADOS
-             * =====================================================
-             *
-             * REGLA DEL NEGOCIO:
-             *
-             * A) PENDIENTE
-             *    -> BLOQUEADO
-             *
-             * B) EN PROCESO
-             *    -> BLOQUEADO
-             *
-             * C) FINALIZADO MENOS DE 30 DÍAS
-             *    -> BLOQUEADO
-             *
-             * D) FINALIZADO HACE 30 DÍAS O MÁS
-             *    -> DISPONIBLE NUEVAMENTE
-             *
-             * E) RECHAZADA
-             *    -> NUNCA BLOQUEA
-             *
-             * F) APROBADA
-             *    -> No se utiliza directamente para bloquear.
-             *       Una aprobada ya genera un detalle de proceso,
-             *       por lo que el bloqueo se controla mediante
-             *       RedistribucionProcesoDetalle.
-             */
+            /*
+        |--------------------------------------
+        | 5. DETERMINAR LAS SUCURSALES EMISORAS
+        |--------------------------------------
+        |
+        | No se fijan manualmente los IDs.
+        |
+        | Las emisoras son las sucursales que aparecen en el período
+        | y que NO forman parte de los 6 receptores.
+        |
+        | Esto evita depender de IDs que puedan cambiar.
+        |
+        */
+
+            $sucursalesDisponibles = $datos
+                ->pluck('sucursal_id')
+                ->unique()
+                ->map(function ($id) {
+                    return (int) $id;
+                })
+                ->values();
+
+            $sucursalesEmisoras = $sucursalesDisponibles
+                ->reject(function ($id) use ($sucursalesReceptoras) {
+
+                    return in_array(
+                        $id,
+                        $sucursalesReceptoras
+                    );
+                })
+                ->values()
+                ->all();
 
 
-            /**
-             * =====================================================
-             * 4.1 CÓDIGOS EN PROCESOS ACTIVOS
-             * =====================================================
-             *
-             * PENDIENTE:
-             * Ya fue aprobado y está esperando lote.
-             *
-             * EN PROCESO:
-             * Está siendo procesado.
-             */
+            /*
+        |--------------------------------------------------------------------------
+        | 6. CÓDIGOS BLOQUEADOS
+        |--------------------------------------------------------------------------
+        |
+        | PENDIENTE   -> BLOQUEADO
+        | EN PROCESO  -> BLOQUEADO
+        |
+        | FINALIZADO:
+        | menos de 30 días -> BLOQUEADO
+        | 30 días o más    -> DISPONIBLE
+        |
+        | RECHAZADO:
+        | NO BLOQUEA
+        |
+        */
+
             $codigosActivos = RedistribucionProcesoDetalle::query()
                 ->whereIn('estado', [
                     'PENDIENTE',
@@ -306,29 +1674,18 @@ class RedistribucionSugeridaController extends Controller
                 ->values();
 
 
-            /**
-             * =====================================================
-             * 4.3 UNIFICAR BLOQUEADOS
-             * =====================================================
-             */
             $codigosBloqueados = $codigosActivos
                 ->merge($codigosFinalizadosRecientes)
                 ->unique()
                 ->values();
 
 
-            /**
-             * =====================================================
-             * 5. EXCLUIR CÓDIGOS BLOQUEADOS
-             * =====================================================
-             *
-             * IMPORTANTE:
-             *
-             * NO buscamos RECHAZADAS.
-             *
-             * Por lo tanto una sugerencia rechazada queda libre
-             * automáticamente para un nuevo análisis.
-             */
+            /*
+        |------------------------------
+        | 7. EXCLUIR CÓDIGOS BLOQUEADOS
+        |------------------------------
+        */
+
             if ($codigosBloqueados->isNotEmpty()) {
 
                 $datos = $datos
@@ -342,11 +1699,12 @@ class RedistribucionSugeridaController extends Controller
             }
 
 
-            /**
-             * =====================================================
-             * 6. VALIDAR SI QUEDARON PRODUCTOS
-             * =====================================================
-             */
+            /*
+        |-----------------------------
+        | 8. VALIDAR SI QUEDARON DATOS
+        |-----------------------------
+        */
+
             if ($datos->isEmpty()) {
 
                 DB::rollBack();
@@ -357,145 +1715,306 @@ class RedistribucionSugeridaController extends Controller
                     )
                     ->with(
                         'warning',
-                        'No existen prendas disponibles para analizar. Las prendas actualmente están pendientes, en proceso o fueron finalizadas hace menos de 30 días.'
+                        'No existen prendas disponibles para analizar. Las referencias actualmente están pendientes, en proceso o fueron finalizadas hace menos de 30 días.'
                     );
             }
 
 
-            /**
-             * =====================================================
-             * 7. AGRUPAR POR PRODUCTO
-             * =====================================================
-             */
+            /*
+        |--------------------------------------------------------------------------
+        | 9. AGRUPAR POR CÓDIGO
+        |--------------------------------------------------------------------------
+        |
+        | IMPORTANTE:
+        |
+        | NO agrupamos por grupo_plan.
+        | NO agrupamos por línea.
+        | NO agrupamos por color.
+        | NO agrupamos por talle.
+        |
+        | El "codigo" ya identifica la referencia completa.
+        |
+        | Ejemplo:
+        |
+        | 060617120RS10
+        |
+        | representa la referencia específica.
+        |
+        */
+
             $productos = $datos->groupBy('codigo');
 
 
-            /**
-             * =====================================================
-             * 8. ACUMULADORES
-             * =====================================================
-             */
+            /*
+        |--------------------------------------------------------------------------
+        | 10. ACUMULADORES
+        |--------------------------------------------------------------------------
+        */
+
             $insertar = [];
 
             $totalSugerencias = 0;
 
+            $totalUnidadesSugeridas = 0;
 
-            /**
-             * =====================================================
-             * 9. ANALIZAR CADA PRODUCTO
-             * =====================================================
-             */
+
+            /*
+        |--------------------------------------------------------------------------
+        | 11. ANALIZAR CADA CÓDIGO
+        |--------------------------------------------------------------------------
+        */
+
             foreach ($productos as $codigo => $sucursales) {
 
-                /**
-                 * Ordenar sucursales por mayor venta.
-                 */
-                $sucursales = $sucursales
-                    ->sortByDesc('cant_vta')
-                    ->values();
+                /*
+            |--------------------------------------------------------------------------
+            | 11.1 SEPARAR RECEPTORES Y EMISORES
+            |--------------------------------------------------------------------------
+            */
 
                 $destinos = [];
+
                 $origenes = [];
 
 
-                /**
-                 * =================================================
-                 * 9.1 IDENTIFICAR ORÍGENES Y DESTINOS
-                 * =================================================
-                 */
                 foreach ($sucursales as $item) {
 
-                    $venta = (int) $item->cant_vta;
-                    $stock = (int) $item->stock_actual;
+                    $sucursalId = (int) $item->sucursal_id;
+
+                    $venta = max(
+                        0,
+                        (int) $item->cant_vta
+                    );
+
+                    $stock = max(
+                        0,
+                        (int) $item->stock_actual
+                    );
 
 
-                    /**
-                     * Stock objetivo = venta.
-                     */
-                    $stockObjetivo = $venta;
+                    /*
+                |--------------------------------------------------------------------------
+                | RECEPTOR
+                |--------------------------------------------------------------------------
+                |
+                | Regla fundamental del Word:
+                |
+                | "Código/talle vendido en un local receptor:
+                | puede redistribuirse dentro del límite de cobertura."
+                |
+                | Por lo tanto:
+                |
+                | venta > 0
+                |
+                | Si nunca vendió ese código:
+                | NO RECIBE.
+                |
+                */
 
-
-                    /**
-                     * Necesidad.
-                     */
-                    $necesidad =
-                        $stockObjetivo - $stock;
-
-
-                    /**
-                     * Exceso.
-                     */
-                    $exceso =
-                        $stock - $stockObjetivo;
-
-
-                    /**
-                     * =============================================
-                     * DESTINO
-                     * =============================================
-                     *
-                     * Solamente se consideran destinos con:
-                     *
-                     * venta > 2
-                     * y stock menor que venta.
-                     */
                     if (
-                        $venta > 2 &&
-                        $necesidad > 0
+                        in_array(
+                            $sucursalId,
+                            $sucursalesReceptoras
+                        )
+                        &&
+                        $venta > 0
                     ) {
 
-                        $destinos[] = [
+                        /*
+                    |--------------------------------------------------------------------------
+                    | COBERTURA DEL RECEPTOR
+                    |--------------------------------------------------------------------------
+                    |
+                    | El informe muestra receptores entre:
+                    |
+                    | 2,04 y 3,38 meses de cobertura.
+                    |
+                    | Para evitar saturarlos al cierre de temporada,
+                    | utilizamos 3 meses como techo operativo.
+                    |
+                    | Esto NO significa que se deba llenar hasta 3 meses.
+                    | Solamente define el máximo razonable.
+                    |
+                    */
 
-                            'sucursal_id' =>
-                            $item->sucursal_id,
+                        $stockMaximo = (int) ceil(
+                            $venta * 3
+                        );
 
-                            'stock' =>
-                            $stock,
 
-                            'venta' =>
-                            $venta,
+                        /*
+                    |--------------------------------------------------------------------------
+                    | CAPACIDAD REAL DEL RECEPTOR
+                    |--------------------------------------------------------------------------
+                    */
 
-                            'necesidad' =>
-                            $necesidad,
-                        ];
+                        $capacidad = max(
+                            0,
+                            $stockMaximo - $stock
+                        );
+
+
+                        if ($capacidad > 0) {
+
+                            $destinos[] = [
+
+                                'sucursal_id' =>
+                                $sucursalId,
+
+                                'stock' =>
+                                $stock,
+
+                                'venta' =>
+                                $venta,
+
+                                'capacidad' =>
+                                $capacidad,
+                            ];
+                        }
                     }
 
 
-                    /**
-                     * =============================================
-                     * ORIGEN
-                     * =============================================
-                     */
-                    if ($exceso > 0) {
+                    /*
+                |--------------------------------------------------------------------------
+                | EMISOR
+                |--------------------------------------------------------------------------
+                |
+                | Se consideran únicamente los 6 locales fuera de los receptores.
+                |
+                */
 
-                        $origenes[] = [
+                    if (
+                        in_array(
+                            $sucursalId,
+                            $sucursalesEmisoras
+                        )
+                        &&
+                        $stock > 0
+                    ) {
 
-                            'sucursal_id' =>
-                            $item->sucursal_id,
+                        /*
+                    |--------------------------------------------------------------------------
+                    | CASO 1:
+                    | STOCK SIN VENTA
+                    |--------------------------------------------------------------------------
+                    |
+                    | El Word indica:
+                    |
+                    | "Stock sin venta o con rotación muy baja:
+                    | retirar para evaluación."
+                    |
+                    | Si no tiene venta, todo el stock queda como candidato.
+                    |
+                    */
 
-                            'stock' =>
-                            $stock,
+                        if ($venta == 0) {
 
-                            'venta' =>
-                            $venta,
+                            $stockMinimo = 0;
 
-                            'exceso' =>
-                            $exceso,
-                        ];
+                            $exceso = $stock;
+                        }
+
+
+                        /*
+                    |--------------------------------------------------------------------------
+                    | CASO 2:
+                    | TIENE VENTA
+                    |--------------------------------------------------------------------------
+                    |
+                    | No debemos vaciar un local que todavía vende.
+                    |
+                    | Conservamos una existencia equivalente a una venta
+                    | del período como mínimo operativo.
+                    |
+                    */ else {
+
+                            $stockMinimo = $venta;
+
+                            $exceso = max(
+                                0,
+                                $stock - $stockMinimo
+                            );
+                        }
+
+
+                        /*
+                    |--------------------------------------------------------------------------
+                    | SOLO CANDIDATOS CON EXCESO
+                    |--------------------------------------------------------------------------
+                    */
+
+                        if ($exceso > 0) {
+
+                            $origenes[] = [
+
+                                'sucursal_id' =>
+                                $sucursalId,
+
+                                'stock' =>
+                                $stock,
+
+                                'venta' =>
+                                $venta,
+
+                                'stock_minimo' =>
+                                $stockMinimo,
+
+                                'exceso' =>
+                                $exceso,
+                            ];
+                        }
                     }
                 }
 
 
-                /**
-                 * =================================================
-                 * 9.2 ORDENAR ORÍGENES
-                 * =================================================
-                 *
-                 * Primero la sucursal con mayor exceso.
-                 */
+                /*
+            |---------------------
+            | 12. ORDENAR ORÍGENES
+            |---------------------
+            |
+            | Prioridad:
+            |
+            | 1. Sin venta
+            | 2. Mayor exceso
+            |
+            | Esto sigue la recomendación del Word:
+            |
+            | Bonanza
+            | L06 San Lo2
+            | La Rural
+            |
+            | como puntos prioritarios de revisión.
+            |
+            */
+
                 usort(
                     $origenes,
                     function ($a, $b) {
+
+                        /*
+                    | Sin venta primero.
+                    */
+
+                        if (
+                            $a['venta'] == 0
+                            &&
+                            $b['venta'] > 0
+                        ) {
+                            return -1;
+                        }
+
+                        if (
+                            $a['venta'] > 0
+                            &&
+                            $b['venta'] == 0
+                        ) {
+                            return 1;
+                        }
+
+
+                        /*
+                    | Después mayor exceso.
+                    */
 
                         return
                             $b['exceso']
@@ -505,13 +2024,18 @@ class RedistribucionSugeridaController extends Controller
                 );
 
 
-                /**
-                 * =================================================
-                 * 9.3 ORDENAR DESTINOS
-                 * =================================================
-                 *
-                 * Primero la sucursal con mayor venta.
-                 */
+                /*
+            |-----------------------
+            | 13. ORDENAR RECEPTORES
+            |-----------------------
+            |
+            | Primero los receptores con mayor venta del código.
+            |
+            | Así la mercadería se concentra donde existe mayor evidencia
+            | de demanda.
+            |
+            */
+
                 usort(
                     $destinos,
                     function ($a, $b) {
@@ -524,42 +2048,58 @@ class RedistribucionSugeridaController extends Controller
                 );
 
 
-                /**
-                 * =================================================
-                 * 9.4 GENERAR TRANSFERENCIAS
-                 * =================================================
-                 */
+                /*
+            |--------------------------------------------------------------------------
+            | 14. GENERAR TRANSFERENCIAS
+            |--------------------------------------------------------------------------
+            */
+
                 foreach ($destinos as &$destino) {
 
                     if (
-                        $destino['necesidad'] <= 0
+                        $destino['capacidad'] <= 0
                     ) {
                         continue;
                     }
 
 
-                    /**
-                     * =================================================
-                     * LÍMITE DE TRANSFERENCIA
-                     * =================================================
-                     *
-                     * Máximo 50% de la necesidad.
-                     */
-                    $maximoTransferirDestino =
+                    /*
+                |--------------------------------------------------------------------------
+                | NO SATURAR EL RECEPTOR
+                |--------------------------------------------------------------------------
+                |
+                | Se utiliza solamente una parte de la capacidad disponible
+                | en cada análisis.
+                |
+                | De esta forma evitamos una centralización agresiva.
+                |
+                | El objetivo es una redistribución SELECTIVA.
+                |
+                */
+
+                    $cantidadMaximaDestino =
                         (int) ceil(
-                            $destino['necesidad'] * 0.50
+                            $destino['capacidad'] * 0.50
                         );
 
 
                     $pendienteTransferir =
-                        $maximoTransferirDestino;
+                        $cantidadMaximaDestino;
 
 
-                    /**
-                     * =================================================
-                     * BUSCAR ORIGEN
-                     * =================================================
-                     */
+                    if (
+                        $pendienteTransferir <= 0
+                    ) {
+                        continue;
+                    }
+
+
+                    /*
+                |--------------------------------------------------------------------------
+                | 15. BUSCAR STOCK EN LOS EMISORES
+                |--------------------------------------------------------------------------
+                */
+
                     foreach ($origenes as &$origen) {
 
                         if (
@@ -569,9 +2109,12 @@ class RedistribucionSugeridaController extends Controller
                         }
 
 
-                        /**
-                         * Nunca transferir a la misma sucursal.
-                         */
+                        /*
+                    |--------------------------------------------------------------------------
+                    | NUNCA MISMA SUCURSAL
+                    |--------------------------------------------------------------------------
+                    */
+
                         if (
                             $origen['sucursal_id']
                             ==
@@ -581,9 +2124,12 @@ class RedistribucionSugeridaController extends Controller
                         }
 
 
-                        /**
-                         * Cantidad a transferir.
-                         */
+                        /*
+                    |--------------------------------------------------------------------------
+                    | CANTIDAD A TRANSFERIR
+                    |--------------------------------------------------------------------------
+                    */
+
                         $cantidad = min(
                             $pendienteTransferir,
                             $origen['exceso']
@@ -595,18 +2141,31 @@ class RedistribucionSugeridaController extends Controller
                         }
 
 
-                        /**
-                         * Motivo.
-                         */
-                        $motivo =
-                            'Transferencia por exceso de stock y mayor demanda.';
+                        /*
+                    |--------------------------------------------------------------------------
+                    | MOTIVO
+                    |--------------------------------------------------------------------------
+                    */
+
+                        if (
+                            $origen['venta'] == 0
+                        ) {
+
+                            $motivo =
+                                'Stock sin venta en el local emisor y demanda comprobada del mismo código en el local receptor.';
+                        } else {
+
+                            $motivo =
+                                'Redistribución selectiva por exceso de stock, conservando existencia mínima en el local emisor y priorizando un local receptor con venta comprobada del mismo código.';
+                        }
 
 
-                        /**
-                         * =================================================
-                         * PREPARAR INSERT
-                         * =================================================
-                         */
+                        /*
+                    |--------------------------------------------------------------------------
+                    | 16. PREPARAR SUGERENCIA
+                    |--------------------------------------------------------------------------
+                    */
+
                         $insertar[] = [
 
                             'codigo' =>
@@ -644,23 +2203,43 @@ class RedistribucionSugeridaController extends Controller
                         ];
 
 
-                        /**
-                         * =================================================
-                         * ACTUALIZAR RESTANTES
-                         * =================================================
-                         */
+                        /*
+                    |--------------------------------------------------------------------------
+                    | 17. ACTUALIZAR DISPONIBLES
+                    |--------------------------------------------------------------------------
+                    |
+                    | Esto es importante.
+                    |
+                    | Si Bonanza tiene 100 unidades y se envían 20:
+                    |
+                    | exceso = 80
+                    |
+                    | La siguiente transferencia NO puede volver a utilizar
+                    | esas 20 unidades.
+                    |
+                    */
+
                         $pendienteTransferir -=
                             $cantidad;
 
                         $origen['exceso'] -=
                             $cantidad;
 
+                        $destino['capacidad'] -=
+                            $cantidad;
+
                         $totalSugerencias++;
 
+                        $totalUnidadesSugeridas +=
+                            $cantidad;
 
-                        /**
-                         * Ya llegó al límite del destino.
-                         */
+
+                        /*
+                    |--------------------------------------------------------------------------
+                    | DESTINO COMPLETO
+                    |--------------------------------------------------------------------------
+                    */
+
                         if (
                             $pendienteTransferir <= 0
                         ) {
@@ -675,11 +2254,12 @@ class RedistribucionSugeridaController extends Controller
             }
 
 
-            /**
-             * =====================================================
-             * 10. INSERT MASIVO
-             * =====================================================
-             */
+            /*
+        |--------------------------------------------------------------------------
+        | 18. INSERT MASIVO
+        |--------------------------------------------------------------------------
+        */
+
             if (!empty($insertar)) {
 
                 foreach (
@@ -696,19 +2276,21 @@ class RedistribucionSugeridaController extends Controller
             }
 
 
-            /**
-             * =====================================================
-             * 11. CONFIRMAR
-             * =====================================================
-             */
+            /*
+        |--------------------------------------------------------------------------
+        | 19. CONFIRMAR TRANSACCIÓN
+        |--------------------------------------------------------------------------
+        */
+
             DB::commit();
 
 
-            /**
-             * =====================================================
-             * 12. SIN RESULTADOS
-             * =====================================================
-             */
+            /*
+        |--------------------------------------------------------------------------
+        | 20. SIN SUGERENCIAS
+        |--------------------------------------------------------------------------
+        */
+
             if (
                 $totalSugerencias === 0
             ) {
@@ -719,16 +2301,17 @@ class RedistribucionSugeridaController extends Controller
                     )
                     ->with(
                         'warning',
-                        'El análisis terminó, pero no se encontraron redistribuciones necesarias.'
+                        'El análisis terminó, pero no se encontraron redistribuciones que cumplan los criterios de demanda comprobada, exceso de stock y capacidad del local receptor.'
                     );
             }
 
 
-            /**
-             * =====================================================
-             * 13. RESULTADO
-             * =====================================================
-             */
+            /*
+        |--------------------------------------------------------------------------
+        | 21. RESULTADO
+        |--------------------------------------------------------------------------
+        */
+
             return redirect()
                 ->route(
                     'RedistribucionSugeridas.index'
@@ -737,7 +2320,9 @@ class RedistribucionSugeridaController extends Controller
                     'success',
                     'Análisis realizado correctamente. Se generaron '
                         . $totalSugerencias
-                        . ' sugerencias.'
+                        . ' sugerencias por '
+                        . $totalUnidadesSugeridas
+                        . ' unidades.'
                 );
         } catch (\Exception $e) {
 
@@ -1758,6 +3343,21 @@ class RedistribucionSugeridaController extends Controller
     {
         try {
 
+            /*
+        |--------------------------------------------------------------------------
+        | AUMENTAR MEMORIA SOLAMENTE PARA LA GENERACIÓN DEL PDF
+        |--------------------------------------------------------------------------
+        */
+
+            ini_set('memory_limit', '2048M');
+
+
+            /*
+        |--------------------------------------------------------------------------
+        | 1. BUSCAR LOTE
+        |--------------------------------------------------------------------------
+        */
+
             $lote = RedistribucionLote::with([
                 'detalles.origen',
                 'detalles.destino'
@@ -1766,7 +3366,7 @@ class RedistribucionSugeridaController extends Controller
 
             /*
         |--------------------------------------------------------------------------
-        | OBTENER CÓDIGOS DEL LOTE
+        | 2. OBTENER CÓDIGOS DEL LOTE
         |--------------------------------------------------------------------------
         */
 
@@ -1779,85 +3379,116 @@ class RedistribucionSugeridaController extends Controller
 
             /*
         |--------------------------------------------------------------------------
-        | BUSCAR GRUPO_PLAN = DESCRIPCIÓN
+        | 3. BUSCAR DESCRIPCIONES
         |--------------------------------------------------------------------------
         */
 
-            $descripciones = DB::table('stock_ventas_sucursales')
-                ->whereIn('codigo', $codigos)
-                ->select(
-                    'codigo',
-                    'grupo_plan'
-                )
-                ->orderBy('id')
-                ->get()
-                ->groupBy('codigo')
-                ->map(function ($items) {
+            $descripciones = collect();
 
-                    return $items->first()->grupo_plan ?? '-';
-                });
+            if ($codigos->isNotEmpty()) {
+
+                $descripciones = DB::table('stock_ventas_sucursales')
+                    ->whereIn('codigo', $codigos->toArray())
+                    ->select(
+                        'codigo',
+                        'grupo_plan'
+                    )
+                    ->orderBy('id')
+                    ->get()
+                    ->groupBy('codigo')
+                    ->map(function ($items) {
+
+                        return $items->first()->grupo_plan ?? '-';
+                    });
+            }
 
 
             /*
         |--------------------------------------------------------------------------
-        | ASIGNAR DESCRIPCIÓN A CADA DETALLE
+        | 4. ASIGNAR DESCRIPCIÓN
         |--------------------------------------------------------------------------
         */
 
             $lote->detalles->each(function ($detalle) use ($descripciones) {
 
                 $detalle->descripcion =
-                    $descripciones[$detalle->codigo] ?? '-';
+                    $descripciones->get(
+                        $detalle->codigo,
+                        '-'
+                    );
             });
 
 
             /*
         |--------------------------------------------------------------------------
-        | ORDENAR DETALLES
+        | 5. ORDENAR DETALLES
+        |--------------------------------------------------------------------------
+        */
+
+            $detallesOrdenados = $lote->detalles
+                ->sortBy(function ($detalle) {
+
+                    $origen = $detalle->origen;
+
+                    $destino = $detalle->destino;
+
+                    return [
+
+                        strtoupper(
+                            trim(
+                                $origen
+                                    ? ($origen->suc_descri ?? '')
+                                    : ''
+                            )
+                        ),
+
+                        strtoupper(
+                            trim(
+                                $destino
+                                    ? ($destino->suc_descri ?? '')
+                                    : ''
+                            )
+                        ),
+
+                        strtoupper(
+                            trim(
+                                $detalle->codigo ?? ''
+                            )
+                        )
+                    ];
+                })
+                ->values();
+
+
+            /*
+        |--------------------------------------------------------------------------
+        | 6. REEMPLAZAR RELACIÓN ORDENADA
         |--------------------------------------------------------------------------
         */
 
             $lote->setRelation(
                 'detalles',
-                $lote->detalles
-                    ->sortBy(function ($detalle) {
-
-                        return [
-                            // 1. ORIGEN
-                            strtoupper(
-                                trim($detalle->origen->suc_descri ?? '')
-                            ),
-
-                            // 2. DESTINO
-                            strtoupper(
-                                trim($detalle->destino->suc_descri ?? '')
-                            ),
-
-                            // 3. CÓDIGO
-                            strtoupper(
-                                trim($detalle->codigo ?? '')
-                            )
-                        ];
-                    })
-                    ->values()
+                $detallesOrdenados
             );
 
 
             /*
         |--------------------------------------------------------------------------
-        | GENERAR PDF
+        | 7. CONFIGURAR DOMPDF
         |--------------------------------------------------------------------------
         */
 
             $pdf = Pdf::loadView(
                 'redistribucion_sugeridas.pdf.lote',
-                compact('lote')
+                [
+                    'lote' => $lote
+                ]
             );
 
 
             /*
         |--------------------------------------------------------------------------
-        | CONFIGURACIÓN
+        | 8. CONFIGURAR PAPEL
         |--------------------------------------------------------------------------
         */
 
@@ -1869,33 +3500,56 @@ class RedistribucionSugeridaController extends Controller
 
             /*
         |--------------------------------------------------------------------------
-        | DESCARGAR
+        | 9. DESCARGAR
         |--------------------------------------------------------------------------
         */
 
             return $pdf->download(
                 'Lote-' . $lote->numero_lote . '.pdf'
             );
-        } catch (\Exception $e) {
+        } catch (\Throwable $e) {
+
+            /*
+        |--------------------------------------------------------------------------
+        | REGISTRAR ERROR
+        |--------------------------------------------------------------------------
+        */
 
             Log::error(
                 'Error exportando lote a PDF',
                 [
                     'lote_id' => $id,
-                    'error'   => $e->getMessage(),
-                    'line'    => $e->getLine(),
-                    'file'    => $e->getFile()
+
+                    'error' => $e->getMessage(),
+
+                    'line' => $e->getLine(),
+
+                    'file' => $e->getFile(),
+
+                    'memory_usage' => memory_get_usage(true),
+
+                    'memory_peak' => memory_get_peak_usage(true),
+
+                    'trace' => $e->getTraceAsString(),
                 ]
             );
 
 
-            return back()->with(
-                'error',
-                'No se pudo generar el PDF: ' .
-                    $e->getMessage()
-            );
+            /*
+        |--------------------------------------------------------------------------
+        | VOLVER CON ERROR
+        |--------------------------------------------------------------------------
+        */
+
+            return redirect()
+                ->back()
+                ->with(
+                    'error',
+                    'No se pudo generar el PDF. El lote puede contener demasiados detalles para generar el documento.'
+                );
         }
     }
+
 
 
     /*

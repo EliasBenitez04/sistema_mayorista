@@ -52,26 +52,45 @@
 </div>
 
 <div class="form-group col-md-4">
+
     {!! Form::label('id_cliente', 'Cliente') !!}
 
     <div class="input-group input-group-sm">
 
         <div class="input-group-prepend">
-            <span class="input-group-text"><i class="fas fa-user-tie"></i></span>
+            <span class="input-group-text">
+                <i class="fas fa-user-tie"></i>
+            </span>
         </div>
 
         <div style="flex:1;">
+
             {!! Form::select('id_cliente', $clientes, $pedido->id_cliente ?? null, [
                 'class' => 'form-control select2',
+                'id' => 'id_cliente',
                 'placeholder' => 'Seleccione un cliente',
                 'required',
                 'style' => 'width:100%;',
             ]) !!}
+
+        </div>
+
+        <!-- BOTÓN NUEVO CLIENTE -->
+
+        <div class="input-group-append">
+
+            <button type="button" class="btn btn-primary" data-toggle="modal" data-target="#modalCliente"
+                title="Nuevo Cliente">
+
+                <i class="fas fa-user-plus"></i>
+
+            </button>
+
         </div>
 
     </div>
-</div>
 
+</div>
 <div class="form-group col-sm-4">
     {!! Form::label('aplica_descuento', '¿Aplicar Descuento?', ['class' => 'font-weight-bold d-block mb-2']) !!}
 
@@ -442,10 +461,10 @@
 
 
         // ================= AGREGAR PRODUCTO =================
-            function seleccionarProductoPed(codigo, producto, precio) {
+        function seleccionarProductoPed(codigo, producto, precio) {
 
-                let tabla = document.getElementById('selectedProducts');
-                let cantidadMultiplicador = parseInt(document.getElementById("cantidad_multiplicador").value) || 1;
+            let tabla = document.getElementById('selectedProducts');
+            let cantidadMultiplicador = parseInt(document.getElementById("cantidad_multiplicador").value) || 1;
 
             // 🔥 VALIDAR DUPLICADO
             let existe = Array.from(tabla.querySelectorAll("input[name='codigo[]']"))

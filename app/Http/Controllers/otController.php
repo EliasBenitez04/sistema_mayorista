@@ -11,6 +11,7 @@ use Carbon\Carbon;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use App\Exports\OtLogisticaExport;
+use App\Models\OtTrazabilidad;
 
 class OtController extends Controller
 {
@@ -317,9 +318,9 @@ class OtController extends Controller
         'SERIGRAFIA'           => 55,
         'BORDADO'              => 60,
         'COSTURA INTERNA'      => 70,
-        'LAVANDERIA'           => 75,
-        'PRETERMINACION'       => 80,
-        'ATRAQUES'             => 85,
+        'ATRAQUES'             => 75,
+        'LAVANDERIA'           => 80,
+        'PRETERMINACION'       => 85,
         'INGRESO TERMINACION'  => 90,
         'TERMINACION'          => 95,
         'PRODUCTO TERMINADO'   => 100,
@@ -2579,22 +2580,9 @@ class OtController extends Controller
     |        ↓
     | ot
     |
-    | IMPORTANTE:
-    |
     | La fecha oficial para este dashboard es:
     |
     |     t.fecha_proceso
-    |
-    | NO usamos d.created_at para los filtros de fecha.
-    |
-    | Ejemplo:
-    |
-    | OT 30100
-    |
-    | 27/08/2026 -> trazabilidad A -> 279 prendas
-    | 28/08/2026 -> trazabilidad B -> 1 prenda
-    |
-    | El dashboard debe conservar ambos registros.
     |
     */
 
@@ -2619,10 +2607,6 @@ class OtController extends Controller
     |--------------------------------------------------------------------------
     | FILTRO FECHA DESDE
     |--------------------------------------------------------------------------
-    |
-    | La fecha corresponde a la trazabilidad/importación:
-    | t.fecha_proceso
-    |
     */
 
         if ($request->filled('fecha_desde')) {
@@ -2659,7 +2643,10 @@ class OtController extends Controller
 
         if ($request->filled('sucursal')) {
 
-            $sucursalesSeleccionadas = $request->input('sucursal', []);
+            $sucursalesSeleccionadas = $request->input(
+                'sucursal',
+                []
+            );
 
             $baseQuery->whereIn(
                 'd.sucursal',
@@ -2670,19 +2657,22 @@ class OtController extends Controller
 
         /*
     |--------------------------------------------------------------------------
-    | FILTRO N° OT
+    | FILTRO N° OT / CÓDIGO
     |--------------------------------------------------------------------------
     */
 
         if ($request->filled('busqueda')) {
 
-            $busqueda = trim($request->busqueda);
+            $busqueda = trim(
+                $request->busqueda
+            );
+
 
             if (!ctype_digit($busqueda)) {
 
                 alert()->warning(
                     'Dato inválido',
-                    'Ingrese solo números en el campo N° OT.'
+                    'Ingrese solo números en el campo N° OT o Código.'
                 );
 
                 return redirect()
@@ -2690,7 +2680,8 @@ class OtController extends Controller
                     ->withInput();
             }
 
-            if ((int) $busqueda > 2147483647) {
+
+            if (strlen($busqueda) > 10) {
 
                 alert()->warning(
                     'N° OT / Código inválido',
@@ -2702,10 +2693,20 @@ class OtController extends Controller
                     ->withInput();
             }
 
-            $baseQuery->where(
-                'o.nro_ot',
-                (int) $busqueda
-            );
+
+            $baseQuery->where(function ($query) use ($busqueda) {
+
+                $query->where(
+                    'o.nro_ot',
+                    (int) $busqueda
+                )
+
+                    ->orWhere(
+                        'o.codigo',
+                        'ILIKE',
+                        $busqueda . '%'
+                    );
+            });
         }
 
 
@@ -2713,24 +2714,12 @@ class OtController extends Controller
     |--------------------------------------------------------------------------
     | DETALLE
     |--------------------------------------------------------------------------
-    |
-    | Orden:
-    |
-    | 1. Fecha de proceso DESC
-    | 2. N° OT ASC
-    | 3. Código ASC
-    | 4. Sucursal ASC
-    | 5. ID trazabilidad DESC
-    | 6. ID detalle DESC
-    |
-    | El ID de trazabilidad es importante porque permite distinguir
-    | diferentes envíos/importaciones de la misma OT.
-    |
     */
 
         $detalles = (clone $baseQuery)
 
             ->select([
+
                 'd.id',
                 'd.id_ot',
                 'd.id_trazabilidad',
@@ -2752,7 +2741,7 @@ class OtController extends Controller
 
             /*
         |--------------------------------------------------------------------------
-        | FECHA DE PROCESO
+        | FECHA
         |--------------------------------------------------------------------------
         */
 
@@ -2766,7 +2755,7 @@ class OtController extends Controller
 
             /*
         |--------------------------------------------------------------------------
-        | OT
+        | N° OT
         |--------------------------------------------------------------------------
         */
 
@@ -2801,10 +2790,6 @@ class OtController extends Controller
         |--------------------------------------------------------------------------
         | TRAZABILIDAD
         |--------------------------------------------------------------------------
-        |
-        | Esto ayuda a mantener juntos los registros pertenecientes
-        | a una misma importación/proceso.
-        |
         */
 
             ->orderByDesc(
@@ -2841,15 +2826,7 @@ class OtController extends Controller
     | TOTAL OT
     |--------------------------------------------------------------------------
     |
-    | Una OT puede tener varias trazabilidades.
-    |
-    | Ejemplo:
-    |
-    | OT 30100
-    |   27/08 -> trazabilidad 500
-    |   28/08 -> trazabilidad 501
-    |
-    | Sigue siendo UNA sola OT.
+    | Una OT puede tener varias trazabilidades/detalles.
     |
     */
 
@@ -2860,22 +2837,172 @@ class OtController extends Controller
 
         /*
     |--------------------------------------------------------------------------
-    | TOTAL CANTIDAD
+    | TOTAL CANTIDAD ENVIADA
     |--------------------------------------------------------------------------
     |
-    | Suma todos los detalles que cumplen los filtros.
+    | La cantidad enviada corresponde a:
     |
-    | Ejemplo:
-    |
-    | 27/08 -> 279
-    | 28/08 -> 1
-    |
-    | Total -> 280
+    | ot_logistica_detalle.cantidad
     |
     */
 
-        $totalCantidad = (clone $baseQuery)
+        $totalCantidadEnviada = (clone $baseQuery)
             ->sum('d.cantidad');
+
+
+        /*
+    |--------------------------------------------------------------------------
+    | TOTAL CANTIDAD
+    |--------------------------------------------------------------------------
+    |
+    | Mantenemos esta variable porque ya la utilizás
+    | posiblemente en otras partes del dashboard.
+    |
+    | Actualmente representa la cantidad de logística.
+    |
+    */
+
+        $totalCantidad = $totalCantidadEnviada;
+
+
+        /*
+    |--------------------------------------------------------------------------
+    | TOTAL CANTIDAD ORDENADA
+    |--------------------------------------------------------------------------
+    |
+    | Tomamos solamente una vez cada OT.
+    |
+    | Esto evita que una OT con varias trazabilidades
+    | sea sumada varias veces.
+    |
+    */
+
+        $totalCantidadOrdenada = DB::query()
+
+            ->fromSub(
+
+                (clone $baseQuery)
+
+                    ->select([
+                        'o.id_ot',
+                        'o.cantidad_orden',
+                    ])
+
+                    ->distinct(),
+
+                'ots'
+            )
+
+            ->sum(
+                'cantidad_orden'
+            );
+
+
+        /*
+    |--------------------------------------------------------------------------
+    | OTs FILTRADAS
+    |--------------------------------------------------------------------------
+    |
+    | Obtenemos las OTs que realmente aparecen después
+    | de aplicar los filtros del dashboard.
+    |
+    */
+
+        $otFiltradas = (clone $baseQuery)
+
+            ->select(
+                'o.id_ot'
+            )
+
+            ->whereNotNull(
+                'o.id_ot'
+            )
+
+            ->distinct()
+
+            ->pluck(
+                'id_ot'
+            );
+
+
+        /*
+    |--------------------------------------------------------------------------
+    | TOTAL CANTIDAD CORTADA
+    |--------------------------------------------------------------------------
+    |
+    | La cantidad cortada está en:
+    |
+    | ot_trazabilidad.resultado
+    |
+    | solamente para:
+    |
+    | PRODUCCION - CORTE
+    |
+    */
+
+        $totalCantidadCortada = 0;
+
+
+        if ($otFiltradas->isNotEmpty()) {
+
+            $totalCantidadCortada = DB::table(
+                'ot_trazabilidad as tc'
+            )
+
+                ->whereIn(
+                    'tc.id_ot',
+                    $otFiltradas
+                )
+
+                ->where(
+                    'tc.proceso',
+                    'PRODUCCION - CORTE'
+                )
+
+                ->sum(
+                    'tc.resultado'
+                );
+        }
+
+
+        /*
+    |--------------------------------------------------------------------------
+    | DIFERENCIA ORDENADA - CORTADA
+    |--------------------------------------------------------------------------
+    |
+    | Ejemplo:
+    |
+    | Ordenada = 1000
+    | Cortada  = 949
+    |
+    | Diferencia = 51
+    |
+    */
+
+        $diferenciaOrdenadaCortada =
+            $totalCantidadOrdenada
+            -
+            $totalCantidadCortada;
+
+
+        /*
+    |--------------------------------------------------------------------------
+    | DIFERENCIA CORTADA - ENVIADA
+    |--------------------------------------------------------------------------
+    |
+    | Ejemplo:
+    |
+    | Cortada = 949
+    | Enviada = 949
+    |
+    | Diferencia = 0
+    |
+    */
+
+        $diferenciaCortadaEnviada =
+            $totalCantidadCortada
+            -
+            $totalCantidadEnviada;
 
 
         /*
@@ -2907,9 +3034,6 @@ class OtController extends Controller
     |--------------------------------------------------------------------------
     | INFORMACIÓN DE HOY
     |--------------------------------------------------------------------------
-    |
-    | HOY se determina mediante t.fecha_proceso.
-    |
     */
 
         $hoyQuery = clone $baseQuery;
@@ -2937,8 +3061,12 @@ class OtController extends Controller
     */
 
         $otHoy = (clone $hoyQuery)
+
             ->distinct()
-            ->count('d.id_ot');
+
+            ->count(
+                'd.id_ot'
+            );
 
 
         /*
@@ -2955,50 +3083,23 @@ class OtController extends Controller
     |--------------------------------------------------------------------------
     | RESUMEN POR FECHA
     |--------------------------------------------------------------------------
-    |
-    | USAMOS t.fecha_proceso.
-    |
-    | Esto significa:
-    |
-    | 27/08/2026 -> 279
-    | 28/08/2026 -> 1
-    |
-    | NO se mezclan por la fecha de created_at.
-    |
     */
 
         $porFecha = (clone $baseQuery)
 
             ->select([
+
                 DB::raw(
                     'DATE(t.fecha_proceso) as fecha_proceso'
                 ),
-
-                /*
-            |--------------------------------------------------------------------------
-            | OTs diferentes de ese día
-            |--------------------------------------------------------------------------
-            */
 
                 DB::raw(
                     'COUNT(DISTINCT d.id_ot) as total_ot'
                 ),
 
-                /*
-            |--------------------------------------------------------------------------
-            | Registros de ese día
-            |--------------------------------------------------------------------------
-            */
-
                 DB::raw(
                     'COUNT(d.id) as total_registros'
                 ),
-
-                /*
-            |--------------------------------------------------------------------------
-            | Cantidad de ese día
-            |--------------------------------------------------------------------------
-            */
 
                 DB::raw(
                     'COALESCE(SUM(d.cantidad), 0) as total_cantidad'
@@ -3028,30 +3129,44 @@ class OtController extends Controller
     |--------------------------------------------------------------------------
     | RESUMEN POR SUCURSAL
     |--------------------------------------------------------------------------
-    |
-    | Respeta los filtros de fecha, OT y sucursal.
-    |
     */
 
         $porSucursal = (clone $baseQuery)
 
             ->select([
+
                 'd.sucursal',
 
-                DB::raw('COUNT(DISTINCT o.nro_ot) as total_ot'),
+                DB::raw(
+                    'COUNT(DISTINCT o.nro_ot) as total_ot'
+                ),
 
-                DB::raw('COUNT(d.id) as total_registros'),
+                DB::raw(
+                    'COUNT(d.id) as total_registros'
+                ),
 
-                DB::raw('COALESCE(SUM(d.cantidad), 0) as total_cantidad'),
+                DB::raw(
+                    'COALESCE(SUM(d.cantidad), 0) as total_cantidad'
+                ),
             ])
 
-            ->whereNotNull('d.sucursal')
+            ->whereNotNull(
+                'd.sucursal'
+            )
 
-            ->where('d.sucursal', '<>', '')
+            ->where(
+                'd.sucursal',
+                '<>',
+                ''
+            )
 
-            ->groupBy('d.sucursal')
+            ->groupBy(
+                'd.sucursal'
+            )
 
-            ->orderByDesc('total_cantidad')
+            ->orderByDesc(
+                'total_cantidad'
+            )
 
             ->get();
 
@@ -3076,9 +3191,6 @@ class OtController extends Controller
     |--------------------------------------------------------------------------
     | SUCURSALES PARA SELECT2
     |--------------------------------------------------------------------------
-    |
-    | Obtenemos todas las sucursales disponibles.
-    |
     */
 
         $sucursales = DB::table(
@@ -3120,21 +3232,21 @@ class OtController extends Controller
             'dashboard.ot-logistica',
             compact(
                 'detalles',
-
                 'totalRegistros',
                 'totalOT',
                 'totalCantidad',
+                'totalCantidadOrdenada',
+                'totalCantidadCortada',
+                'totalCantidadEnviada',
+                'diferenciaOrdenadaCortada',
+                'diferenciaCortadaEnviada',
                 'totalSucursales',
-
                 'cantidadHoy',
                 'otHoy',
                 'registrosHoy',
-
                 'promedioCantidadOT',
-
                 'porFecha',
                 'porSucursal',
-
                 'sucursales'
             )
         );
@@ -3176,6 +3288,336 @@ class OtController extends Controller
             ),
 
             $nombreArchivo
+        );
+    }
+
+    public function historiaGeneral(Request $request)
+    {
+        /*
+    |--------------------------------------------------------------------------
+    | ORDEN REAL DEL FLUJO
+    |--------------------------------------------------------------------------
+    */
+
+        $ordenProcesos = [
+
+            'DISEÑO - ORDEN DE TRABAJO'            => 10,
+            'DISEÑO - MOLDERIA'                    => 15,
+            'DISEÑO - PROTOTIPO'                   => 20,
+            'DISEÑO - DISEÑO GRAFICO'              => 25,
+
+            'PRODUCCION - TIZADAS'                 => 30,
+            'PRODUCCION - CORTE'                   => 40,
+            'PRODUCCION - LOTEO Y DISTRIBUCION'    => 45,
+            'PRODUCCION - REVELADO'                => 50,
+            'PRODUCCION - SERIGRAFIA'              => 55,
+            'PRODUCCION - BORDADO'                 => 60,
+            'PRODUCCION - COSTURA INTERNA'         => 70,
+            'PRODUCCION - ATRAQUES'                => 75,
+            'PRODUCCION - LAVANDERIA'              => 80,
+            'PRODUCCION - PRETERMINACION'          => 85,
+
+            'TERMINACION - INGRESO TERMINACION'    => 90,
+            'TERMINACION - TERMINACION'            => 95,
+            'TERMINACION - PRODUCTO TERMINADO'     => 100,
+
+            'LOGISTICA - LOGISTICA Y DISTRIBUCION' => 110,
+        ];
+
+
+        /*
+    |--------------------------------------------------------------------------
+    | FECHAS
+    |--------------------------------------------------------------------------
+    */
+
+        $fechaDesde = $request->fecha_desde;
+        $fechaHasta = $request->fecha_hasta;
+
+
+        /*
+    |--------------------------------------------------------------------------
+    | TRAER TODA LA TRAZABILIDAD
+    |--------------------------------------------------------------------------
+    |
+    | No filtramos las fechas todavía.
+    | Necesitamos conocer el movimiento anterior y siguiente de cada OT.
+    |
+    */
+
+        $trazabilidades = DB::table('ot_trazabilidad as t')
+            ->join('ot as o', 'o.id_ot', '=', 't.id_ot')
+            ->select(
+                't.id_trazabilidad',
+                't.id_ot',
+                'o.nro_ot',
+                'o.codigo',
+                'o.descripcion',
+                'o.cantidad_orden',
+                't.proceso',
+                't.resultado',
+                't.fecha_proceso'
+            )
+            ->orderBy('t.id_ot')
+            ->orderBy('t.id_trazabilidad')
+            ->get();
+
+
+        /*
+    |--------------------------------------------------------------------------
+    | AGRUPAR POR OT
+    |--------------------------------------------------------------------------
+    */
+
+        $trazabilidadesPorOt = $trazabilidades->groupBy('id_ot');
+
+
+        /*
+    |--------------------------------------------------------------------------
+    | HISTORIA GENERAL
+    |--------------------------------------------------------------------------
+    */
+
+        $historiaGeneral = [];
+
+
+        /*
+    |--------------------------------------------------------------------------
+    | RECORRER CADA OT
+    |--------------------------------------------------------------------------
+    */
+
+        foreach ($trazabilidadesPorOt as $idOt => $movimientos) {
+
+            /*
+        | Ordenar según el flujo real.
+        */
+
+            $movimientos = $movimientos
+                ->sortBy(function ($movimiento) use ($ordenProcesos) {
+
+                    return $ordenProcesos[$movimiento->proceso] ?? 999;
+                })
+                ->values();
+
+
+            /*
+        |--------------------------------------------------------------------------
+        | RECORRER LOS MOVIMIENTOS DE ESTA OT
+        |--------------------------------------------------------------------------
+        */
+
+            foreach ($movimientos as $index => $movimiento) {
+
+                $movimientoAnterior = $movimientos->get($index - 1);
+
+                $movimientoSiguiente = $movimientos->get($index + 1);
+
+
+                /*
+            |--------------------------------------------------------------------------
+            | CANTIDAD
+            |--------------------------------------------------------------------------
+            */
+
+                $resultado = (int) ($movimiento->resultado ?? 0);
+
+
+                if ($resultado <= 0) {
+                    continue;
+                }
+
+
+                /*
+            |--------------------------------------------------------------------------
+            | ENTRADA
+            |--------------------------------------------------------------------------
+            |
+            | La entrada del proceso actual es la salida
+            | del proceso anterior.
+            |
+            */
+
+                $entrada = 0;
+
+                if ($movimientoAnterior) {
+
+                    $entrada = (int) ($movimientoAnterior->resultado ?? 0);
+                }
+
+
+                /*
+            |--------------------------------------------------------------------------
+            | SALIDA
+            |--------------------------------------------------------------------------
+            |
+            | Si existe un proceso siguiente, esta cantidad sale
+            | hacia ese proceso.
+            |
+            | Si es el último proceso, no tiene salida.
+            |
+            */
+
+                $salida = 0;
+
+                if ($movimientoSiguiente) {
+
+                    $salida = $resultado;
+                }
+
+
+                /*
+            |--------------------------------------------------------------------------
+            | FILTRO DE FECHA
+            |--------------------------------------------------------------------------
+            */
+
+                if (
+                    $fechaDesde &&
+                    $movimiento->fecha_proceso < $fechaDesde
+                ) {
+                    continue;
+                }
+
+                if (
+                    $fechaHasta &&
+                    $movimiento->fecha_proceso > $fechaHasta
+                ) {
+                    continue;
+                }
+
+
+                /*
+            |--------------------------------------------------------------------------
+            | CREAR PROCESO
+            |--------------------------------------------------------------------------
+            */
+
+                if (!isset($historiaGeneral[$movimiento->proceso])) {
+
+                    $historiaGeneral[$movimiento->proceso] = [
+
+                        'proceso' => $movimiento->proceso,
+
+                        'orden' =>
+                        $ordenProcesos[$movimiento->proceso] ?? 999,
+
+                        'entrada' => 0,
+
+                        'salida' => 0,
+
+                        'cantidad_ots' => 0,
+
+                        'detalles' => [],
+                    ];
+                }
+
+
+                /*
+            |--------------------------------------------------------------------------
+            | ACUMULAR
+            |--------------------------------------------------------------------------
+            */
+
+                $historiaGeneral[$movimiento->proceso]['entrada']
+                    += $entrada;
+
+                $historiaGeneral[$movimiento->proceso]['salida']
+                    += $salida;
+
+
+                /*
+            |--------------------------------------------------------------------------
+            | DETALLE
+            |--------------------------------------------------------------------------
+            */
+
+                $historiaGeneral[$movimiento->proceso]['detalles'][] = [
+
+                    'id_ot' => $idOt,
+
+                    'nro_ot' => $movimiento->nro_ot,
+
+                    'codigo' => $movimiento->codigo,
+
+                    'descripcion' => $movimiento->descripcion,
+
+                    'cantidad_orden' =>
+                    $movimiento->cantidad_orden,
+
+                    'fecha' =>
+                    $movimiento->fecha_proceso,
+
+                    'entrada' =>
+                    $entrada,
+
+                    'salida' =>
+                    $salida,
+
+                    'proceso_anterior' =>
+                    $movimientoAnterior
+                        ? $movimientoAnterior->proceso
+                        : null,
+
+                    'proceso_siguiente' =>
+                    $movimientoSiguiente
+                        ? $movimientoSiguiente->proceso
+                        : null,
+
+                    'es_primero' =>
+                    !$movimientoAnterior,
+
+                    'es_ultimo' =>
+                    !$movimientoSiguiente,
+                ];
+            }
+        }
+
+
+        /*
+    |--------------------------------------------------------------------------
+    | CANTIDAD DE OTS
+    |--------------------------------------------------------------------------
+    |
+    | Contamos OTs diferentes por proceso.
+    |
+    */
+
+        foreach ($historiaGeneral as &$proceso) {
+
+            $proceso['cantidad_ots'] =
+                collect($proceso['detalles'])
+                ->pluck('nro_ot')
+                ->unique()
+                ->count();
+        }
+
+        unset($proceso);
+
+
+        /*
+    |--------------------------------------------------------------------------
+    | ORDEN FINAL
+    |--------------------------------------------------------------------------
+    */
+
+        $historia = collect($historiaGeneral)
+            ->sortBy('orden')
+            ->values();
+
+
+        /*
+    |--------------------------------------------------------------------------
+    | VISTA
+    |--------------------------------------------------------------------------
+    */
+
+        return view(
+            'ots.historia_general',
+            compact(
+                'historia',
+                'ordenProcesos'
+            )
         );
     }
 }

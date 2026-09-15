@@ -1990,11 +1990,11 @@
                                                             class="btn btn-success">
                                                             <i class="fas fa-file-excel"></i> Excel
                                                         </a>
-                                                        @can('redistribucionsugerencia finalizarLote')
+                                                        {{-- @can('redistribucionsugerencia finalizarLote')
                                                             <button type="button" class="btn btn-finish"
                                                                 onclick="finalizarLote({{ $lote->id }})"><i
                                                                     class="fas fa-check"></i> Finalizar</button>
-                                                        @endcan
+                                                        @endcan --}}
                                                     </div>
                                             </td>
                                         </tr>
@@ -2045,6 +2045,37 @@
                                 <tbody>
                                     @foreach ($lotesFinalizados as $lote)
                                         <tr>
+                                            {{-- LOTE --}}
+                                            <td>
+                                                <strong class="product-code">
+                                                    LOTE #{{ $lote->id }}
+                                                </strong>
+                                            </td>
+
+                                            {{-- FECHA --}}
+                                            <td>
+                                                <span class="location-cell">
+                                                    <i class="far fa-calendar-alt"></i>
+                                                    {{ \Carbon\Carbon::parse($lote->fecha_generacion)->format('d/m/Y H:i') }}
+                                                </span>
+                                            </td>
+
+                                            {{-- MOVIMIENTOS --}}
+                                            <td class="text-center">
+                                                <span class="quantity">
+                                                    {{ $lote->detalles->count() }}
+                                                </span>
+                                            </td>
+
+                                            {{-- ESTADO --}}
+                                            <td class="text-center">
+                                                <span class="status-badge success">
+                                                    <i class="fas fa-check-circle"></i>
+                                                    {{ $lote->estado }}
+                                                </span>
+                                            </td>
+
+                                            {{-- ACCIONES --}}
                                             <td>
                                                 <div class="action-group">
 
@@ -2068,15 +2099,6 @@
                                                         <i class="fas fa-file-excel"></i>
                                                         Excel
                                                     </a>
-
-                                                    {{-- INICIAR --}}
-                                                    @can('redistribucionsugerencia procesarLote')
-                                                        <button type="button" class="btn btn-start"
-                                                            onclick="iniciarLote({{ $lote->id }})">
-                                                            <i class="fas fa-play"></i>
-                                                            Iniciar
-                                                        </button>
-                                                    @endcan
 
                                                 </div>
                                             </td>

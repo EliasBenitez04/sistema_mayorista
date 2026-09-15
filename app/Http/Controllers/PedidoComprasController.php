@@ -57,7 +57,10 @@ class PedidoComprasController extends Controller
 
     public function create()
     {
-        $condicion = ["CONTADO" => "CONTADO", "CREDITO" => "CREDITO"];
+        $condicion = [
+            "CONTADO" => "CONTADO",
+            "CREDITO" => "CREDITO"
+        ];
 
         $sucursal = DB::table('sucursal')
             ->select(DB::raw("suc_descri, cod_suc"))
@@ -70,6 +73,20 @@ class PedidoComprasController extends Controller
             )
             ->orderBy('cli_ci')
             ->pluck('nombre', 'id_cliente');
+
+        // =========================================================
+        // DEPARTAMENTOS
+        // =========================================================
+
+        $departamento = DB::table('departamento')
+            ->pluck('dep_descripcion', 'id_departamento');
+
+        $ciudad = DB::table('ciudad')
+            ->pluck('ciu_descripcion', 'id_ciudad');
+
+        // =========================================================
+        // PRODUCTOS
+        // =========================================================
 
         $productos = DB::table('articulos')
             ->join('stock', 'articulos.id_articulo', '=', 'stock.id_articulo')
@@ -86,6 +103,10 @@ class PedidoComprasController extends Controller
 
         $detalles = [];
 
+        // =========================================================
+        // BUSCAR NÚMEROS DE PEDIDO UTILIZADOS
+        // =========================================================
+
         $usados = DB::table('pedido_compras')
             ->where('ped_estado', '!=', 'ANULADO')
             ->selectRaw("CAST(split_part(nro_pedido, '-', 2) AS INTEGER) as num")
@@ -101,14 +122,21 @@ class PedidoComprasController extends Controller
 
         $nroPedidoPreview = "PED-" . $numero;
 
+        // =========================================================
+        // VISTA
+        // =========================================================
+
         return view('pedido_compras.create')
             ->with('condicion', $condicion)
             ->with('sucursal', $sucursal)
             ->with('productos', $productos)
             ->with('clientes', $clientes)
+            ->with('departamento', $departamento)
+            ->with('ciudad', $ciudad)
             ->with('detalles', $detalles)
             ->with('nroPedidoPreview', $nroPedidoPreview);
     }
+
 
     public function store(Request $request)
     {

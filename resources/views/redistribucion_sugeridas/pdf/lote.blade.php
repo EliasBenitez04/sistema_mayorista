@@ -9,26 +9,22 @@
         Lote {{ $lote->numero_lote }}
     </title>
 
-
     <style>
         @page {
-            margin: 35px 35px 45px 35px;
+            margin: 30px 30px 40px 30px;
         }
-
-
-        * {
-            box-sizing: border-box;
-        }
-
 
         body {
             font-family: DejaVu Sans, sans-serif;
-            font-size: 9px;
+            font-size: 8px;
             color: #334155;
             margin: 0;
             padding: 0;
         }
 
+        table {
+            border-collapse: collapse;
+        }
 
         /* =====================================================
            HEADER
@@ -37,57 +33,44 @@
         .header {
             width: 100%;
             border-bottom: 2px solid #2563eb;
-            padding-bottom: 10px;
-            margin-bottom: 15px;
+            padding-bottom: 8px;
+            margin-bottom: 12px;
         }
-
 
         .header-table {
             width: 100%;
-            border-collapse: collapse;
         }
-
 
         .header-left {
             width: 65%;
-            vertical-align: middle;
         }
-
 
         .header-right {
             width: 35%;
             text-align: right;
-            vertical-align: middle;
         }
-
 
         .system-name {
-            font-size: 17px;
+            font-size: 16px;
             font-weight: bold;
             color: #172033;
-            margin-bottom: 3px;
         }
 
-
         .document-title {
-            font-size: 10px;
+            font-size: 9px;
             color: #64748b;
         }
 
-
         .document-number {
-            font-size: 11px;
+            font-size: 10px;
             font-weight: bold;
             color: #2563eb;
         }
 
-
         .document-date {
-            margin-top: 3px;
-            font-size: 8px;
+            font-size: 7px;
             color: #64748b;
         }
-
 
 
         /* =====================================================
@@ -95,14 +78,13 @@
         ====================================================== */
 
         .section-title {
-            font-size: 10px;
+            font-size: 9px;
             font-weight: bold;
             color: #172033;
-            border-left: 4px solid #2563eb;
-            padding-left: 7px;
-            margin: 15px 0 8px 0;
+            border-left: 3px solid #2563eb;
+            padding-left: 6px;
+            margin: 12px 0 6px 0;
         }
-
 
 
         /* =====================================================
@@ -111,49 +93,37 @@
 
         .summary {
             width: 100%;
-            border-collapse: separate;
-            border-spacing: 6px;
-            margin-left: -6px;
+            margin-bottom: 5px;
         }
-
 
         .summary td {
             width: 25%;
             border: 1px solid #e2e8f0;
             background: #f8fafc;
-            padding: 9px;
+            padding: 7px;
             vertical-align: top;
         }
 
-
         .summary-label {
-            display: block;
             color: #64748b;
-            font-size: 7px;
-            text-transform: uppercase;
+            font-size: 6px;
             font-weight: bold;
-            margin-bottom: 4px;
         }
-
 
         .summary-value {
-            display: block;
             color: #172033;
-            font-size: 11px;
+            font-size: 9px;
             font-weight: bold;
         }
 
-
         .status {
-            display: inline-block;
-            padding: 4px 8px;
+            padding: 3px 6px;
             background: #dcfce7;
             border: 1px solid #bbf7d0;
             color: #166534;
-            font-size: 8px;
+            font-size: 7px;
             font-weight: bold;
         }
-
 
 
         /* =====================================================
@@ -162,83 +132,63 @@
 
         .table-wrapper {
             width: 100%;
-            margin-top: 8px;
+            margin-top: 5px;
         }
 
-
-        table.detalles {
+        .detalles {
             width: 100%;
-            border-collapse: collapse;
             table-layout: fixed;
         }
 
-
-        table.detalles thead {
+        .detalles thead {
             display: table-header-group;
         }
 
+        /*
+        Importante:
+        No usamos page-break-inside: avoid en cada fila.
+        Esto reduce bastante el consumo de memoria de Dompdf.
+        */
 
-        table.detalles tr {
-            page-break-inside: avoid;
-        }
-
-
-        table.detalles th {
+        .detalles th {
             background: #172033;
             color: #ffffff;
-            padding: 7px 5px;
+            padding: 5px 4px;
             text-align: left;
-            font-size: 7px;
+            font-size: 6px;
             font-weight: bold;
-            text-transform: uppercase;
-            border: 1px solid #172033;
         }
 
-
-        table.detalles td {
+        .detalles td {
             border: 1px solid #e2e8f0;
-            padding: 6px 5px;
-            font-size: 7.5px;
+            padding: 4px;
+            font-size: 7px;
             vertical-align: middle;
             word-wrap: break-word;
-            overflow-wrap: break-word;
         }
-
-
-        table.detalles tbody tr:nth-child(even) {
-            background: #f8fafc;
-        }
-
 
         .center {
-            text-align: center !important;
+            text-align: center;
         }
-
 
         .codigo {
             font-weight: bold;
             color: #172033;
-            word-break: break-all;
         }
-
 
         .descripcion {
             color: #334155;
-            line-height: 1.3;
         }
-
 
         .cantidad {
             font-weight: bold;
             color: #2563eb;
         }
 
-
         .estado {
-            font-size: 7px;
+            font-size: 6px;
             font-weight: bold;
         }
-
 
 
         /* =====================================================
@@ -247,17 +197,14 @@
 
         .totales {
             width: 100%;
-            margin-top: 12px;
-            border-collapse: collapse;
+            margin-top: 10px;
         }
-
 
         .totales td {
             border: 1px solid #e2e8f0;
-            padding: 8px;
+            padding: 6px;
             background: #f8fafc;
         }
-
 
         .total-label {
             text-align: right;
@@ -265,15 +212,13 @@
             font-weight: bold;
         }
 
-
         .total-value {
-            width: 100px;
+            width: 70px;
             text-align: center;
             color: #172033;
             font-weight: bold;
-            font-size: 10px;
+            font-size: 9px;
         }
-
 
 
         /* =====================================================
@@ -281,14 +226,13 @@
         ====================================================== */
 
         .footer {
-            margin-top: 20px;
-            padding-top: 8px;
+            margin-top: 15px;
+            padding-top: 6px;
             border-top: 1px solid #e2e8f0;
             text-align: center;
-            font-size: 7px;
+            font-size: 6px;
             color: #94a3b8;
         }
-
 
         .footer strong {
             color: #64748b;
@@ -333,7 +277,6 @@
                     <div class="document-date">
 
                         Generado:
-
                         {{ \Carbon\Carbon::parse($lote->fecha_generacion)->format('d/m/Y H:i') }}
 
                     </div>
@@ -345,7 +288,6 @@
         </table>
 
     </div>
-
 
 
     {{-- =====================================================
@@ -364,8 +306,10 @@
             <td>
 
                 <span class="summary-label">
-                    Número de lote
+                    NÚMERO DE LOTE
                 </span>
+
+                <br>
 
                 <span class="summary-value">
                     {{ $lote->numero_lote }}
@@ -377,8 +321,10 @@
             <td>
 
                 <span class="summary-label">
-                    Estado
+                    ESTADO
                 </span>
+
+                <br>
 
                 <span class="status">
                     {{ $lote->estado }}
@@ -390,8 +336,10 @@
             <td>
 
                 <span class="summary-label">
-                    Total transferencias
+                    TOTAL TRANSFERENCIAS
                 </span>
+
+                <br>
 
                 <span class="summary-value">
                     {{ $lote->total_transferencias }}
@@ -403,8 +351,10 @@
             <td>
 
                 <span class="summary-label">
-                    Total productos
+                    TOTAL PRODUCTOS
                 </span>
+
+                <br>
 
                 <span class="summary-value">
                     {{ $lote->total_productos }}
@@ -415,7 +365,6 @@
         </tr>
 
     </table>
-
 
 
     {{-- =====================================================
@@ -439,31 +388,25 @@
                         #
                     </th>
 
-
                     <th width="15%">
                         Código
                     </th>
-
 
                     <th width="25%">
                         Descripción
                     </th>
 
-
                     <th width="18%">
                         Origen
                     </th>
-
 
                     <th width="18%">
                         Destino
                     </th>
 
-
                     <th width="9%" class="center">
                         Cantidad
                     </th>
-
 
                     <th width="11%">
                         Estado
@@ -479,58 +422,38 @@
                 @forelse ($lote->detalles as $detalle)
                     <tr>
 
-                        {{-- NÚMERO --}}
-
                         <td class="center">
                             {{ $loop->iteration }}
                         </td>
 
-
-                        {{-- CÓDIGO --}}
 
                         <td class="codigo">
                             {{ $detalle->codigo ?? '-' }}
                         </td>
 
 
-                        {{-- DESCRIPCIÓN --}}
-
                         <td class="descripcion">
-
                             {{ $detalle->descripcion ?? '-' }}
-
                         </td>
 
-
-                        {{-- ORIGEN --}}
 
                         <td>
-                            {{ $detalle->origen->suc_descri ?? '-' }}
+                            {{ optional($detalle->origen)->suc_descri ?? '-' }}
                         </td>
 
-
-                        {{-- DESTINO --}}
 
                         <td>
-                            {{ $detalle->destino->suc_descri ?? '-' }}
+                            {{ optional($detalle->destino)->suc_descri ?? '-' }}
                         </td>
 
-
-                        {{-- CANTIDAD --}}
 
                         <td class="center cantidad">
-
                             {{ $detalle->cantidad ?? 0 }}
-
                         </td>
 
 
-                        {{-- ESTADO --}}
-
                         <td class="estado">
-
                             {{ $detalle->estado ?? '-' }}
-
                         </td>
 
                     </tr>
@@ -540,8 +463,7 @@
                     <tr>
 
                         <td colspan="7" class="center">
-                            No existen transferencias
-                            registradas en este lote.
+                            No existen transferencias registradas en este lote.
                         </td>
 
                     </tr>
@@ -552,7 +474,6 @@
         </table>
 
     </div>
-
 
 
     {{-- =====================================================
@@ -568,9 +489,7 @@
             </td>
 
             <td class="total-value">
-
                 {{ $lote->detalles->count() }}
-
             </td>
 
 
@@ -579,15 +498,12 @@
             </td>
 
             <td class="total-value">
-
                 {{ $lote->detalles->sum('cantidad') }}
-
             </td>
 
         </tr>
 
     </table>
-
 
 
     {{-- =====================================================

@@ -395,7 +395,10 @@ class RedistribucionRemisionImport implements ToCollection, WithHeadingRow
                             }
                         } else {
 
-                            if ($fechaRemision || $detalle->fecha_remision) {
+                            // PARCIAL
+                            if ($fechaRecepcion || $detalle->fecha_recepcion) {
+                                $detalle->estado = 'FINALIZADO';
+                            } elseif ($fechaRemision || $detalle->fecha_remision) {
                                 $detalle->estado = 'REALIZADO';
                             }
                         }
@@ -592,30 +595,31 @@ class RedistribucionRemisionImport implements ToCollection, WithHeadingRow
 
                 // =====================================================
                 // ACTUALIZAR ESTADO DEL DETALLE
-                // =====================================================
 
+                // =====================================================
                 if ($estadoCantidad === 'COMPLETO') {
 
                     if ($fechaRecepcion) {
-
                         $detalle->estado = 'FINALIZADO';
                     } else {
-
                         $detalle->estado = 'REALIZADO';
                     }
                 } elseif ($estadoCantidad === 'EXCEDENTE') {
 
                     if ($fechaRecepcion) {
-
                         $detalle->estado = 'FINALIZADO';
                     } else {
-
                         $detalle->estado = 'REALIZADO';
                     }
                 } else {
 
-                    if ($fechaRemision) {
-
+                    // PARCIAL
+                    // Si ya tenemos fecha de recepción,
+                    // significa que la transferencia terminó aunque
+                    // la cantidad haya sido incompleta.
+                    if ($fechaRecepcion) {
+                        $detalle->estado = 'FINALIZADO';
+                    } elseif ($fechaRemision) {
                         $detalle->estado = 'REALIZADO';
                     }
                 }

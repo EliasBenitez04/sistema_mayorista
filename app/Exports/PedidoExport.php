@@ -13,81 +13,38 @@ class PedidoExport implements WithMultipleSheets
 {
     protected $id_pedido;
 
-    /*
-    |--------------------------------------------------------------------------
-    | SUCURSALES PRIORITARIAS
-    |--------------------------------------------------------------------------
-    */
-
     protected $sucursalesPrioritarias = [
         14,
         8,
         2,
         9,
         5,
-        1,
     ];
 
-    /*
-    |--------------------------------------------------------------------------
-    | MÁXIMO DE SUCURSALES POR ARTÍCULO
-    |--------------------------------------------------------------------------
-    */
+    protected $sucursalesExcluidas = [
+        1,   // Sucursal 01
+        25,  // Sucursal 25
+    ];
 
     protected $maxSugerencias = 5;
 
-    /*
-    |--------------------------------------------------------------------------
-    | PEDIDOS AGRUPADOS POR SUCURSAL
-    |--------------------------------------------------------------------------
-    */
-
     protected $pedidosPorSucursal = [];
-
-    /*
-    |--------------------------------------------------------------------------
-    | CONSTRUCTOR
-    |--------------------------------------------------------------------------
-    */
 
     public function __construct($id_pedido)
     {
         $this->id_pedido = $id_pedido;
     }
 
-    /*
-    |--------------------------------------------------------------------------
-    | HOJAS DEL EXCEL
-    |--------------------------------------------------------------------------
-    */
-
     public function sheets(): array
     {
-        /*
-        |--------------------------------------------------------------------------
-        | PROCESAR PEDIDO
-        |--------------------------------------------------------------------------
-        */
 
         $resultado = $this->procesarPedido();
 
         $sheets = [];
 
-        /*
-        |--------------------------------------------------------------------------
-        | PRIMERA HOJA: RESUMEN
-        |--------------------------------------------------------------------------
-        */
-
         $sheets[] = new PedidoResumenSheet(
             $resultado['resumen']
         );
-
-        /*
-        |--------------------------------------------------------------------------
-        | HOJAS DE CADA SUCURSAL
-        |--------------------------------------------------------------------------
-        */
 
         foreach (
             $this->pedidosPorSucursal
@@ -103,19 +60,8 @@ class PedidoExport implements WithMultipleSheets
         return $sheets;
     }
 
-    /*
-    |--------------------------------------------------------------------------
-    | PROCESAR PEDIDO
-    |--------------------------------------------------------------------------
-    */
-
     protected function procesarPedido(): array
     {
-        /*
-        |--------------------------------------------------------------------------
-        | OBTENER DETALLE DEL PEDIDO
-        |--------------------------------------------------------------------------
-        */
 
         $items = DB::table('detalle_pedido as d')
             ->join(
@@ -143,30 +89,12 @@ class PedidoExport implements WithMultipleSheets
             )
             ->get();
 
-        /*
-        |--------------------------------------------------------------------------
-        | RESUMEN
-        |--------------------------------------------------------------------------
-        */
-
         $resumen = [];
-
-        /*
-        |--------------------------------------------------------------------------
-        | PROCESAR CADA ARTÍCULO
-        |--------------------------------------------------------------------------
-        */
 
         foreach ($items as $item) {
 
             $cantidadSolicitada =
                 (int) $item->det_cantidad;
-
-            /*
-            |--------------------------------------------------------------------------
-            | OBTENER STOCK
-            |--------------------------------------------------------------------------
-            */
 
             $stocks = DB::table('stock_sucursales')
                 ->where(
@@ -179,12 +107,6 @@ class PedidoExport implements WithMultipleSheets
                     0
                 )
                 ->get();
-
-            /*
-            |--------------------------------------------------------------------------
-            | SIN STOCK
-            |--------------------------------------------------------------------------
-            */
 
             if ($stocks->isEmpty()) {
 
@@ -218,20 +140,8 @@ class PedidoExport implements WithMultipleSheets
                 continue;
             }
 
-            /*
-            |--------------------------------------------------------------------------
-            | PROCESAR STOCK
-            |--------------------------------------------------------------------------
-            */
-
             $stocksProcesados = $stocks
                 ->map(function ($stock) {
-
-                    /*
-                    |--------------------------------------------------------------------------
-                    | EXTRAER CÓDIGO DE SUCURSAL
-                    |--------------------------------------------------------------------------
-                    */
 
                     preg_match(
                         '/Sucursal:\s*([0-9]+)/',
@@ -257,11 +167,14 @@ class PedidoExport implements WithMultipleSheets
                 })
                 ->values();
 
-            /*
-            |--------------------------------------------------------------------------
-            | NO HAY STOCK VÁLIDO
-            |--------------------------------------------------------------------------
-            */
+            $stocksProcesados = $stocksProcesados
+                ->reject(function ($stock) {
+                    return in_array(
+                        $stock->codigo_sucursal,
+                        $this->sucursalesExcluidas
+                    );
+                })
+                ->values();
 
             if ($stocksProcesados->isEmpty()) {
 
@@ -295,12 +208,6 @@ class PedidoExport implements WithMultipleSheets
                 continue;
             }
 
-            /*
-            |--------------------------------------------------------------------------
-            | SUCURSALES PRIORITARIAS
-            |--------------------------------------------------------------------------
-            */
-
             $prioritarias = $stocksProcesados
                 ->filter(function ($stock) {
 
@@ -318,12 +225,6 @@ class PedidoExport implements WithMultipleSheets
                 })
                 ->values();
 
-            /*
-            |--------------------------------------------------------------------------
-            | OTRAS SUCURSALES
-            |--------------------------------------------------------------------------
-            */
-
             $otrasSucursales = $stocksProcesados
                 ->filter(function ($stock) {
 
@@ -335,21 +236,9 @@ class PedidoExport implements WithMultipleSheets
                 ->sortByDesc('cantidad')
                 ->values();
 
-            /*
-            |--------------------------------------------------------------------------
-            | ORDEN FINAL
-            |--------------------------------------------------------------------------
-            */
-
             $stocksOrdenados = $prioritarias
                 ->concat($otrasSucursales)
                 ->values();
-
-            /*
-            |--------------------------------------------------------------------------
-            | BUSCAR UNA PRIORITARIA CON TODO
-            |--------------------------------------------------------------------------
-            */
 
             $sucursalCompleta = null;
 
@@ -382,19 +271,7 @@ class PedidoExport implements WithMultipleSheets
                 }
             }
 
-            /*
-            |--------------------------------------------------------------------------
-            | ASIGNACIONES
-            |--------------------------------------------------------------------------
-            */
-
             $asignaciones = [];
-
-            /*
-            |--------------------------------------------------------------------------
-            | UNA SUCURSAL TIENE TODO
-            |--------------------------------------------------------------------------
-            */
 
             if ($sucursalCompleta) {
 

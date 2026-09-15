@@ -7,6 +7,7 @@ use Illuminate\Support\Facades\Cache;
 use App\Http\Controllers\auditoriaController;
 use App\Http\Controllers\Auth\ForgotPasswordController;
 use App\Http\Controllers\Auth\ResetPasswordController;
+use App\Http\Controllers\ClienteController;
 use App\Http\Controllers\PedidoComprasController;
 use App\Http\Controllers\stock_ventas_sucursales_Controller;
 use App\Http\Controllers\StockController;
@@ -787,3 +788,18 @@ Route::get(
     '/dashboard/logistica/exportar',
     [OtController::class, 'exportarDashboardLogistica']
 )->name('dashboard.logistica.exportar');
+
+Route::get('/clientes/ciudades', [ClienteController::class, 'getCiudades'])
+    ->name('clientes.ciudades');
+
+Route::get('/ot/historia-general', [OtController::class, 'historiaGeneral'])
+    ->name('ots.historia-general');
+
+use App\Http\Controllers\ControlTerminacionController;
+
+Route::get(
+    '/control/terminacion',
+    [ControlTerminacionController::class, 'index']
+)->name('control.terminacion');
+
+Route::resource('redistribucion-configs', App\Http\Controllers\RedistribucionConfigController::class);

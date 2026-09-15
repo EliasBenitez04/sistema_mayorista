@@ -115,11 +115,18 @@ class OtLogisticaExport implements
 
         if (!empty($this->sucursal)) {
 
-            $query->where(
-                'd.sucursal',
-                'ILIKE',
-                '%' . trim($this->sucursal) . '%'
+            $sucursales = is_array($this->sucursal)
+                ? $this->sucursal
+                : [$this->sucursal];
+
+            $sucursales = array_filter(
+                array_map('trim', $sucursales),
+                fn($valor) => $valor !== ''
             );
+
+            if (!empty($sucursales)) {
+                $query->whereIn('d.sucursal', $sucursales);
+            }
         }
 
 
