@@ -31,13 +31,12 @@
 
                 <div class="row">
 
-                    {{-- 🔥 IMPORTANTE: PASAR DETALLE AL FORM --}}
                     @php
                         $pedido = $pedido_compras;
                         $detalles = $detalle ?? [];
                     @endphp
 
-                    @include('pedido_compras.fields')
+                    @include('pedido_compras.fields_v2')
 
                 </div>
             </div>
