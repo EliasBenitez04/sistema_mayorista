@@ -25,6 +25,17 @@
 
                 @include('sweetalert::alert')
 
+                <div class="d-flex justify-content-end mb-3">
+                    <button type="button"
+                        id="btnNuevoClientePedido"
+                        class="btn btn-success btn-sm px-3"
+                        data-toggle="modal"
+                        data-target="#clienteRapidoModal">
+                        <i class="fas fa-user-plus mr-1"></i>
+                        Nuevo cliente
+                    </button>
+                </div>
+
                 <div class="row">
                     @include('pedido_compras.fields')
                 </div>
