@@ -61,6 +61,12 @@ Route::post('users/perfil/cambiar-password', [App\Http\Controllers\UsuarioContro
 |--------------------------------------------------------------------------
 */
 
+Route::get('/pedido_compras/clientes/catalogos', [App\Http\Controllers\PedidoClienteRapidoController::class, 'catalogos'])
+    ->name('pedido_compras.clientes.catalogos');
+
+Route::post('/pedido_compras/clientes/rapido', [App\Http\Controllers\PedidoClienteRapidoController::class, 'store'])
+    ->name('pedido_compras.clientes.store');
+
 Route::patch('/pedido_compras/confirm/{id}', [PedidoComprasController::class, 'confirm'])->name('pedido_compras.confirm');
 
 Route::get('pedido_compras/{id}/edit', [PedidoComprasController::class, 'edit'])->name('pedido_compras.edit');

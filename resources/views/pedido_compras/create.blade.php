@@ -39,5 +39,8 @@
             {!! Form::close() !!}
 
         </div>
+
+        {{-- El modal queda fuera del formulario del pedido para evitar formularios anidados. --}}
+        @include('pedido_compras.modal_cliente')
     </div>
 @endsection
