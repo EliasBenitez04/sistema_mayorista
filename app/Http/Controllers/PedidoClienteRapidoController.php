@@ -85,35 +85,69 @@ class PedidoClienteRapidoController extends Controller
         $direccion = strtoupper(trim((string) $request->input('cli_direccion')));
         $ci = trim((string) $request->input('cli_ci'));
         $telefono = trim((string) $request->input('cli_telefono'));
+        $idDepartamento = $request->input('id_departamento');
+        $idCiudad = $request->input('id_ciudad');
+
+        DB::beginTransaction();
 
         try {
-            $idCliente = DB::table('clientes')->insertGetId([
-                'id_ciudad' => $request->input('id_ciudad'),
-                'id_departamento' => $request->input('id_departamento'),
-                'cli_ci' => $ci,
-                'cli_nombre' => $nombre,
-                'cli_apellido' => $apellido,
-                'cli_direccion' => $direccion,
-                'cli_telefono' => $telefono,
-            ], 'id_cliente');
+            // Se usa el mismo patrón que ClienteController::store, que ya funciona
+            // con la estructura actual de PostgreSQL del proyecto.
+            DB::insert(
+                'INSERT INTO clientes (id_ciudad, id_departamento, cli_ci, cli_nombre, cli_apellido, cli_direccion, cli_telefono)
+                 VALUES (?, ?, ?, ?, ?, ?, ?)',
+                [
+                    $idCiudad,
+                    $idDepartamento,
+                    $ci,
+                    $nombre,
+                    $apellido,
+                    $direccion,
+                    $telefono,
+                ]
+            );
 
-            $nombreCompleto = trim($nombre . ' ' . $apellido);
+            // No dependemos de insertGetId/RETURNING ni de la secuencia del PK.
+            $clienteCreado = DB::table('clientes')
+                ->where('cli_ci', $ci)
+                ->select(
+                    'id_cliente',
+                    'cli_ci',
+                    'cli_nombre',
+                    'cli_apellido',
+                    'cli_direccion',
+                    'cli_telefono',
+                    'id_departamento',
+                    'id_ciudad'
+                )
+                ->first();
+
+            if (!$clienteCreado) {
+                throw new \RuntimeException('El cliente fue insertado pero no pudo recuperarse.');
+            }
+
+            DB::commit();
+
+            $nombreCompleto = trim($clienteCreado->cli_nombre . ' ' . $clienteCreado->cli_apellido);
 
             return response()->json([
+                'status' => 'success',
                 'message' => 'Cliente registrado correctamente.',
                 'cliente' => [
-                    'id' => $idCliente,
-                    'texto' => $ci . ' - ' . $nombreCompleto,
-                    'cli_ci' => $ci,
-                    'cli_nombre' => $nombre,
-                    'cli_apellido' => $apellido,
-                    'cli_direccion' => $direccion,
-                    'cli_telefono' => $telefono,
-                    'id_departamento' => (int) $request->input('id_departamento'),
-                    'id_ciudad' => (int) $request->input('id_ciudad'),
+                    'id' => $clienteCreado->id_cliente,
+                    'texto' => $clienteCreado->cli_ci . ' - ' . $nombreCompleto,
+                    'cli_ci' => $clienteCreado->cli_ci,
+                    'cli_nombre' => $clienteCreado->cli_nombre,
+                    'cli_apellido' => $clienteCreado->cli_apellido,
+                    'cli_direccion' => $clienteCreado->cli_direccion,
+                    'cli_telefono' => $clienteCreado->cli_telefono,
+                    'id_departamento' => (int) $clienteCreado->id_departamento,
+                    'id_ciudad' => (int) $clienteCreado->id_ciudad,
                 ],
             ], 201);
         } catch (\Throwable $e) {
+            DB::rollBack();
+
             Log::error('Error al registrar cliente desde pedido', [
                 'message' => $e->getMessage(),
                 'cli_ci' => $ci,
@@ -121,7 +155,9 @@ class PedidoClienteRapidoController extends Controller
             ]);
 
             return response()->json([
-                'message' => 'No se pudo registrar el cliente. Intente nuevamente.',
+                'status' => 'error',
+                'message' => 'No se pudo registrar el cliente. Revise los datos e intente nuevamente.',
+                'debug' => config('app.debug') ? $e->getMessage() : null,
             ], 500);
         }
     }
