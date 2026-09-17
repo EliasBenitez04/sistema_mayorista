@@ -40,11 +40,13 @@
                     @include('pedido_compras.fields')
                 </div>
 
+                @include('pedido_compras.borrador')
+
             </div>
 
             <div class="card-footer">
                 {!! Form::submit('Guardar', ['class' => 'btn btn-success']) !!}
-                <a href="{{ route('pedido_compras.index') }}" class="btn btn-primary"> Cancelar </a>
+                <a href="{{ route('pedido_compras.index') }}" class="btn btn-primary btn-cancelar-pedido"> Cancelar </a>
             </div>
 
             {!! Form::close() !!}
