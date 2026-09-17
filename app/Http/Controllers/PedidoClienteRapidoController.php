@@ -16,7 +16,7 @@ class PedidoClienteRapidoController extends Controller
     }
 
     /**
-     * Catálogos necesarios para registrar un cliente desde el pedido.
+     * Catálogos independientes para registrar un cliente desde el pedido.
      */
     public function catalogos()
     {
@@ -26,7 +26,7 @@ class PedidoClienteRapidoController extends Controller
             ->get();
 
         $ciudades = DB::table('ciudad')
-            ->select('id_ciudad', 'id_departamento', 'ciu_descripcion')
+            ->select('id_ciudad', 'ciu_descripcion')
             ->orderBy('ciu_descripcion')
             ->get();
 
@@ -77,20 +77,6 @@ class PedidoClienteRapidoController extends Controller
             return response()->json([
                 'message' => 'Revise los datos del cliente.',
                 'errors' => $validator->errors(),
-            ], 422);
-        }
-
-        $ciudadPerteneceAlDepartamento = DB::table('ciudad')
-            ->where('id_ciudad', $request->input('id_ciudad'))
-            ->where('id_departamento', $request->input('id_departamento'))
-            ->exists();
-
-        if (!$ciudadPerteneceAlDepartamento) {
-            return response()->json([
-                'message' => 'La ciudad seleccionada no pertenece al departamento indicado.',
-                'errors' => [
-                    'id_ciudad' => ['Seleccione una ciudad correspondiente al departamento.'],
-                ],
             ], 422);
         }
 
