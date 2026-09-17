@@ -13,13 +13,11 @@
 
         if (!texto) return 0;
 
-        // Valor numérico crudo típico de PostgreSQL/Blade: 35000 o 35000.00
         if (/^-?\d+(\.\d+)?$/.test(texto)) {
             const directo = Number(texto);
             return Number.isFinite(directo) ? directo : 0;
         }
 
-        // Formato paraguayo: 35.000 / 35.000,50
         if (texto.includes(',')) {
             texto = texto.replace(/\./g, '').replace(',', '.');
         } else {
@@ -60,7 +58,32 @@
         return precio;
     }
 
-    function recalcularFilaSeguro(row) {
+    function obtenerCantidad(input, completarVacio) {
+        const texto = String(input.value ?? '').trim();
+
+        // Mientras el usuario escribe permitimos que el campo quede vacío.
+        if (texto === '') {
+            if (completarVacio) {
+                input.value = 1;
+                return 1;
+            }
+            return null;
+        }
+
+        let cantidad = parseInt(texto, 10) || 0;
+
+        if (cantidad < 1) {
+            if (completarVacio) {
+                input.value = 1;
+                return 1;
+            }
+            return null;
+        }
+
+        return cantidad;
+    }
+
+    function recalcularFilaSeguro(row, completarVacio = true) {
         if (!row) return;
 
         const cantidadInput = row.querySelector('.cantidad');
@@ -68,11 +91,10 @@
 
         if (!cantidadInput || !subtotalInput) return;
 
-        let cantidad = parseInt(cantidadInput.value, 10) || 0;
-        if (cantidad < 1) {
-            cantidad = 1;
-            cantidadInput.value = 1;
-        }
+        const cantidad = obtenerCantidad(cantidadInput, completarVacio);
+
+        // Si está vacío mientras se edita, no pisamos el subtotal anterior.
+        if (cantidad === null) return;
 
         const precio = obtenerPrecioFila(row);
         const subtotal = cantidad * precio;
@@ -81,7 +103,7 @@
         subtotalInput.value = formatearMiles(subtotal);
     }
 
-    function recalcularTotalesSeguro() {
+    function recalcularTotalesSeguro(completarVacios = true) {
         let totalCantidad = 0;
         let total = 0;
 
@@ -91,14 +113,17 @@
 
             if (!cantidadInput || !subtotalInput) return;
 
-            let cantidad = parseInt(cantidadInput.value, 10) || 0;
-            if (cantidad < 1) {
-                cantidad = 1;
-                cantidadInput.value = 1;
+            const cantidad = obtenerCantidad(cantidadInput, completarVacios);
+
+            // Durante la edición de un campo vacío conservamos temporalmente
+            // el subtotal anterior y no forzamos el valor a 1 todavía.
+            if (cantidad === null) {
+                total += normalizarNumeroSeguro(subtotalInput.dataset.value || subtotalInput.value);
+                return;
             }
 
             totalCantidad += cantidad;
-            recalcularFilaSeguro(row);
+            recalcularFilaSeguro(row, completarVacios);
             total += normalizarNumeroSeguro(subtotalInput.dataset.value || subtotalInput.value);
         });
 
@@ -121,27 +146,54 @@
         if (modalTotal) modalTotal.innerText = formatearMiles(total);
     }
 
-    // Dejamos estas funciones como las oficiales para cualquier llamada del módulo.
     window.normalizarNumeroPedido = normalizarNumeroSeguro;
-    window.recalcularFila = recalcularFilaSeguro;
-    window.calcularTodo = recalcularTotalesSeguro;
-    window.calcularTotal = recalcularTotalesSeguro;
+    window.recalcularFila = function (row) {
+        recalcularFilaSeguro(row, true);
+    };
+    window.calcularTodo = function () {
+        recalcularTotalesSeguro(true);
+    };
+    window.calcularTotal = function () {
+        recalcularTotalesSeguro(true);
+    };
 
-    function manejarCantidad(event) {
+    function manejarInputCantidad(event) {
         if (!event.target || !event.target.classList.contains('cantidad')) return;
 
-        // Evita que el listener antiguo de fields.blade.php vuelva a ejecutar
-        // otro cálculo después y pise el subtotal correcto con 0.
+        // Impide que el listener antiguo fuerce 1 mientras el usuario está borrando.
         event.stopImmediatePropagation();
 
         event.target.value = event.target.value.replace(/[^0-9]/g, '');
-        recalcularFilaSeguro(event.target.closest('tr'));
-        recalcularTotalesSeguro();
+
+        // Vacío es válido mientras se está escribiendo.
+        if (event.target.value === '') {
+            recalcularTotalesSeguro(false);
+            return;
+        }
+
+        recalcularFilaSeguro(event.target.closest('tr'), false);
+        recalcularTotalesSeguro(false);
     }
 
-    // Captura = true: este handler corre antes de los listeners antiguos.
-    document.addEventListener('input', manejarCantidad, true);
-    document.addEventListener('change', manejarCantidad, true);
+    function finalizarEdicionCantidad(event) {
+        if (!event.target || !event.target.classList.contains('cantidad')) return;
+
+        event.stopImmediatePropagation();
+
+        // Al abandonar el campo: vacío, cero o inválido => 1.
+        const cantidad = parseInt(event.target.value, 10) || 0;
+        if (cantidad < 1) {
+            event.target.value = 1;
+        }
+
+        recalcularFilaSeguro(event.target.closest('tr'), true);
+        recalcularTotalesSeguro(true);
+    }
+
+    // Captura = true para ejecutarnos antes del listener antiguo de fields.blade.php.
+    document.addEventListener('input', manejarInputCantidad, true);
+    document.addEventListener('change', finalizarEdicionCantidad, true);
+    document.addEventListener('blur', finalizarEdicionCantidad, true);
 })();
 </script>
 @endpush
