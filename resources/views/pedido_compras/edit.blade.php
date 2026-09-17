@@ -37,6 +37,7 @@
                     @endphp
 
                     @include('pedido_compras.fields')
+                    @include('pedido_compras.calculo_detalle_fix')
 
                 </div>
             </div>
