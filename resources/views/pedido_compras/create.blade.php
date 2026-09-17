@@ -37,7 +37,7 @@
                 </div>
 
                 <div class="row">
-                    @include('pedido_compras.fields')
+                    @include('pedido_compras.fields_v2')
                 </div>
 
             </div>
