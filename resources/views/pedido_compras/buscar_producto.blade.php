@@ -21,6 +21,7 @@
                 $stockSucursal = $product->cantidad ?? 0;
                 $stockGeneral = $product->stock_general ?? 0;
                 $stockDisponible = $product->stock_disponible_pedir ?? 0;
+                $precioPedido = (float) ($product->prec_vent ?? 0);
             @endphp
 
             <tr
@@ -28,7 +29,7 @@
                     onclick="seleccionarProductoPed(
                         '{{ $product->art_codigo }}',
                         '{{ addslashes($product->art_descripcion) }}',
-                        {{ $product->prec_vent ?? 0 }},
+                        {{ $precioPedido }},
                         {{ $stockDisponible }}
                     )"
                 @else
@@ -48,7 +49,7 @@
 
                 {{-- Precio --}}
                 <td>
-                    {{ number_format($product->prec_vent ?? 0, 0, ',', '.') }}
+                    {{ number_format($precioPedido, 0, ',', '.') }}
                 </td>
 
                 {{-- Stock general --}}
