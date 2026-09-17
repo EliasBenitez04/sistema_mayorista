@@ -51,7 +51,7 @@
 
         </div>
 
-        {{-- El modal queda fuera del formulario del pedido para evitar formularios anidados. --}}
-        @include('pedido_compras.modal_cliente')
+        {{-- Modal V2: catálogos renderizados directamente, sin AJAX de ciudades/departamentos. --}}
+        @include('pedido_compras.modal_cliente_v2')
     </div>
 @endsection
