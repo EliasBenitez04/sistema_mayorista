@@ -9,6 +9,7 @@
     const BORRADOR_KEY = @json($pedidoBorradorKey);
     const PENDIENTE_KEY = 'sistema_mayorista:pedido_compras:borrador-pendiente';
     let restaurandoBorrador = false;
+    let borradorDescartado = false;
     let timerBorrador = null;
 
     function storageDisponible() {
@@ -86,7 +87,7 @@
     }
 
     function guardarBorrador() {
-        if (restaurandoBorrador) return;
+        if (restaurandoBorrador || borradorDescartado) return;
         try {
             localStorage.setItem(BORRADOR_KEY, JSON.stringify(construirBorrador()));
         } catch (e) {
@@ -95,7 +96,7 @@
     }
 
     function programarGuardadoBorrador() {
-        if (restaurandoBorrador) return;
+        if (restaurandoBorrador || borradorDescartado) return;
         clearTimeout(timerBorrador);
         timerBorrador = setTimeout(guardarBorrador, 180);
     }
@@ -195,7 +196,6 @@
         if (!borrador || borrador.version !== 1) return;
 
         restaurandoBorrador = true;
-
         restaurarCabecera(borrador.cabecera || {});
 
         const tabla = document.getElementById('selectedProducts');
@@ -214,6 +214,8 @@
     }
 
     function limpiarBorrador() {
+        borradorDescartado = true;
+        clearTimeout(timerBorrador);
         try {
             localStorage.removeItem(BORRADOR_KEY);
             if (sessionStorage.getItem(PENDIENTE_KEY) === BORRADOR_KEY) {
@@ -223,16 +225,12 @@
     }
 
     function inicializarBorrador() {
-        // Si el servidor devolvió el mismo formulario por una validación o error,
-        // no se considera guardado exitoso: conservamos el borrador.
         try {
             if (sessionStorage.getItem(PENDIENTE_KEY) === BORRADOR_KEY) {
                 sessionStorage.removeItem(PENDIENTE_KEY);
             }
         } catch (e) {}
 
-        // Los handlers de fields.blade.php se registran antes que este include.
-        // Dejamos que terminen de cargar el detalle original y luego restauramos.
         setTimeout(function () {
             restaurarBorrador();
 
