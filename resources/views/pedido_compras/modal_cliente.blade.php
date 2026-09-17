@@ -1,3 +1,15 @@
+@php
+    $departamentosClienteRapido = \Illuminate\Support\Facades\DB::table('departamento')
+        ->select('id_departamento', 'dep_descripcion')
+        ->orderBy('dep_descripcion')
+        ->get();
+
+    $ciudadesClienteRapido = \Illuminate\Support\Facades\DB::table('ciudad')
+        ->select('id_ciudad', 'ciu_descripcion')
+        ->orderBy('ciu_descripcion')
+        ->get();
+@endphp
+
 <div class="modal fade" id="clienteRapidoModal" tabindex="-1" role="dialog" aria-labelledby="clienteRapidoModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-lg modal-dialog-centered" role="document">
         <div class="modal-content cliente-rapido-content">
@@ -100,11 +112,15 @@
                                     <span class="input-group-text"><i class="fas fa-map"></i></span>
                                 </div>
                                 <select id="cliente_id_departamento" class="form-control">
-                                    <option value="">Cargando departamentos...</option>
+                                    <option value="">Seleccione un departamento</option>
+                                    @foreach ($departamentosClienteRapido as $departamento)
+                                        <option value="{{ $departamento->id_departamento }}">
+                                            {{ $departamento->dep_descripcion }}
+                                        </option>
+                                    @endforeach
                                 </select>
                                 <div class="invalid-feedback" id="error_cliente_id_departamento"></div>
                             </div>
-                            <small class="text-muted">Se selecciona de forma independiente.</small>
                         </div>
 
                         <div class="col-md-6 mb-3">
@@ -114,18 +130,22 @@
                                     <span class="input-group-text"><i class="fas fa-city"></i></span>
                                 </div>
                                 <select id="cliente_id_ciudad" class="form-control">
-                                    <option value="">Cargando ciudades...</option>
+                                    <option value="">Seleccione una ciudad</option>
+                                    @foreach ($ciudadesClienteRapido as $ciudad)
+                                        <option value="{{ $ciudad->id_ciudad }}">
+                                            {{ $ciudad->ciu_descripcion }}
+                                        </option>
+                                    @endforeach
                                 </select>
                                 <div class="invalid-feedback" id="error_cliente_id_ciudad"></div>
                             </div>
-                            <small class="text-muted">No depende del departamento seleccionado.</small>
                         </div>
                     </div>
                 </div>
 
                 <div class="cliente-rapido-help mt-2">
                     <i class="fas fa-info-circle mr-2"></i>
-                    El cliente se guardará y quedará seleccionado automáticamente en este pedido.
+                    Departamento y ciudad se seleccionan de forma independiente.
                 </div>
             </div>
 
@@ -254,9 +274,6 @@
 
 <script>
     (function() {
-        let catalogosClienteCargados = false;
-        let cargandoCatalogosCliente = false;
-
         function escaparHtml(texto) {
             return $('<div>').text(texto == null ? '' : texto).html();
         }
@@ -298,71 +315,6 @@
             }
         }
 
-        function poblarDepartamentosCliente(departamentos) {
-            const $departamento = $('#cliente_id_departamento');
-            $departamento.empty().append('<option value="">Seleccione un departamento</option>');
-
-            departamentos.forEach(function(item) {
-                $departamento.append($('<option>', {
-                    value: item.id_departamento,
-                    text: item.dep_descripcion
-                }));
-            });
-
-            $departamento.prop('disabled', false);
-        }
-
-        function poblarCiudadesCliente(ciudades) {
-            const $ciudad = $('#cliente_id_ciudad');
-            $ciudad.empty().append('<option value="">Seleccione una ciudad</option>');
-
-            ciudades.forEach(function(item) {
-                $ciudad.append($('<option>', {
-                    value: item.id_ciudad,
-                    text: item.ciu_descripcion
-                }));
-            });
-
-            $ciudad.prop('disabled', false);
-        }
-
-        async function cargarCatalogosCliente() {
-            if (catalogosClienteCargados || cargandoCatalogosCliente) {
-                return;
-            }
-
-            cargandoCatalogosCliente = true;
-            $('#cliente_id_departamento').html('<option value="">Cargando departamentos...</option>').prop('disabled', true);
-            $('#cliente_id_ciudad').html('<option value="">Cargando ciudades...</option>').prop('disabled', true);
-
-            try {
-                const response = await fetch('{{ route('pedido_compras.clientes.catalogos') }}', {
-                    headers: {
-                        'Accept': 'application/json',
-                        'X-Requested-With': 'XMLHttpRequest'
-                    }
-                });
-
-                const data = await response.json().catch(function() {
-                    return {};
-                });
-
-                if (!response.ok) {
-                    throw new Error(data.message || 'No se pudieron cargar los departamentos y ciudades.');
-                }
-
-                poblarDepartamentosCliente(data.departamentos || []);
-                poblarCiudadesCliente(data.ciudades || []);
-                catalogosClienteCargados = true;
-            } catch (error) {
-                $('#cliente_id_departamento').html('<option value="">No se pudo cargar</option>').prop('disabled', true);
-                $('#cliente_id_ciudad').html('<option value="">No se pudo cargar</option>').prop('disabled', true);
-                mostrarAlertaCliente(error.message || 'No se pudieron cargar los datos de ubicación.');
-            } finally {
-                cargandoCatalogosCliente = false;
-            }
-        }
-
         function limpiarClienteRapido() {
             limpiarErroresCliente();
             $('#cliente_cli_ci, #cliente_cli_nombre, #cliente_cli_apellido, #cliente_cli_direccion, #cliente_cli_telefono').val('');
@@ -371,12 +323,8 @@
         }
 
         $(document).ready(function() {
-            $('#clienteRapidoModal').on('show.bs.modal', function() {
-                limpiarErroresCliente();
-                cargarCatalogosCliente();
-            });
-
             $('#clienteRapidoModal').on('shown.bs.modal', function() {
+                limpiarErroresCliente();
                 $('#cliente_cli_ci').trigger('focus');
             });
 
@@ -436,9 +384,7 @@
                     const cliente = data.cliente;
                     const $selectCliente = $('select[name="id_cliente"]');
 
-                    if ($selectCliente.find('option[value="' + cliente.id + '"]').length) {
-                        $selectCliente.find('option[value="' + cliente.id + '"]').remove();
-                    }
+                    $selectCliente.find('option[value="' + cliente.id + '"]').remove();
 
                     const nuevaOpcion = new Option(cliente.texto, cliente.id, true, true);
                     $selectCliente.append(nuevaOpcion).val(String(cliente.id)).trigger('change');
