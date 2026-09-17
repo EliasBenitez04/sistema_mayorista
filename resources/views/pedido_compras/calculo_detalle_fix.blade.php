@@ -1,11 +1,7 @@
 @push('page_scripts')
 <script>
 (function () {
-    /**
-     * Convierte valores numéricos provenientes de PostgreSQL/Blade o con
-     * formato paraguayo (35.000 / 35.000,50) a un Number confiable.
-     */
-    window.normalizarNumeroPedido = function (valor) {
+    function normalizarNumeroSeguro(valor) {
         if (typeof valor === 'number') {
             return Number.isFinite(valor) ? valor : 0;
         }
@@ -17,42 +13,57 @@
 
         if (!texto) return 0;
 
-        const tieneComa = texto.indexOf(',') !== -1;
-        const tienePunto = texto.indexOf('.') !== -1;
+        // Valor numérico crudo típico de PostgreSQL/Blade: 35000 o 35000.00
+        if (/^-?\d+(\.\d+)?$/.test(texto)) {
+            const directo = Number(texto);
+            return Number.isFinite(directo) ? directo : 0;
+        }
 
-        if (tieneComa && tienePunto) {
-            // 35.000,50 => 35000.50 | 35,000.50 => 35000.50
-            if (texto.lastIndexOf(',') > texto.lastIndexOf('.')) {
-                texto = texto.replace(/\./g, '').replace(',', '.');
-            } else {
-                texto = texto.replace(/,/g, '');
-            }
-        } else if (tieneComa) {
-            const partes = texto.split(',');
-            if (partes.length === 2 && partes[1].length <= 2) {
-                texto = partes[0].replace(/\./g, '') + '.' + partes[1];
-            } else {
-                texto = texto.replace(/,/g, '');
-            }
-        } else if (tienePunto) {
-            const partes = texto.split('.');
-            if (partes.length > 2) {
-                texto = texto.replace(/\./g, '');
-            } else if (partes.length === 2 && partes[1].length === 3) {
-                // Formato de miles usado en Paraguay: 35.000
-                texto = partes[0] + partes[1];
-            }
+        // Formato paraguayo: 35.000 / 35.000,50
+        if (texto.includes(',')) {
+            texto = texto.replace(/\./g, '').replace(',', '.');
+        } else {
+            texto = texto.replace(/\./g, '');
         }
 
         const numero = Number(texto);
         return Number.isFinite(numero) ? numero : 0;
-    };
+    }
 
-    window.recalcularFila = function (row) {
+    function obtenerPrecioFila(row) {
+        const precioRaw = row.querySelector('.precio_raw');
+        const subtotalInput = row.querySelector('.subtotal');
+        const cantidadInput = row.querySelector('.cantidad');
+
+        let precio = 0;
+
+        if (precioRaw) {
+            precio = normalizarNumeroSeguro(precioRaw.dataset.precio || precioRaw.value);
+        }
+
+        if (precio <= 0 && subtotalInput && cantidadInput) {
+            const subtotalAnterior = normalizarNumeroSeguro(
+                subtotalInput.dataset.value || subtotalInput.value
+            );
+            const cantidadOriginal = parseInt(cantidadInput.defaultValue, 10) || 1;
+
+            if (subtotalAnterior > 0 && cantidadOriginal > 0) {
+                precio = subtotalAnterior / cantidadOriginal;
+            }
+        }
+
+        if (precioRaw && precio > 0) {
+            precioRaw.value = precio;
+            precioRaw.dataset.precio = precio;
+        }
+
+        return precio;
+    }
+
+    function recalcularFilaSeguro(row) {
         if (!row) return;
 
         const cantidadInput = row.querySelector('.cantidad');
-        const precioRaw = row.querySelector('.precio_raw');
         const subtotalInput = row.querySelector('.subtotal');
 
         if (!cantidadInput || !subtotalInput) return;
@@ -63,49 +74,39 @@
             cantidadInput.value = 1;
         }
 
-        let precio = precioRaw
-            ? normalizarNumeroPedido(precioRaw.dataset.precio || precioRaw.value)
-            : 0;
-
-        // Respaldo: si el precio oculto vino vacío/incorrecto, reconstruirlo
-        // usando el subtotal que ya mostraba la fila y su cantidad original.
-        if (precio <= 0) {
-            const subtotalAnterior = normalizarNumeroPedido(
-                subtotalInput.dataset.value || subtotalInput.value
-            );
-            const cantidadOriginal = parseInt(cantidadInput.defaultValue, 10) || cantidad;
-
-            if (subtotalAnterior > 0 && cantidadOriginal > 0) {
-                precio = subtotalAnterior / cantidadOriginal;
-            }
-        }
-
-        if (precioRaw) {
-            precioRaw.value = precio;
-            precioRaw.dataset.precio = precio;
-        }
-
+        const precio = obtenerPrecioFila(row);
         const subtotal = cantidad * precio;
-        subtotalInput.dataset.value = subtotal;
-        subtotalInput.value = formatearMiles(subtotal);
-    };
 
-    window.calcularTodo = function () {
+        subtotalInput.dataset.value = String(subtotal);
+        subtotalInput.value = formatearMiles(subtotal);
+    }
+
+    function recalcularTotalesSeguro() {
         let totalCantidad = 0;
+        let total = 0;
 
         document.querySelectorAll('#selectedProducts tr').forEach(function (row) {
-            const input = row.querySelector('.cantidad');
-            if (!input) return;
+            const cantidadInput = row.querySelector('.cantidad');
+            const subtotalInput = row.querySelector('.subtotal');
 
-            let cantidad = parseInt(input.value, 10) || 0;
+            if (!cantidadInput || !subtotalInput) return;
+
+            let cantidad = parseInt(cantidadInput.value, 10) || 0;
             if (cantidad < 1) {
                 cantidad = 1;
-                input.value = 1;
+                cantidadInput.value = 1;
             }
 
             totalCantidad += cantidad;
-            recalcularFila(row);
+            recalcularFilaSeguro(row);
+            total += normalizarNumeroSeguro(subtotalInput.dataset.value || subtotalInput.value);
         });
+
+        if ($('#descuento_si').is(':checked')) {
+            let descuento = normalizarNumeroSeguro($('#descuento_input').val());
+            descuento = Math.max(0, Math.min(100, descuento));
+            total -= total * (descuento / 100);
+        }
 
         const totalCantidadElement = document.getElementById('totalCantidad');
         if (totalCantidadElement) totalCantidadElement.innerText = totalCantidad;
@@ -113,39 +114,34 @@
         const modalCantidad = document.getElementById('modalCantidadProductos');
         if (modalCantidad) modalCantidad.innerText = totalCantidad;
 
-        calcularTotal();
-    };
-
-    window.calcularTotal = function () {
-        let total = 0;
-
-        document.querySelectorAll('#selectedProducts .subtotal').forEach(function (input) {
-            total += normalizarNumeroPedido(input.dataset.value || input.value);
-        });
-
-        if ($('#descuento_si').is(':checked')) {
-            let descuento = normalizarNumeroPedido($('#descuento_input').val());
-            descuento = Math.max(0, Math.min(100, descuento));
-            total -= total * (descuento / 100);
-        }
-
         const totalPedido = document.getElementById('ped_total');
         if (totalPedido) totalPedido.value = formatearMiles(total);
 
         const modalTotal = document.getElementById('modalTotalPedido');
         if (modalTotal) modalTotal.innerText = formatearMiles(total);
-    };
+    }
 
-    // Recalcular inmediatamente la fila modificada. El listener existente
-    // puede seguir ejecutándose; ambos usan estas funciones corregidas.
-    document.addEventListener('input', function (event) {
-        if (!event.target.classList.contains('cantidad')) return;
+    // Dejamos estas funciones como las oficiales para cualquier llamada del módulo.
+    window.normalizarNumeroPedido = normalizarNumeroSeguro;
+    window.recalcularFila = recalcularFilaSeguro;
+    window.calcularTodo = recalcularTotalesSeguro;
+    window.calcularTotal = recalcularTotalesSeguro;
+
+    function manejarCantidad(event) {
+        if (!event.target || !event.target.classList.contains('cantidad')) return;
+
+        // Evita que el listener antiguo de fields.blade.php vuelva a ejecutar
+        // otro cálculo después y pise el subtotal correcto con 0.
+        event.stopImmediatePropagation();
 
         event.target.value = event.target.value.replace(/[^0-9]/g, '');
-        const row = event.target.closest('tr');
-        recalcularFila(row);
-        calcularTodo();
-    });
+        recalcularFilaSeguro(event.target.closest('tr'));
+        recalcularTotalesSeguro();
+    }
+
+    // Captura = true: este handler corre antes de los listeners antiguos.
+    document.addEventListener('input', manejarCantidad, true);
+    document.addEventListener('change', manejarCantidad, true);
 })();
 </script>
 @endpush
