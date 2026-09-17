@@ -149,26 +149,265 @@
 
 @push('page_scripts')
 <script type="text/javascript">
-let ES_EDIT={!! isset($pedido) ? 'true' : 'false' !!};let scrollMode='bottom';
+let ES_EDIT={!! isset($pedido) ? 'true' : 'false' !!};
+let scrollMode='bottom';
+
 $(document).ready(function(){
-$('form.confirm-submit').on('keypress',function(e){if(e.which===13&&!$(e.target).is('textarea')){e.preventDefault();return false;}});
-if(ES_EDIT){cargarDetalleEdit();let descuento=parseFloat("{{ $pedido->descuento ?? 0 }}")||0;if(descuento>0){$('#descuento_si').prop('checked',true);$('#descuento_no').prop('checked',false);$('#div-descuento').show();$('#descuento_input').val(descuento);}else{$('#descuento_no').prop('checked',true);$('#descuento_si').prop('checked',false);$('#div-descuento').hide();$('#descuento_input').val(0);}}
-$('#productSearchModalPed').on('show.bs.modal',function(){fetchProductos($('#productSearchQueryPed').val()||'',$('#cod_suc').val());});
-let timeout=null;$('#productSearchQueryPed').on('keyup',function(){clearTimeout(timeout);let query=$(this).val().trim(),cod_suc=$('#cod_suc').val();timeout=setTimeout(function(){if(query.length<4){$('#modalResultsPed').html('<div class="text-center text-muted p-4"><i class="fas fa-search mb-2 d-block"></i>Escriba al menos 4 caracteres...</div>');return;}fetchProductos(query,cod_suc);},700);});
-$('#descuento_si, #descuento_no').on('change',toggleDescuento);$('#condicion').on('change',toggleCondicion);$('#descuento_input').on('keyup change',calcularTotal);$('#descuento_input').on('input',function(){let valor=parseFloat(this.value)||0,error=document.getElementById('error-descuento');if(valor>100){this.value=100;if(error)error.classList.remove('d-none');Swal.fire({icon:'warning',title:'Límite excedido',text:'El descuento máximo permitido es 100%',timer:1200,showConfirmButton:false,toast:true,position:'top-end'});}else if(error){error.classList.add('d-none');}if(valor<0)this.value=0;});toggleDescuento();toggleCondicion();calcularTotal();});
-function fetchProductos(query,cod_suc){fetch('{{ url('buscar-productos-ped') }}?query='+encodeURIComponent(query||'')+'&cod_suc='+encodeURIComponent(cod_suc||''),{headers:{'X-Requested-With':'XMLHttpRequest'}}).then(function(res){if(!res.ok)throw new Error();return res.text();}).then(function(html){let c=document.getElementById('modalResultsPed');if(c)c.innerHTML=html;}).catch(function(){let c=document.getElementById('modalResultsPed');if(c)c.innerHTML='<div class="text-center text-danger p-4">No se pudieron cargar los productos.</div>';});}
-function formatearMiles(numero){return Number(numero||0).toLocaleString('es-PY');}
-function cargarDetalleEdit(){let detalle=@json($detalle ?? []),tabla=document.getElementById('selectedProducts');if(!tabla||!detalle.length)return;tabla.innerHTML='';detalle.forEach(function(item){let cantidad=parseInt(item.det_cantidad||0),precio=parseFloat(item.det_precio||0),subtotal=parseFloat(item.det_subtotal||(precio*cantidad)),row=document.createElement('tr');row.innerHTML=`<td class="text-center"><input name="codigo[]" value="${item.art_codigo}" readonly class="form-control form-control-sm text-center"></td><td><input name="producto[]" value="${item.art_descripcion}" readonly class="form-control form-control-sm"></td><td class="text-center"><input name="cantidad[]" value="${cantidad}" class="form-control form-control-sm text-center cantidad" min="1"></td><td class="text-center"><input type="hidden" class="precio_raw" value="${precio}"><input class="form-control form-control-sm text-right" value="${formatearMiles(precio)}" readonly></td><td class="text-center"><input class="form-control form-control-sm text-right subtotal" value="${formatearMiles(subtotal)}" data-value="${subtotal}" readonly></td><td class="text-center"><button type="button" class="btn btn-sm btn-danger" onclick="confirmarBorrado(this)" title="Eliminar producto"><i class="far fa-trash-alt"></i></button></td>`;tabla.appendChild(row);});calcularTodo();}
-function seleccionarProductoPed(codigo,producto,precio){let tabla=document.getElementById('selectedProducts'),cantidadInput=document.getElementById('cantidad_multiplicador'),cantidadMultiplicador=parseInt(cantidadInput?cantidadInput.value:1)||1;if(!tabla)return;let existe=Array.from(tabla.querySelectorAll("input[name='codigo[]']")).some(function(i){return i.value===codigo;});if(existe){Swal.fire({icon:'warning',title:'Producto ya agregado',text:'Solo podés modificar la cantidad en la tabla.',timer:1500,showConfirmButton:false,toast:true,position:'top-end',customClass:{popup:'toast-grande'}});return;}let subtotal=precio*cantidadMultiplicador,row=document.createElement('tr');row.innerHTML=`<td class="text-center"><input name="codigo[]" value="${codigo}" readonly class="form-control form-control-sm text-center"></td><td><input name="producto[]" value="${producto}" readonly class="form-control form-control-sm"></td><td class="text-center"><input name="cantidad[]" value="${cantidadMultiplicador}" class="form-control form-control-sm text-center cantidad" min="1"></td><td class="text-center"><input type="hidden" class="precio_raw" value="${precio}"><input value="${formatearMiles(precio)}" readonly class="form-control form-control-sm text-right"></td><td class="text-center"><input class="form-control form-control-sm text-right subtotal" value="${formatearMiles(subtotal)}" data-value="${subtotal}" readonly></td><td class="text-center"><button type="button" class="btn btn-sm btn-danger" onclick="borrarFila(this)" title="Eliminar producto"><i class="far fa-trash-alt"></i></button></td>`;tabla.appendChild(row);row.scrollIntoView({behavior:'smooth',block:'center'});row.style.backgroundColor='#eefbf2';setTimeout(function(){row.style.transition='background-color .5s';row.style.backgroundColor='';},800);Swal.fire({icon:'success',title:'Agregado',timer:800,toast:true,position:'top-end',showConfirmButton:false,customClass:{popup:'toast-grande'}});calcularTodo();}
-function recalcularFila(row){let c=row.querySelector('.cantidad'),p=row.querySelector('.precio_raw'),s=row.querySelector('.subtotal');if(!c||!p||!s)return;let cantidad=parseInt(c.value)||0,precio=parseFloat(p.value)||0;if(cantidad<1){cantidad=1;c.value=1;}let subtotal=cantidad*precio;s.dataset.value=subtotal;s.value=formatearMiles(subtotal);}
-function calcularTodo(){let totalCantidad=0;document.querySelectorAll('#selectedProducts tr').forEach(function(row){let input=row.querySelector('.cantidad');if(!input)return;let cantidad=parseInt(input.value)||0;if(cantidad<1){input.value=1;cantidad=1;}totalCantidad+=cantidad;recalcularFila(row);});let e=document.getElementById('totalCantidad');if(e)e.innerText=totalCantidad;let m=document.getElementById('modalCantidadProductos');if(m)m.innerText=totalCantidad;calcularTotal();}
-function calcularTotal(){let total=0;document.querySelectorAll('.subtotal').forEach(function(i){total+=parseFloat(i.dataset.value||0);});if($('#descuento_si').is(':checked')){let d=parseFloat($('#descuento_input').val())||0;total-=total*(d/100);}let p=document.getElementById('ped_total');if(p)p.value=formatearMiles(total);let m=document.getElementById('modalTotalPedido');if(m)m.innerText=formatearMiles(total);}
-function borrarFila(btn){let row=btn?btn.closest('tr'):null;if(row)row.remove();calcularTodo();}
-function toggleDescuento(){if($('#descuento_si').is(':checked')){$('#div-descuento').show();}else{$('#div-descuento').hide();$('#descuento_input').val(0);}calcularTotal();}
-function toggleCondicion(){if($('#condicion').val()==='CREDITO'){$('#div-intervalo, #div-cantcuotas').show();}else{$('#div-intervalo, #div-cantcuotas').hide();}}
-document.addEventListener('input',function(e){if(e.target.classList.contains('cantidad')){e.target.value=e.target.value.replace(/[^0-9]/g,'');calcularTodo();}});
-function toggleScroll(){if(scrollMode==='top'){window.scrollTo({top:0,behavior:'smooth'});}else{window.scrollTo({top:document.documentElement.scrollHeight,behavior:'smooth'});}}
-window.addEventListener('scroll',function(){let btn=document.getElementById('btnScroll'),icon=document.getElementById('iconScroll');if(!btn||!icon)return;let scrollTop=window.scrollY,docHeight=document.documentElement.scrollHeight,windowHeight=window.innerHeight;if(scrollTop>200)btn.classList.add('show');else btn.classList.remove('show');if(scrollTop+windowHeight>=docHeight-50){scrollMode='top';btn.title='Volver arriba';icon.classList.remove('fa-arrow-down');icon.classList.add('fa-arrow-up');}else{scrollMode='bottom';btn.title='Ir al final';icon.classList.remove('fa-arrow-up');icon.classList.add('fa-arrow-down');}});
-function confirmarBorrado(btn){Swal.fire({title:'¿Eliminar producto?',text:'Esta acción quitará el producto del detalle.',icon:'warning',showCancelButton:true,confirmButtonColor:'#d33',cancelButtonColor:'#6c757d',confirmButtonText:'Sí, eliminar',cancelButtonText:'Cancelar'}).then(function(result){if(result.isConfirmed){borrarFila(btn);Swal.fire({icon:'success',title:'Eliminado',timer:800,showConfirmButton:false,toast:true,position:'top-end',customClass:{popup:'toast-grande'}});}});}
+    $('form.confirm-submit').on('keypress',function(e){
+        if(e.which===13&&!$(e.target).is('textarea')){
+            e.preventDefault();
+            return false;
+        }
+    });
+
+    if(ES_EDIT){
+        cargarDetalleEdit();
+        let descuento=normalizarNumeroPedido("{{ $pedido->descuento ?? 0 }}");
+        if(descuento>0){
+            $('#descuento_si').prop('checked',true);
+            $('#descuento_no').prop('checked',false);
+            $('#div-descuento').show();
+            $('#descuento_input').val(descuento);
+        }else{
+            $('#descuento_no').prop('checked',true);
+            $('#descuento_si').prop('checked',false);
+            $('#div-descuento').hide();
+            $('#descuento_input').val(0);
+        }
+    }
+
+    $('#productSearchModalPed').on('show.bs.modal',function(){
+        fetchProductos($('#productSearchQueryPed').val()||'',$('#cod_suc').val());
+    });
+
+    let timeout=null;
+    $('#productSearchQueryPed').on('keyup',function(){
+        clearTimeout(timeout);
+        let query=$(this).val().trim(),cod_suc=$('#cod_suc').val();
+        timeout=setTimeout(function(){
+            if(query.length<4){
+                $('#modalResultsPed').html('<div class="text-center text-muted p-4"><i class="fas fa-search mb-2 d-block"></i>Escriba al menos 4 caracteres...</div>');
+                return;
+            }
+            fetchProductos(query,cod_suc);
+        },700);
+    });
+
+    $('#descuento_si, #descuento_no').on('change',toggleDescuento);
+    $('#condicion').on('change',toggleCondicion);
+    $('#descuento_input').on('keyup change',calcularTotal);
+    $('#descuento_input').on('input',function(){
+        let valor=normalizarNumeroPedido(this.value),error=document.getElementById('error-descuento');
+        if(valor>100){
+            this.value=100;
+            if(error)error.classList.remove('d-none');
+            Swal.fire({icon:'warning',title:'Límite excedido',text:'El descuento máximo permitido es 100%',timer:1200,showConfirmButton:false,toast:true,position:'top-end'});
+        }else if(error){
+            error.classList.add('d-none');
+        }
+        if(valor<0)this.value=0;
+    });
+
+    toggleDescuento();
+    toggleCondicion();
+    calcularTodo(true);
+});
+
+function fetchProductos(query,cod_suc){
+    fetch('{{ url('buscar-productos-ped') }}?query='+encodeURIComponent(query||'')+'&cod_suc='+encodeURIComponent(cod_suc||''),{headers:{'X-Requested-With':'XMLHttpRequest'}})
+        .then(function(res){if(!res.ok)throw new Error();return res.text();})
+        .then(function(html){let c=document.getElementById('modalResultsPed');if(c)c.innerHTML=html;})
+        .catch(function(){let c=document.getElementById('modalResultsPed');if(c)c.innerHTML='<div class="text-center text-danger p-4">No se pudieron cargar los productos.</div>';});
+}
+
+function formatearMiles(numero){
+    return Number(numero||0).toLocaleString('es-PY');
+}
+
+function normalizarNumeroPedido(valor){
+    if(typeof valor==='number')return Number.isFinite(valor)?valor:0;
+    let texto=String(valor??'').trim().replace(/\s/g,'').replace(/[^0-9,.-]/g,'');
+    if(!texto)return 0;
+    if(/^-?\d+(\.\d+)?$/.test(texto)){
+        let directo=Number(texto);
+        return Number.isFinite(directo)?directo:0;
+    }
+    if(texto.includes(','))texto=texto.replace(/\./g,'').replace(',','.');
+    else texto=texto.replace(/\./g,'');
+    let numero=Number(texto);
+    return Number.isFinite(numero)?numero:0;
+}
+
+function cargarDetalleEdit(){
+    let detalle=@json($detalle ?? []),tabla=document.getElementById('selectedProducts');
+    if(!tabla||!detalle.length)return;
+    tabla.innerHTML='';
+    detalle.forEach(function(item){
+        let cantidad=parseInt(item.det_cantidad||0,10)||1;
+        let precio=normalizarNumeroPedido(item.det_precio||0);
+        let subtotal=precio*cantidad;
+        let row=document.createElement('tr');
+        row.innerHTML=`<td class="text-center"><input name="codigo[]" value="${item.art_codigo}" readonly class="form-control form-control-sm text-center"></td><td><input name="producto[]" value="${item.art_descripcion}" readonly class="form-control form-control-sm"></td><td class="text-center"><input name="cantidad[]" value="${cantidad}" class="form-control form-control-sm text-center cantidad" inputmode="numeric" autocomplete="off"></td><td class="text-center"><input type="hidden" class="precio_raw" value="${precio}" data-precio="${precio}"><input class="form-control form-control-sm text-right" value="${formatearMiles(precio)}" readonly></td><td class="text-center"><input class="form-control form-control-sm text-right subtotal" value="${formatearMiles(subtotal)}" data-value="${subtotal}" readonly></td><td class="text-center"><button type="button" class="btn btn-sm btn-danger" onclick="confirmarBorrado(this)" title="Eliminar producto"><i class="far fa-trash-alt"></i></button></td>`;
+        tabla.appendChild(row);
+    });
+    calcularTodo(true);
+}
+
+function seleccionarProductoPed(codigo,producto,precio){
+    let tabla=document.getElementById('selectedProducts');
+    let cantidadInput=document.getElementById('cantidad_multiplicador');
+    let cantidadMultiplicador=parseInt(cantidadInput?cantidadInput.value:1,10)||1;
+    if(!tabla)return;
+
+    let existe=Array.from(tabla.querySelectorAll("input[name='codigo[]']")).some(function(i){return i.value===codigo;});
+    if(existe){
+        Swal.fire({icon:'warning',title:'Producto ya agregado',text:'Solo podés modificar la cantidad en la tabla.',timer:1500,showConfirmButton:false,toast:true,position:'top-end',customClass:{popup:'toast-grande'}});
+        return;
+    }
+
+    precio=normalizarNumeroPedido(precio);
+    let subtotal=precio*cantidadMultiplicador,row=document.createElement('tr');
+    row.innerHTML=`<td class="text-center"><input name="codigo[]" value="${codigo}" readonly class="form-control form-control-sm text-center"></td><td><input name="producto[]" value="${producto}" readonly class="form-control form-control-sm"></td><td class="text-center"><input name="cantidad[]" value="${cantidadMultiplicador}" class="form-control form-control-sm text-center cantidad" inputmode="numeric" autocomplete="off"></td><td class="text-center"><input type="hidden" class="precio_raw" value="${precio}" data-precio="${precio}"><input value="${formatearMiles(precio)}" readonly class="form-control form-control-sm text-right"></td><td class="text-center"><input class="form-control form-control-sm text-right subtotal" value="${formatearMiles(subtotal)}" data-value="${subtotal}" readonly></td><td class="text-center"><button type="button" class="btn btn-sm btn-danger" onclick="borrarFila(this)" title="Eliminar producto"><i class="far fa-trash-alt"></i></button></td>`;
+    tabla.appendChild(row);
+    row.scrollIntoView({behavior:'smooth',block:'center'});
+    row.style.backgroundColor='#eefbf2';
+    setTimeout(function(){row.style.transition='background-color .5s';row.style.backgroundColor='';},800);
+    Swal.fire({icon:'success',title:'Agregado',timer:800,toast:true,position:'top-end',showConfirmButton:false,customClass:{popup:'toast-grande'}});
+    calcularTodo(true);
+}
+
+function obtenerCantidad(input,completarVacio){
+    let texto=String(input.value??'').trim();
+    if(texto===''){
+        if(completarVacio){input.value='1';return 1;}
+        return null;
+    }
+    let cantidad=parseInt(texto,10)||0;
+    if(cantidad<1){
+        if(completarVacio){input.value='1';return 1;}
+        return null;
+    }
+    return cantidad;
+}
+
+function recalcularFila(row,completarVacio=false){
+    if(!row)return;
+    let cantidadInput=row.querySelector('.cantidad');
+    let precioRaw=row.querySelector('.precio_raw');
+    let subtotalInput=row.querySelector('.subtotal');
+    if(!cantidadInput||!precioRaw||!subtotalInput)return;
+
+    let cantidad=obtenerCantidad(cantidadInput,completarVacio);
+    if(cantidad===null)return;
+
+    let precio=normalizarNumeroPedido(precioRaw.dataset.precio||precioRaw.value);
+    precioRaw.value=precio;
+    precioRaw.dataset.precio=precio;
+
+    let subtotal=cantidad*precio;
+    subtotalInput.dataset.value=String(subtotal);
+    subtotalInput.value=formatearMiles(subtotal);
+}
+
+function calcularTodo(completarVacios=false){
+    let totalCantidad=0;
+    document.querySelectorAll('#selectedProducts tr').forEach(function(row){
+        let input=row.querySelector('.cantidad');
+        if(!input)return;
+        let cantidad=obtenerCantidad(input,completarVacios);
+        if(cantidad===null)return;
+        totalCantidad+=cantidad;
+        recalcularFila(row,completarVacios);
+    });
+    let e=document.getElementById('totalCantidad');if(e)e.innerText=totalCantidad;
+    let m=document.getElementById('modalCantidadProductos');if(m)m.innerText=totalCantidad;
+    calcularTotal();
+}
+
+function calcularTotal(){
+    let total=0;
+    document.querySelectorAll('#selectedProducts .subtotal').forEach(function(i){
+        total+=normalizarNumeroPedido(i.dataset.value||i.value);
+    });
+    if($('#descuento_si').is(':checked')){
+        let d=normalizarNumeroPedido($('#descuento_input').val());
+        d=Math.max(0,Math.min(100,d));
+        total-=total*(d/100);
+    }
+    let p=document.getElementById('ped_total');if(p)p.value=formatearMiles(total);
+    let m=document.getElementById('modalTotalPedido');if(m)m.innerText=formatearMiles(total);
+}
+
+function borrarFila(btn){
+    let row=btn?btn.closest('tr'):null;
+    if(row)row.remove();
+    calcularTodo(true);
+}
+
+function toggleDescuento(){
+    if($('#descuento_si').is(':checked'))$('#div-descuento').show();
+    else{$('#div-descuento').hide();$('#descuento_input').val(0);}
+    calcularTotal();
+}
+
+function toggleCondicion(){
+    if($('#condicion').val()==='CREDITO')$('#div-intervalo, #div-cantcuotas').show();
+    else $('#div-intervalo, #div-cantcuotas').hide();
+}
+
+// Mientras escribe: el campo puede quedar vacío y no se fuerza a 1.
+document.addEventListener('input',function(e){
+    if(!e.target.classList.contains('cantidad'))return;
+    e.target.value=e.target.value.replace(/[^0-9]/g,'');
+    if(e.target.value===''){
+        calcularTodo(false);
+        return;
+    }
+    recalcularFila(e.target.closest('tr'),false);
+    calcularTodo(false);
+});
+
+// Recién al salir del campo se normaliza vacío/0 a 1.
+document.addEventListener('blur',function(e){
+    if(!e.target.classList.contains('cantidad'))return;
+    let cantidad=parseInt(e.target.value,10)||0;
+    if(cantidad<1)e.target.value='1';
+    recalcularFila(e.target.closest('tr'),true);
+    calcularTodo(true);
+},true);
+
+document.addEventListener('change',function(e){
+    if(!e.target.classList.contains('cantidad'))return;
+    let cantidad=parseInt(e.target.value,10)||0;
+    if(cantidad<1)e.target.value='1';
+    recalcularFila(e.target.closest('tr'),true);
+    calcularTodo(true);
+});
+
+function toggleScroll(){
+    if(scrollMode==='top')window.scrollTo({top:0,behavior:'smooth'});
+    else window.scrollTo({top:document.documentElement.scrollHeight,behavior:'smooth'});
+}
+
+window.addEventListener('scroll',function(){
+    let btn=document.getElementById('btnScroll'),icon=document.getElementById('iconScroll');
+    if(!btn||!icon)return;
+    let scrollTop=window.scrollY,docHeight=document.documentElement.scrollHeight,windowHeight=window.innerHeight;
+    if(scrollTop>200)btn.classList.add('show');else btn.classList.remove('show');
+    if(scrollTop+windowHeight>=docHeight-50){
+        scrollMode='top';btn.title='Volver arriba';icon.classList.remove('fa-arrow-down');icon.classList.add('fa-arrow-up');
+    }else{
+        scrollMode='bottom';btn.title='Ir al final';icon.classList.remove('fa-arrow-up');icon.classList.add('fa-arrow-down');
+    }
+});
+
+function confirmarBorrado(btn){
+    Swal.fire({title:'¿Eliminar producto?',text:'Esta acción quitará el producto del detalle.',icon:'warning',showCancelButton:true,confirmButtonColor:'#d33',cancelButtonColor:'#6c757d',confirmButtonText:'Sí, eliminar',cancelButtonText:'Cancelar'}).then(function(result){
+        if(result.isConfirmed){
+            borrarFila(btn);
+            Swal.fire({icon:'success',title:'Eliminado',timer:800,showConfirmButton:false,toast:true,position:'top-end',customClass:{popup:'toast-grande'}});
+        }
+    });
+}
 </script>
 @endpush
