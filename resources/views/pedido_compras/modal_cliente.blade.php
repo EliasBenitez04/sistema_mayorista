@@ -104,6 +104,7 @@
                                 </select>
                                 <div class="invalid-feedback" id="error_cliente_id_departamento"></div>
                             </div>
+                            <small class="text-muted">Se selecciona de forma independiente.</small>
                         </div>
 
                         <div class="col-md-6 mb-3">
@@ -112,11 +113,12 @@
                                 <div class="input-group-prepend">
                                     <span class="input-group-text"><i class="fas fa-city"></i></span>
                                 </div>
-                                <select id="cliente_id_ciudad" class="form-control" disabled>
-                                    <option value="">Seleccione primero un departamento</option>
+                                <select id="cliente_id_ciudad" class="form-control">
+                                    <option value="">Cargando ciudades...</option>
                                 </select>
                                 <div class="invalid-feedback" id="error_cliente_id_ciudad"></div>
                             </div>
+                            <small class="text-muted">No depende del departamento seleccionado.</small>
                         </div>
                     </div>
                 </div>
@@ -204,10 +206,7 @@
         min-height: 40px;
     }
 
-    .cliente-rapido-section .input-group .form-control {
-        border-left: 0;
-    }
-
+    .cliente-rapido-section .input-group .form-control,
     .cliente-rapido-section select.form-control {
         border-left: 0;
     }
@@ -227,12 +226,6 @@
         border-top: 1px solid #eef1f4;
         background: #fff;
         padding: 16px 24px;
-    }
-
-    .nuevo-cliente-pedido-wrap {
-        margin-top: 8px;
-        display: flex;
-        justify-content: flex-end;
     }
 
     #btnNuevoClientePedido {
@@ -262,7 +255,6 @@
 <script>
     (function() {
         let catalogosClienteCargados = false;
-        let ciudadesClienteRapido = [];
         let cargandoCatalogosCliente = false;
 
         function escaparHtml(texto) {
@@ -311,40 +303,27 @@
             $departamento.empty().append('<option value="">Seleccione un departamento</option>');
 
             departamentos.forEach(function(item) {
-                $departamento.append(
-                    $('<option>', {
-                        value: item.id_departamento,
-                        text: item.dep_descripcion
-                    })
-                );
+                $departamento.append($('<option>', {
+                    value: item.id_departamento,
+                    text: item.dep_descripcion
+                }));
             });
+
+            $departamento.prop('disabled', false);
         }
 
-        function poblarCiudadesCliente(idDepartamento) {
+        function poblarCiudadesCliente(ciudades) {
             const $ciudad = $('#cliente_id_ciudad');
-            $ciudad.empty();
+            $ciudad.empty().append('<option value="">Seleccione una ciudad</option>');
 
-            if (!idDepartamento) {
-                $ciudad.append('<option value="">Seleccione primero un departamento</option>').prop('disabled', true);
-                return;
-            }
-
-            const filtradas = ciudadesClienteRapido.filter(function(item) {
-                return String(item.id_departamento) === String(idDepartamento);
+            ciudades.forEach(function(item) {
+                $ciudad.append($('<option>', {
+                    value: item.id_ciudad,
+                    text: item.ciu_descripcion
+                }));
             });
 
-            $ciudad.append('<option value="">Seleccione una ciudad</option>');
-
-            filtradas.forEach(function(item) {
-                $ciudad.append(
-                    $('<option>', {
-                        value: item.id_ciudad,
-                        text: item.ciu_descripcion
-                    })
-                );
-            });
-
-            $ciudad.prop('disabled', filtradas.length === 0);
+            $ciudad.prop('disabled', false);
         }
 
         async function cargarCatalogosCliente() {
@@ -372,10 +351,8 @@
                     throw new Error(data.message || 'No se pudieron cargar los departamentos y ciudades.');
                 }
 
-                ciudadesClienteRapido = data.ciudades || [];
                 poblarDepartamentosCliente(data.departamentos || []);
-                poblarCiudadesCliente('');
-                $('#cliente_id_departamento').prop('disabled', false);
+                poblarCiudadesCliente(data.ciudades || []);
                 catalogosClienteCargados = true;
             } catch (error) {
                 $('#cliente_id_departamento').html('<option value="">No se pudo cargar</option>').prop('disabled', true);
@@ -390,32 +367,10 @@
             limpiarErroresCliente();
             $('#cliente_cli_ci, #cliente_cli_nombre, #cliente_cli_apellido, #cliente_cli_direccion, #cliente_cli_telefono').val('');
             $('#cliente_id_departamento').val('');
-            poblarCiudadesCliente('');
-        }
-
-        function prepararBotonNuevoCliente() {
-            const $clienteSelect = $('select[name="id_cliente"]');
-
-            if (!$clienteSelect.length || $('#btnNuevoClientePedido').length) {
-                return;
-            }
-
-            $clienteSelect.attr('id', 'id_cliente');
-
-            const $wrap = $('<div class="nuevo-cliente-pedido-wrap"></div>');
-            const $boton = $(
-                '<button type="button" id="btnNuevoClientePedido" class="btn btn-outline-success btn-sm" data-toggle="modal" data-target="#clienteRapidoModal">' +
-                    '<i class="fas fa-user-plus mr-1"></i> Nuevo cliente' +
-                '</button>'
-            );
-
-            $wrap.append($boton);
-            $clienteSelect.closest('.form-group').append($wrap);
+            $('#cliente_id_ciudad').val('');
         }
 
         $(document).ready(function() {
-            prepararBotonNuevoCliente();
-
             $('#clienteRapidoModal').on('show.bs.modal', function() {
                 limpiarErroresCliente();
                 cargarCatalogosCliente();
@@ -427,14 +382,6 @@
 
             $('#clienteRapidoModal').on('hidden.bs.modal', function() {
                 limpiarClienteRapido();
-            });
-
-            $('#cliente_id_departamento').on('change', function() {
-                $(this).removeClass('is-invalid');
-                $('#error_cliente_id_departamento').text('');
-                $('#cliente_id_ciudad').removeClass('is-invalid');
-                $('#error_cliente_id_ciudad').text('');
-                poblarCiudadesCliente($(this).val());
             });
 
             $('#cliente_cli_ci').on('input', function() {
