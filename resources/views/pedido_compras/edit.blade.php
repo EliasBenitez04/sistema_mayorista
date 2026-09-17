@@ -36,7 +36,7 @@
                         $detalles = $detalle ?? [];
                     @endphp
 
-                    @include('pedido_compras.fields_v2')
+                    @include('pedido_compras.fields')
 
                 </div>
             </div>
