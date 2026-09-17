@@ -27,3 +27,19 @@
         </div>
     </div>
 @endsection
+
+@push('page_scripts')
+<script type="text/javascript">
+(function () {
+    const PENDIENTE_KEY = 'sistema_mayorista:pedido_compras:borrador-pendiente';
+
+    try {
+        const borradorGuardado = sessionStorage.getItem(PENDIENTE_KEY);
+        if (borradorGuardado) {
+            localStorage.removeItem(borradorGuardado);
+            sessionStorage.removeItem(PENDIENTE_KEY);
+        }
+    } catch (e) {}
+})();
+</script>
+@endpush
