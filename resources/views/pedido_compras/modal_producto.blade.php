@@ -1663,6 +1663,18 @@
            SELECCIONAR PRODUCTO
         ========================================================= */
 
+        function seleccionarProductoPedDesdeFila(fila) {
+            if (!fila) return;
+
+            seleccionarProductoPed(
+                fila.dataset.codigo || '',
+                fila.dataset.producto || '',
+                parseFloat(fila.dataset.stock) || 0,
+                parseFloat(fila.dataset.precio) || 0
+            );
+        }
+
+
         function seleccionarProductoPed(
             codigo,
             producto,
