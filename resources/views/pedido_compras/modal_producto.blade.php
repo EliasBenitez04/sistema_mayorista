@@ -1442,13 +1442,27 @@
 
 
     @media (max-width: 991px) {
-
-        #productSearchModalPed .col-md-4 {
-
-            margin-top: 18px;
-
+        #productSearchModalPed .modal-productos-body {
+            overflow-y: auto;
+            overflow-x: hidden;
         }
 
+        #productSearchModalPed .modal-productos-body > .row {
+            height: auto;
+        }
+
+        #productSearchModalPed .modal-productos-body > .row > .col-md-8 {
+            display: block;
+        }
+
+        #productSearchModalPed #modalResultsPed {
+            height: auto !important;
+            max-height: 340px !important;
+        }
+
+        #productSearchModalPed .col-md-4 {
+            margin-top: 18px;
+        }
     }
 
 
@@ -1526,18 +1540,19 @@
             }
 
             const cacheKey = codSuc + '|' + query.toLocaleLowerCase('es');
+            const requestId = ++productSearchRequestPed;
+
+            if (productSearchControllerPed) {
+                productSearchControllerPed.abort();
+                productSearchControllerPed = null;
+            }
 
             if (productSearchCachePed.has(cacheKey)) {
                 productSearchResultsPed.innerHTML = productSearchCachePed.get(cacheKey);
                 return;
             }
 
-            if (productSearchControllerPed) {
-                productSearchControllerPed.abort();
-            }
-
             productSearchControllerPed = new AbortController();
-            const requestId = ++productSearchRequestPed;
 
             mostrarEstadoBusquedaPed('loading', 'Buscando productos...');
 
