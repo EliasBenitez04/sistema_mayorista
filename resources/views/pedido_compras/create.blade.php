@@ -1,7 +1,7 @@
 @extends('layouts.app')
 
 @section('content')
-    <section class="content-header">
+    {{-- <section class="content-header">
         <div class="container-fluid">
             <div class="row mb-2">
                 <div class="col-sm-12">
@@ -11,7 +11,7 @@
                 </div>
             </div>
         </div>
-    </section>
+    </section> --}}
 
     <div class="content px-3">
 
@@ -25,7 +25,7 @@
 
                 @include('sweetalert::alert')
 
-                <div class="d-flex justify-content-end mb-3">
+                {{-- <div class="d-flex justify-content-end mb-3">
                     <button type="button"
                         id="btnNuevoClientePedido"
                         class="btn btn-success btn-sm px-3"
@@ -34,7 +34,7 @@
                         <i class="fas fa-user-plus mr-1"></i>
                         Nuevo cliente
                     </button>
-                </div>
+                </div> --}}
 
                 <div class="row">
                     @include('pedido_compras.fields')

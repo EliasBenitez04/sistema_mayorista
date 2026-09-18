@@ -117,7 +117,7 @@
 
     .pedido-detail-subtitle {
         margin: 4px 0 0;
-        color: #7a8797;
+        color: #000;
         font-size: 12px;
         line-height: 1.35;
     }
@@ -161,7 +161,7 @@
         table-layout: fixed;
         border-collapse: separate;
         border-spacing: 0;
-        color: #344256;
+        color: #000;
         font-size: 12px;
     }
 
@@ -178,7 +178,7 @@
         vertical-align: middle;
         border-top: 0;
         border-bottom: 1px solid #dfe6ee;
-        color: #5b6879;
+        color: #000;
         background: #f6f8fb;
         font-size: 10.5px;
         font-weight: 700;
@@ -208,7 +208,7 @@
         padding: 5px 8px;
         border: 1px solid #dce3eb;
         border-radius: 7px;
-        color: #344256;
+        color: #000;
         background: #fff;
         font-size: 12px;
         box-shadow: none;
@@ -220,7 +220,7 @@
     }
 
     .pedido-detail-table .form-control[readonly] {
-        color: #526173;
+        color: #394049;
         background: #f8fafc;
     }
 

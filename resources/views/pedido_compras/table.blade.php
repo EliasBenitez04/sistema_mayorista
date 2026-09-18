@@ -409,6 +409,7 @@
     }
 
     @media (max-width: 767.98px) {
+
         .pedido-table-toolbar,
         .pedido-table-footer {
             align-items: flex-start;
@@ -437,10 +438,15 @@
             </div>
         </div>
 
-        <span class="pedido-record-count">
-            <i class="fas fa-database mr-1"></i>
-            {{ number_format($pedido_compras->total(), 0, ',', '.') }} registros
-        </span>
+        <div class="col-sm-6">
+            <span class="pedido-record-count">
+                <i class="fas fa-database mr-1"></i>
+                {{ number_format($pedido_compras->total(), 0, ',', '.') }} registros
+            </span>
+            <a class="btn btn-primary float-right" href="{{ route('pedido_compras.create') }}">
+                Nuevo Pedido
+            </a>
+        </div>
     </div>
 
     <div class="pedido-table-scroll">
@@ -499,8 +505,7 @@
 
                     <tr>
                         <td class="text-left">
-                            <a href="{{ route('pedido_compras.show', [$pedido->id_pedido]) }}"
-                                class="pedido-code-link"
+                            <a href="{{ route('pedido_compras.show', [$pedido->id_pedido]) }}" class="pedido-code-link"
                                 title="Ver {{ $pedido->nro_pedido }}">
                                 <span class="pedido-code-icon">
                                     <i class="fas fa-file-invoice"></i>
@@ -509,7 +514,8 @@
                             </a>
                         </td>
 
-                        <td class="text-center" data-sort-value="{{ \Carbon\Carbon::parse($pedido->ped_fecha)->format('Y-m-d') }}">
+                        <td class="text-center"
+                            data-sort-value="{{ \Carbon\Carbon::parse($pedido->ped_fecha)->format('Y-m-d') }}">
                             <span class="pedido-date">
                                 {{ \Carbon\Carbon::parse($pedido->ped_fecha)->format('d/m/Y') }}
                             </span>
@@ -560,27 +566,25 @@
                                         'id' => 'confirm-form-' . $pedido->id_pedido,
                                         'class' => 'd-inline',
                                     ]) !!}
-                                        {!! Form::button('<i class="fas fa-check"></i>', [
-                                            'type' => 'button',
-                                            'class' => 'pedido-action-btn pedido-action-confirm alert-confirm',
-                                            'data-id' => $pedido->id_pedido,
-                                            'title' => 'Confirmar pedido',
-                                            'aria-label' => 'Confirmar pedido',
-                                        ]) !!}
+                                    {!! Form::button('<i class="fas fa-check"></i>', [
+                                        'type' => 'button',
+                                        'class' => 'pedido-action-btn pedido-action-confirm alert-confirm',
+                                        'data-id' => $pedido->id_pedido,
+                                        'title' => 'Confirmar pedido',
+                                        'aria-label' => 'Confirmar pedido',
+                                    ]) !!}
                                     {!! Form::close() !!}
                                 @endif
 
                                 @if ($estado === 'CONFIRMADO')
                                     <a href="{{ route('pedido_compras.imprimir', [$pedido->id_pedido]) }}"
-                                        class="pedido-action-btn pedido-action-print"
-                                        title="Imprimir pedido"
+                                        class="pedido-action-btn pedido-action-print" title="Imprimir pedido"
                                         aria-label="Imprimir pedido">
                                         <i class="fas fa-print"></i>
                                     </a>
 
                                     <a href="{{ route('pedido.export', [$pedido->id_pedido]) }}"
-                                        class="pedido-action-btn pedido-action-excel"
-                                        title="Exportar Excel"
+                                        class="pedido-action-btn pedido-action-excel" title="Exportar Excel"
                                         aria-label="Exportar Excel">
                                         <i class="fas fa-file-excel"></i>
                                     </a>
@@ -588,16 +592,14 @@
 
                                 @if (!in_array($estado, ['CONFIRMADO', 'ANULADO']))
                                     <a href="{{ route('pedido_compras.edit', [$pedido->id_pedido]) }}"
-                                        class="pedido-action-btn pedido-action-edit"
-                                        title="Editar pedido"
+                                        class="pedido-action-btn pedido-action-edit" title="Editar pedido"
                                         aria-label="Editar pedido">
                                         <i class="far fa-edit"></i>
                                     </a>
                                 @endif
 
                                 <a href="{{ route('pedido_compras.show', [$pedido->id_pedido]) }}"
-                                    class="pedido-action-btn pedido-action-view"
-                                    title="Ver detalles"
+                                    class="pedido-action-btn pedido-action-view" title="Ver detalles"
                                     aria-label="Ver detalles">
                                     <i class="far fa-eye"></i>
                                 </a>
@@ -609,13 +611,13 @@
                                         'class' => 'd-inline',
                                         'id' => 'delete-form-' . $pedido->id_pedido,
                                     ]) !!}
-                                        {!! Form::button('<i class="fas fa-ban"></i>', [
-                                            'type' => 'button',
-                                            'class' => 'pedido-action-btn pedido-action-delete alert-delete',
-                                            'data-id' => $pedido->id_pedido,
-                                            'title' => 'Anular pedido',
-                                            'aria-label' => 'Anular pedido',
-                                        ]) !!}
+                                    {!! Form::button('<i class="fas fa-ban"></i>', [
+                                        'type' => 'button',
+                                        'class' => 'pedido-action-btn pedido-action-delete alert-delete',
+                                        'data-id' => $pedido->id_pedido,
+                                        'title' => 'Anular pedido',
+                                        'aria-label' => 'Anular pedido',
+                                    ]) !!}
                                     {!! Form::close() !!}
                                 @endif
                             </div>
@@ -639,7 +641,8 @@
     <div class="pedido-table-footer">
         <div class="pedido-table-footer-info">
             @if ($pedido_compras->total() > 0)
-                Mostrando <strong>{{ $pedido_compras->firstItem() }}</strong>–<strong>{{ $pedido_compras->lastItem() }}</strong>
+                Mostrando
+                <strong>{{ $pedido_compras->firstItem() }}</strong>–<strong>{{ $pedido_compras->lastItem() }}</strong>
                 de <strong>{{ number_format($pedido_compras->total(), 0, ',', '.') }}</strong> registros
             @else
                 Sin registros para mostrar
@@ -653,101 +656,106 @@
 </div>
 
 @push('page_scripts')
-<script>
-    document.addEventListener('DOMContentLoaded', function() {
-        const table = document.getElementById('pedido_compras-table');
-        if (!table) return;
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const table = document.getElementById('pedido_compras-table');
+            if (!table) return;
 
-        const tbody = table.querySelector('tbody');
-        const headers = Array.from(table.querySelectorAll('thead th.sortable'));
-        let currentSort = { index: null, direction: 'asc' };
+            const tbody = table.querySelector('tbody');
+            const headers = Array.from(table.querySelectorAll('thead th.sortable'));
+            let currentSort = {
+                index: null,
+                direction: 'asc'
+            };
 
-        function normalizarTexto(value) {
-            return (value || '')
-                .toString()
-                .trim()
-                .toLocaleLowerCase('es');
-        }
+            function normalizarTexto(value) {
+                return (value || '')
+                    .toString()
+                    .trim()
+                    .toLocaleLowerCase('es');
+            }
 
-        function valorCelda(row, index, type) {
-            const cell = row.children[index];
-            if (!cell) return '';
+            function valorCelda(row, index, type) {
+                const cell = row.children[index];
+                if (!cell) return '';
 
-            const explicitValue = cell.getAttribute('data-sort-value');
-            const raw = explicitValue !== null ? explicitValue : cell.innerText.trim();
+                const explicitValue = cell.getAttribute('data-sort-value');
+                const raw = explicitValue !== null ? explicitValue : cell.innerText.trim();
 
-            if (type === 'number') {
-                if (explicitValue !== null) {
-                    return Number(explicitValue) || 0;
-                }
+                if (type === 'number') {
+                    if (explicitValue !== null) {
+                        return Number(explicitValue) || 0;
+                    }
 
-                return Number(
-                    raw.replace(/[^\d,.-]/g, '')
+                    return Number(
+                        raw.replace(/[^\d,.-]/g, '')
                         .replace(/\./g, '')
                         .replace(',', '.')
-                ) || 0;
-            }
-
-            if (type === 'date') {
-                if (explicitValue) {
-                    return new Date(explicitValue + 'T00:00:00').getTime();
+                    ) || 0;
                 }
 
-                const parts = raw.split('/');
-                if (parts.length === 3) {
-                    return new Date(parts[2], parts[1] - 1, parts[0]).getTime();
+                if (type === 'date') {
+                    if (explicitValue) {
+                        return new Date(explicitValue + 'T00:00:00').getTime();
+                    }
+
+                    const parts = raw.split('/');
+                    if (parts.length === 3) {
+                        return new Date(parts[2], parts[1] - 1, parts[0]).getTime();
+                    }
+                    return 0;
                 }
-                return 0;
+
+                return normalizarTexto(raw);
             }
 
-            return normalizarTexto(raw);
-        }
+            function actualizarIconos(activeIndex, direction) {
+                headers.forEach(function(th) {
+                    const icon = th.querySelector('.pedido-sort-icon');
+                    const index = th.cellIndex;
+                    if (!icon) return;
 
-        function actualizarIconos(activeIndex, direction) {
+                    icon.textContent = index === activeIndex ?
+                        (direction === 'asc' ? '▲' : '▼') :
+                        '↕';
+                });
+            }
+
             headers.forEach(function(th) {
-                const icon = th.querySelector('.pedido-sort-icon');
-                const index = th.cellIndex;
-                if (!icon) return;
+                th.addEventListener('click', function() {
+                    const columnIndex = th.cellIndex;
+                    const type = th.getAttribute('data-type') || 'text';
 
-                icon.textContent = index === activeIndex
-                    ? (direction === 'asc' ? '▲' : '▼')
-                    : '↕';
-            });
-        }
+                    if (currentSort.index === columnIndex) {
+                        currentSort.direction = currentSort.direction === 'asc' ? 'desc' : 'asc';
+                    } else {
+                        currentSort.index = columnIndex;
+                        currentSort.direction = 'asc';
+                    }
 
-        headers.forEach(function(th) {
-            th.addEventListener('click', function() {
-                const columnIndex = th.cellIndex;
-                const type = th.getAttribute('data-type') || 'text';
+                    const rows = Array.from(tbody.querySelectorAll('tr'))
+                        .filter(function(row) {
+                            return !row.querySelector('.pedido-empty');
+                        });
 
-                if (currentSort.index === columnIndex) {
-                    currentSort.direction = currentSort.direction === 'asc' ? 'desc' : 'asc';
-                } else {
-                    currentSort.index = columnIndex;
-                    currentSort.direction = 'asc';
-                }
+                    rows.sort(function(a, b) {
+                        const valueA = valorCelda(a, columnIndex, type);
+                        const valueB = valorCelda(b, columnIndex, type);
 
-                const rows = Array.from(tbody.querySelectorAll('tr'))
-                    .filter(function(row) {
-                        return !row.querySelector('.pedido-empty');
+                        if (valueA < valueB) return currentSort.direction === 'asc' ? -1 :
+                            1;
+                        if (valueA > valueB) return currentSort.direction === 'asc' ? 1 : -
+                            1;
+                        return 0;
                     });
 
-                rows.sort(function(a, b) {
-                    const valueA = valorCelda(a, columnIndex, type);
-                    const valueB = valorCelda(b, columnIndex, type);
+                    rows.forEach(function(row) {
+                        tbody.appendChild(row);
+                    });
 
-                    if (valueA < valueB) return currentSort.direction === 'asc' ? -1 : 1;
-                    if (valueA > valueB) return currentSort.direction === 'asc' ? 1 : -1;
-                    return 0;
+                    actualizarIconos(columnIndex, currentSort.direction);
                 });
-
-                rows.forEach(function(row) {
-                    tbody.appendChild(row);
-                });
-
-                actualizarIconos(columnIndex, currentSort.direction);
             });
         });
-    });
-</script>
+    </script>
 @endpush
