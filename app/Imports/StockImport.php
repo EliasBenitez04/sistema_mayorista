@@ -3,75 +3,64 @@
 namespace App\Imports;
 
 use Illuminate\Support\Collection;
-use Maatwebsite\Excel\Concerns\ToCollection;
 use Illuminate\Support\Facades\DB;
+use Maatwebsite\Excel\Concerns\ToCollection;
 
 class StockImport implements ToCollection
 {
+    /**
+     * Cantidad de filas enviadas a PostgreSQL por sentencia.
+     *
+     * Con 2.000 registros reducimos drásticamente los viajes a la base de datos
+     * sin generar sentencias excesivamente grandes.
+     */
+    private const BATCH_SIZE = 2000;
+
     public function collection(Collection $rows)
     {
-        // Guardar combinaciones importadas
-        $importados = [];
+        $ahora = now();
+        $registros = [];
 
         foreach ($rows->skip(1) as $row) {
+            $sucursal = trim((string) ($row[0] ?? ''));
+            $cantidad = (float) ($row[1] ?? 0);
+            $descripcion = trim((string) ($row[2] ?? ''));
+            $codigo = trim((string) ($row[3] ?? ''));
 
-            $sucursal   = trim($row[0] ?? '');
-            $cantidad   = (float) ($row[1] ?? 0);
-            $descripcion = trim($row[2] ?? '');
-            $codigo     = trim($row[3] ?? '');
-
-            // Validar datos mínimos
             if ($sucursal === '' || $codigo === '') {
                 continue;
             }
 
-            // Guardar combinación para luego comparar
-            $clave = $sucursal . '|' . $codigo;
-            $importados[] = $clave;
+            /*
+             * La clave evita duplicados dentro del mismo Excel.
+             * Si la misma sucursal/código aparece más de una vez,
+             * se conserva la última fila, igual que en la importación anterior.
+             */
+            $clave = $sucursal . "\x1F" . $codigo;
 
-            // Insertar o actualizar
-            DB::statement("
-                INSERT INTO stock_sucursales
-                    (sucursal, codigo, descripcion, cantidad, updated_at)
-                VALUES (?, ?, ?, ?, NOW())
-                ON CONFLICT (sucursal, codigo)
-                DO UPDATE SET
-                    cantidad = EXCLUDED.cantidad,
-                    descripcion = EXCLUDED.descripcion,
-                    updated_at = NOW()
-            ", [
-                $sucursal,
-                $codigo,
-                $descripcion,
-                $cantidad
-            ]);
+            $registros[$clave] = [
+                'sucursal' => $sucursal,
+                'codigo' => $codigo,
+                'descripcion' => $descripcion,
+                'cantidad' => $cantidad,
+                'updated_at' => $ahora,
+            ];
+        }
+
+        if (empty($registros)) {
+            return;
         }
 
         /*
-        |--------------------------------------------------------------------------
-        | PONER EN 0 LOS QUE YA NO EXISTEN EN EL EXCEL
-        |--------------------------------------------------------------------------
-        */
-
-        $stocks = DB::table('stock_sucursales')
-            ->select('sucursal', 'codigo')
-            ->get();
-
-        foreach ($stocks as $stock) {
-
-            $claveBD = $stock->sucursal . '|' . $stock->codigo;
-
-            // Si no vino en el Excel → stock 0
-            if (!in_array($claveBD, $importados)) {
-
-                DB::table('stock_sucursales')
-                    ->where('sucursal', $stock->sucursal)
-                    ->where('codigo', $stock->codigo)
-                    ->update([
-                        'cantidad' => 0,
-                        'updated_at' => now()
-                    ]);
-            }
+         * Antes se ejecutaba un INSERT ... ON CONFLICT por cada fila.
+         * Ahora se hace UPSERT masivo por bloques.
+         */
+        foreach (array_chunk(array_values($registros), self::BATCH_SIZE) as $lote) {
+            DB::table('stock_sucursales')->upsert(
+                $lote,
+                ['sucursal', 'codigo'],
+                ['descripcion', 'cantidad', 'updated_at']
+            );
         }
     }
 }
