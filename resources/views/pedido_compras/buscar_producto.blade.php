@@ -28,12 +28,11 @@
                 @if ($puedePedir)
                     role="button"
                     tabindex="0"
-                    onclick="seleccionarProductoPed(
-                        @js($product->art_codigo),
-                        @js($product->art_descripcion),
-                        {{ $stockDisponible }},
-                        {{ $precioPedido }}
-                    )"
+                    data-codigo="{{ $product->art_codigo }}"
+                    data-producto="{{ $product->art_descripcion }}"
+                    data-stock="{{ $stockDisponible }}"
+                    data-precio="{{ $precioPedido }}"
+                    onclick="seleccionarProductoPedDesdeFila(this)"
                     onkeydown="if(event.key === 'Enter'){ this.click(); }"
                 @endif>
 
