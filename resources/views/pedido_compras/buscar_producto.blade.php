@@ -24,7 +24,7 @@
             @endphp
 
             <tr
-                @if ($stockDisponible >3 ) style="cursor: pointer;"
+                @if ($stockDisponible >=0 ) style="cursor: pointer;"
                     onclick="seleccionarProductoPed(
                         '{{ $product->art_codigo }}',
                         '{{ addslashes($product->art_descripcion) }}',
