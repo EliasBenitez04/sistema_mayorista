@@ -9,7 +9,7 @@
 @endphp
 
 <div class="modal fade" id="clienteRapidoModal" tabindex="-1" role="dialog" aria-labelledby="clienteRapidoModalLabel" aria-hidden="true">
-    <div class="modal-dialog modal-lg modal-dialog-centered" role="document">
+    <div class="modal-dialog modal-lg modal-dialog-centered cliente-rapido-dialog" role="document">
         <div class="modal-content cliente-rapido-content">
             <div class="modal-header cliente-rapido-header">
                 <div class="d-flex align-items-center">
@@ -153,17 +153,28 @@
 </div>
 
 <style>
+    .cliente-rapido-dialog {
+        width: calc(100% - 30px);
+        max-width: 860px;
+        margin: 15px auto;
+    }
+
     .cliente-rapido-content {
+        max-height: calc(100vh - 30px);
         border: 0;
-        border-radius: 18px;
-        overflow: hidden;
-        box-shadow: 0 25px 70px rgba(31, 45, 61, .28);
+        border-radius: 16px;
+        overflow: visible;
+        display: flex;
+        flex-direction: column;
+        box-shadow: 0 20px 55px rgba(31, 45, 61, .24);
     }
 
     .cliente-rapido-header {
+        flex: 0 0 auto;
         border: 0;
-        padding: 22px 26px;
+        padding: 16px 20px;
         color: #fff;
+        border-radius: 16px 16px 0 0;
         background: linear-gradient(135deg, #1769aa 0%, #168aad 55%, #17a2b8 100%);
     }
 
@@ -176,15 +187,16 @@
     }
 
     .cliente-rapido-icon {
-        width: 50px;
-        height: 50px;
-        border-radius: 14px;
+        width: 42px;
+        height: 42px;
+        flex: 0 0 42px;
+        border-radius: 12px;
         display: flex;
         align-items: center;
         justify-content: center;
         background: rgba(255, 255, 255, .17);
         box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .15);
-        font-size: 21px;
+        font-size: 18px;
     }
 
     .cliente-rapido-subtitle {
@@ -192,46 +204,60 @@
     }
 
     .cliente-rapido-body {
-        padding: 24px 26px 18px;
+        min-height: 0;
+        flex: 1 1 auto;
+        overflow-y: auto;
+        overflow-x: visible;
+        padding: 16px 20px 12px;
         background: #f7f9fc;
+        scrollbar-width: thin;
     }
 
     .cliente-section {
         background: #fff;
         border: 1px solid #e4eaf0;
-        border-radius: 14px;
-        padding: 20px 20px 8px;
+        border-radius: 12px;
+        padding: 14px 16px 4px;
         box-shadow: 0 3px 12px rgba(31, 45, 61, .04);
+    }
+
+    #clienteRapidoModal .cliente-section.mb-4 {
+        margin-bottom: 12px !important;
+    }
+
+    #clienteRapidoModal .mb-3 {
+        margin-bottom: 10px !important;
     }
 
     .cliente-section-title {
         display: flex;
         align-items: center;
         color: #34495e;
-        font-size: 14px;
+        font-size: 13px;
         font-weight: 700;
         text-transform: uppercase;
-        letter-spacing: .45px;
-        margin-bottom: 18px;
+        letter-spacing: .4px;
+        margin-bottom: 12px;
     }
 
     .cliente-section-icon {
-        width: 30px;
-        height: 30px;
+        width: 26px;
+        height: 26px;
         display: inline-flex;
         align-items: center;
         justify-content: center;
-        margin-right: 9px;
-        border-radius: 8px;
+        margin-right: 8px;
+        border-radius: 7px;
         color: #168aad;
         background: #eaf7fb;
+        font-size: 12px;
     }
 
     .cliente-label {
         display: block;
-        margin-bottom: 7px;
+        margin-bottom: 5px;
         color: #455a64;
-        font-size: 13px;
+        font-size: 12px;
         font-weight: 700;
     }
 
@@ -250,10 +276,11 @@
     }
 
     .cliente-input-group .form-control {
-        height: 42px;
+        height: 38px;
         border-color: #dce3ea;
         border-left: 0;
         border-radius: 0 9px 9px 0;
+        font-size: 13px;
     }
 
     .cliente-input-group .form-control:focus {
@@ -266,21 +293,22 @@
     }
 
     #clienteRapidoModal .select2-container--default .select2-selection--single {
-        height: 42px !important;
+        height: 38px !important;
         border: 1px solid #dce3ea;
         border-radius: 9px;
         box-shadow: 0 2px 8px rgba(31, 45, 61, .06);
     }
 
     #clienteRapidoModal .select2-container--default .select2-selection--single .select2-selection__rendered {
-        line-height: 40px;
-        padding-left: 14px;
-        padding-right: 36px;
+        line-height: 36px;
+        padding-left: 12px;
+        padding-right: 34px;
         color: #495057;
+        font-size: 13px;
     }
 
     #clienteRapidoModal .select2-container--default .select2-selection--single .select2-selection__arrow {
-        height: 40px !important;
+        height: 36px !important;
         right: 8px;
     }
 
@@ -293,11 +321,38 @@
         border-color: #dc3545 !important;
     }
 
-    .select2-container--open .select2-dropdown {
+    #clienteRapidoModal .select2-container--open .select2-dropdown,
+    .cliente-rapido-select-dropdown {
         border-color: #80bdff;
         border-radius: 8px;
         overflow: hidden;
         box-shadow: 0 10px 25px rgba(31, 45, 61, .15);
+        z-index: 1065;
+    }
+
+    .cliente-rapido-select-dropdown .select2-search--dropdown {
+        padding: 7px;
+        background: #fff;
+    }
+
+    .cliente-rapido-select-dropdown .select2-search__field {
+        height: 34px;
+        padding: 5px 9px;
+        border: 1px solid #ced7e0 !important;
+        border-radius: 6px;
+        font-size: 13px;
+        outline: none;
+    }
+
+    .cliente-rapido-select-dropdown .select2-results__options {
+        max-height: 170px !important;
+        overflow-y: auto;
+    }
+
+    .cliente-rapido-select-dropdown .select2-results__option {
+        padding: 7px 10px;
+        font-size: 13px;
+        line-height: 1.25;
     }
 
     .cliente-info-box {
@@ -311,8 +366,10 @@
     }
 
     .cliente-rapido-footer {
+        flex: 0 0 auto;
         border-top: 1px solid #e9eef3;
-        padding: 16px 26px;
+        padding: 12px 20px;
+        border-radius: 0 0 16px 16px;
         background: #fff;
     }
 
@@ -329,13 +386,76 @@
         font-size: 12px;
     }
 
-    @media (max-width: 767.98px) {
+    @media (max-height: 800px) and (min-width: 768px) {
+        .cliente-rapido-dialog {
+            margin-top: 8px;
+            margin-bottom: 8px;
+        }
+
+        .cliente-rapido-content {
+            max-height: calc(100vh - 16px);
+        }
+
+        .cliente-rapido-header {
+            padding-top: 12px;
+            padding-bottom: 12px;
+        }
+
         .cliente-rapido-body {
-            padding: 18px;
+            padding-top: 12px;
+            padding-bottom: 8px;
         }
 
         .cliente-section {
-            padding: 16px 16px 5px;
+            padding-top: 10px;
+        }
+
+        .cliente-info-box {
+            margin-bottom: 8px;
+            padding-top: 7px;
+            padding-bottom: 7px;
+        }
+    }
+
+    @media (max-width: 767.98px) {
+        .cliente-rapido-dialog {
+            width: calc(100% - 16px);
+            margin: 8px auto;
+        }
+
+        .cliente-rapido-content {
+            max-height: calc(100vh - 16px);
+            border-radius: 12px;
+        }
+
+        .cliente-rapido-header {
+            padding: 12px 14px;
+            border-radius: 12px 12px 0 0;
+        }
+
+        .cliente-rapido-icon {
+            width: 36px;
+            height: 36px;
+            flex-basis: 36px;
+            margin-right: 10px !important;
+        }
+
+        .cliente-rapido-body {
+            padding: 12px;
+        }
+
+        .cliente-section {
+            padding: 12px 12px 3px;
+        }
+
+        .cliente-rapido-footer {
+            padding: 10px 12px;
+            border-radius: 0 0 12px 12px;
+        }
+
+        .cliente-btn-cancelar,
+        .cliente-btn-guardar {
+            min-width: 0;
         }
 
         .cliente-rapido-subtitle {
@@ -366,7 +486,8 @@
                     width: '100%',
                     allowClear: true,
                     placeholder: $select.find('option:first').text(),
-                    dropdownParent: $modalCliente
+                    dropdownParent: $modalCliente,
+                    dropdownCssClass: 'cliente-rapido-select-dropdown'
                 });
             });
         }
@@ -430,7 +551,24 @@
         $modalCliente.on('shown.bs.modal', function() {
             inicializarSelectsCliente();
             limpiarErroresCliente();
+            $('.cliente-rapido-body').scrollTop(0);
             $('#cliente_cli_ci').trigger('focus');
+        });
+
+        $modalCliente.on('select2:open', '.cliente-modal-select', function() {
+            const $body = $modalCliente.find('.cliente-rapido-body');
+            const $select = $(this);
+            const selectTop = $select.offset().top;
+            const bodyTop = $body.offset().top;
+            const bodyHeight = $body.innerHeight();
+            const visibleBottom = bodyTop + bodyHeight;
+            const desiredBottom = selectTop + 245;
+
+            if (desiredBottom > visibleBottom) {
+                $body.stop(true).animate({
+                    scrollTop: $body.scrollTop() + (desiredBottom - visibleBottom) + 12
+                }, 120);
+            }
         });
 
         $modalCliente.on('hidden.bs.modal', function() {
