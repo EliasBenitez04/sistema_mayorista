@@ -56,6 +56,14 @@
         font-size: 12px;
     }
 
+    .pedido-toolbar-actions {
+        flex: 0 0 auto;
+        display: flex;
+        align-items: center;
+        justify-content: flex-end;
+        gap: 10px;
+    }
+
     .pedido-record-count {
         flex: 0 0 auto;
         padding: 6px 10px;
@@ -66,6 +74,19 @@
         font-size: 12px;
         font-weight: 600;
         white-space: nowrap;
+    }
+
+    .pedido-new-order-btn {
+        min-height: 36px;
+        padding: 0 14px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 8px;
+        font-size: 12px;
+        font-weight: 700;
+        white-space: nowrap;
+        box-shadow: none !important;
     }
 
     .pedido-table-scroll {
@@ -420,6 +441,11 @@
             gap: 10px;
         }
 
+        .pedido-toolbar-actions {
+            width: 100%;
+            justify-content: space-between;
+        }
+
         .pedido-table-footer-info {
             white-space: normal;
         }
@@ -438,12 +464,14 @@
             </div>
         </div>
 
-        <div class="col-sm-6">
+        <div class="pedido-toolbar-actions">
             <span class="pedido-record-count">
                 <i class="fas fa-database mr-1"></i>
                 {{ number_format($pedido_compras->total(), 0, ',', '.') }} registros
             </span>
-            <a class="btn btn-primary float-right" href="{{ route('pedido_compras.create') }}">
+
+            <a class="btn btn-primary pedido-new-order-btn" href="{{ route('pedido_compras.create') }}">
+                <i class="fas fa-plus mr-1"></i>
                 Nuevo Pedido
             </a>
         </div>
