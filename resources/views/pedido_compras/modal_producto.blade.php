@@ -4,9 +4,9 @@
 <div class="modal fade" id="productSearchModalPed" tabindex="-1" role="dialog" aria-labelledby="productSearchModalPedLabel"
     aria-hidden="true">
 
-    <div class="modal-dialog modal-xl" role="document">
+    <div class="modal-dialog modal-xl modal-dialog-centered modal-productos-dialog" role="document">
 
-        <div class="modal-content shadow-lg border-0">
+        <div class="modal-content shadow-lg border-0 modal-productos-content">
 
             <!-- =====================================================
                  HEADER
@@ -123,21 +123,8 @@
 
                             <div class="card-body p-0">
 
-                                <div id="modalResultsPed" class="table-responsive">
-
-                                    <table class="table table-hover table-striped mb-0">
-
-                                        <thead class="bg-dark text-white">
-                                        </thead>
-
-                                        <tbody>
-
-                                            @include('pedido_compras.buscar_producto')
-
-                                        </tbody>
-
-                                    </table>
-
+                                <div id="modalResultsPed" class="table-responsive modal-product-results">
+                                    @include('pedido_compras.buscar_producto')
                                 </div>
 
                             </div>
@@ -1169,6 +1156,291 @@
        RESPONSIVE
     ========================================================= */
 
+    /* =========================================================
+       AJUSTE MODAL + RESULTADOS PARA NOTEBOOK / 1366x768
+    ========================================================= */
+
+    #productSearchModalPed .modal-productos-dialog {
+        width: calc(100% - 24px);
+        max-width: 1180px;
+        margin: 12px auto;
+    }
+
+    #productSearchModalPed .modal-productos-content {
+        max-height: calc(100vh - 24px);
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
+    }
+
+    #productSearchModalPed .modal-productos-header {
+        flex: 0 0 auto;
+        padding: 12px 16px;
+    }
+
+    #productSearchModalPed .modal-header-icon {
+        width: 38px;
+        height: 38px;
+        margin-right: 10px;
+        border-radius: 10px;
+        font-size: 16px;
+    }
+
+    #productSearchModalPed .modal-productos-header h5 {
+        font-size: 16px;
+    }
+
+    #productSearchModalPed .modal-productos-body {
+        min-height: 0;
+        flex: 1 1 auto;
+        overflow: hidden;
+        padding: 12px 14px;
+    }
+
+    #productSearchModalPed .modal-productos-body > .row {
+        height: 100%;
+        min-height: 0;
+    }
+
+    #productSearchModalPed .modal-productos-body > .row > .col-md-8,
+    #productSearchModalPed .modal-productos-body > .row > .col-md-4 {
+        min-height: 0;
+    }
+
+    #productSearchModalPed .modal-productos-body > .row > .col-md-8 {
+        display: flex;
+        flex-direction: column;
+    }
+
+    #productSearchModalPed .buscador-card {
+        flex: 0 0 auto;
+        margin-bottom: 10px !important;
+    }
+
+    #productSearchModalPed .buscador-card .card-body {
+        padding: 10px 12px !important;
+    }
+
+    #productSearchModalPed .buscador-label {
+        margin-bottom: 5px !important;
+    }
+
+    #productSearchModalPed .buscador-input.input-group-lg > .form-control,
+    #productSearchModalPed .buscador-input.input-group-lg > .input-group-prepend > .input-group-text {
+        height: 40px;
+        min-height: 40px;
+        font-size: 13px;
+    }
+
+    #productSearchModalPed .buscador-ayuda {
+        margin-top: 4px;
+    }
+
+    #productSearchModalPed .productos-card {
+        min-height: 0;
+        flex: 1 1 auto;
+        display: flex;
+        flex-direction: column;
+        margin-bottom: 0;
+    }
+
+    #productSearchModalPed .productos-card-header {
+        flex: 0 0 auto;
+        padding: 9px 12px;
+    }
+
+    #productSearchModalPed .productos-header-icon {
+        width: 32px;
+        height: 32px;
+        border-radius: 8px;
+        font-size: 13px;
+    }
+
+    #productSearchModalPed .productos-card .card-body {
+        min-height: 0;
+        flex: 1 1 auto;
+        overflow: hidden;
+    }
+
+    #productSearchModalPed #modalResultsPed {
+        width: 100%;
+        height: 100% !important;
+        max-height: none !important;
+        overflow: auto !important;
+        position: relative;
+        background: #fff;
+    }
+
+    #productSearchModalPed .pedido-product-search-table {
+        width: 100%;
+        min-width: 720px;
+        margin: 0;
+    }
+
+    #productSearchModalPed .pedido-product-search-table thead th {
+        position: sticky;
+        top: 0;
+        z-index: 3;
+        padding: 8px 10px;
+        border-top: 0;
+        border-bottom: 1px solid #dbe3ec;
+        color: #44505f;
+        background: #f5f7fa;
+        font-size: 10.5px;
+        letter-spacing: .025em;
+        white-space: nowrap;
+    }
+
+    #productSearchModalPed .pedido-product-search-table tbody td {
+        height: 43px;
+        padding: 7px 10px;
+        border-top: 0;
+        border-bottom: 1px solid #edf1f5;
+        font-size: 12px;
+    }
+
+    #productSearchModalPed .producto-search-row {
+        cursor: pointer;
+    }
+
+    #productSearchModalPed .producto-search-row:hover td {
+        background: #eef6ff;
+    }
+
+    #productSearchModalPed .producto-search-row-disabled {
+        cursor: not-allowed;
+        opacity: .62;
+    }
+
+    #productSearchModalPed .producto-search-code {
+        color: #1d4ed8;
+        white-space: nowrap;
+    }
+
+    #productSearchModalPed .producto-search-description {
+        display: block;
+        max-width: 310px;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    #productSearchModalPed .producto-search-price {
+        font-weight: 700;
+        white-space: nowrap;
+    }
+
+    #productSearchModalPed .producto-stock-badge {
+        min-width: 64px;
+        padding: 5px 7px;
+        font-size: 10px;
+    }
+
+    #productSearchModalPed .producto-search-empty {
+        height: 180px !important;
+        text-align: center;
+        vertical-align: middle;
+        color: #7a8797;
+        background: #fff;
+    }
+
+    #productSearchModalPed .producto-search-empty-icon {
+        width: 40px;
+        height: 40px;
+        margin: 0 auto 8px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 11px;
+        color: #6b7d90;
+        background: #f1f5f9;
+    }
+
+    #productSearchModalPed .producto-search-loading {
+        min-height: 180px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-direction: column;
+        gap: 9px;
+        color: #64748b;
+        background: #fff;
+        font-size: 12px;
+    }
+
+    #productSearchModalPed .producto-search-loading i {
+        color: #2563eb;
+        font-size: 22px;
+    }
+
+    #productSearchModalPed .resumen-pedido-card {
+        max-height: 100%;
+        margin-bottom: 0;
+        overflow: auto;
+    }
+
+    #productSearchModalPed .resumen-header {
+        padding: 12px 13px;
+    }
+
+    #productSearchModalPed .resumen-header-icon {
+        width: 36px;
+        height: 36px;
+        margin-right: 9px;
+        font-size: 15px;
+    }
+
+    #productSearchModalPed .resumen-header h5 {
+        font-size: 14px;
+    }
+
+    #productSearchModalPed .resumen-pedido-card .card-body {
+        padding: 11px !important;
+    }
+
+    #productSearchModalPed .cantidad-insercion-box {
+        padding: 11px;
+    }
+
+    #productSearchModalPed .cantidad-input-wrapper {
+        height: 44px;
+    }
+
+    #productSearchModalPed .cantidad-insercion-input {
+        font-size: 20px;
+    }
+
+    #productSearchModalPed .resumen-stat {
+        min-height: 58px;
+        padding: 7px;
+    }
+
+    #productSearchModalPed .resumen-ayuda {
+        margin-top: 10px !important;
+        padding: 8px;
+    }
+
+    @media (max-height: 800px) and (min-width: 992px) {
+        #productSearchModalPed .modal-productos-dialog {
+            margin-top: 8px;
+            margin-bottom: 8px;
+        }
+
+        #productSearchModalPed .modal-productos-content {
+            max-height: calc(100vh - 16px);
+        }
+
+        #productSearchModalPed .cantidad-info {
+            padding: 6px 8px;
+            margin-top: 6px;
+        }
+
+        #productSearchModalPed .resumen-pedido-card .row.mt-3 {
+            margin-top: 8px !important;
+        }
+    }
+
+
     @media (max-width: 991px) {
 
         #productSearchModalPed .col-md-4 {
@@ -1204,27 +1476,145 @@
            BUSCADOR DE PRODUCTOS
         ========================================================= */
 
-        document.getElementById('productSearchQueryPed')
-            .addEventListener('keyup', function() {
+        const productSearchInputPed = document.getElementById('productSearchQueryPed');
+        const productSearchResultsPed = document.getElementById('modalResultsPed');
+        const productSearchCachePed = new Map();
 
-                let query = this.value;
+        let productSearchTimerPed = null;
+        let productSearchControllerPed = null;
+        let productSearchRequestPed = 0;
 
-                fetch(
-                        '{{ url('buscar-productos-ped') }}?query=' +
-                        encodeURIComponent(query) +
-                        '&cod_suc=' +
-                        $("#cod_suc").val()
-                    )
+        function mostrarEstadoBusquedaPed(tipo, mensaje) {
+            if (!productSearchResultsPed) return;
 
-                    .then(response => response.text())
+            const icono = tipo === 'loading'
+                ? '<i class="fas fa-spinner fa-spin"></i>'
+                : '<i class="fas fa-search"></i>';
 
-                    .then(html => {
+            productSearchResultsPed.innerHTML =
+                '<div class="producto-search-loading">' +
+                    icono +
+                    '<span>' + mensaje + '</span>' +
+                '</div>';
+        }
 
-                        document.getElementById('modalResultsPed').innerHTML = html;
+        async function ejecutarBusquedaProductoPed() {
+            if (!productSearchInputPed || !productSearchResultsPed) return;
 
-                    });
+            const query = productSearchInputPed.value.trim();
+            const codSuc = document.getElementById('cod_suc')?.value || '';
 
+            if (query.length < 4) {
+                if (productSearchControllerPed) {
+                    productSearchControllerPed.abort();
+                    productSearchControllerPed = null;
+                }
+
+                mostrarEstadoBusquedaPed(
+                    'empty',
+                    'Escriba al menos 4 caracteres para buscar productos.'
+                );
+                return;
+            }
+
+            if (!codSuc) {
+                mostrarEstadoBusquedaPed(
+                    'empty',
+                    'No se pudo identificar la sucursal del pedido.'
+                );
+                return;
+            }
+
+            const cacheKey = codSuc + '|' + query.toLocaleLowerCase('es');
+
+            if (productSearchCachePed.has(cacheKey)) {
+                productSearchResultsPed.innerHTML = productSearchCachePed.get(cacheKey);
+                return;
+            }
+
+            if (productSearchControllerPed) {
+                productSearchControllerPed.abort();
+            }
+
+            productSearchControllerPed = new AbortController();
+            const requestId = ++productSearchRequestPed;
+
+            mostrarEstadoBusquedaPed('loading', 'Buscando productos...');
+
+            try {
+                const params = new URLSearchParams({
+                    query: query,
+                    cod_suc: codSuc
+                });
+
+                const response = await fetch(
+                    '{{ url('buscar-productos-ped') }}?' + params.toString(),
+                    {
+                        signal: productSearchControllerPed.signal,
+                        headers: {
+                            'X-Requested-With': 'XMLHttpRequest',
+                            'Accept': 'text/html'
+                        }
+                    }
+                );
+
+                if (!response.ok) {
+                    throw new Error('HTTP ' + response.status);
+                }
+
+                const html = await response.text();
+
+                // Una respuesta vieja nunca debe reemplazar una búsqueda más nueva.
+                if (requestId !== productSearchRequestPed) {
+                    return;
+                }
+
+                productSearchCachePed.set(cacheKey, html);
+
+                // Evita que el caché del navegador crezca indefinidamente.
+                if (productSearchCachePed.size > 30) {
+                    const firstKey = productSearchCachePed.keys().next().value;
+                    productSearchCachePed.delete(firstKey);
+                }
+
+                productSearchResultsPed.innerHTML = html;
+            } catch (error) {
+                if (error.name === 'AbortError') {
+                    return;
+                }
+
+                console.error('Error al buscar productos:', error);
+                mostrarEstadoBusquedaPed(
+                    'error',
+                    'No se pudo cargar la búsqueda. Intente nuevamente.'
+                );
+            }
+        }
+
+        if (productSearchInputPed) {
+            productSearchInputPed.addEventListener('input', function() {
+                clearTimeout(productSearchTimerPed);
+
+                productSearchTimerPed = setTimeout(function() {
+                    ejecutarBusquedaProductoPed();
+                }, 300);
             });
+        }
+
+        $('#productSearchModalPed').on('shown.bs.modal', function() {
+            setTimeout(function() {
+                productSearchInputPed?.focus();
+            }, 50);
+        });
+
+        $('#productSearchModalPed').on('hidden.bs.modal', function() {
+            clearTimeout(productSearchTimerPed);
+
+            if (productSearchControllerPed) {
+                productSearchControllerPed.abort();
+                productSearchControllerPed = null;
+            }
+        });
 
 
         /* =========================================================
