@@ -62,20 +62,28 @@
 
                 <div class="form-group col-xl-6 col-md-7">
                     {!! Form::label('id_cliente', 'Cliente', ['class' => 'pedido-field-label']) !!}
-                    <div class="pedido-select-shell">
-                        <span class="pedido-select-icon"><i class="fas fa-user-tie"></i></span>
-                        <div class="pedido-select-control">
-                            {!! Form::select('id_cliente', $clientes, $pedido->id_cliente ?? null, [
-                                'class' => 'form-control select2',
-                                'placeholder' => 'Seleccione un cliente',
-                                'required' => true,
-                                'style' => 'width:100%;',
-                            ]) !!}
-                                <button type="button" id="btnNuevoClientePedido" class="btn btn-success btn-sm px-3"
-                                    data-toggle="modal" data-target="#clienteRapidoModal">
-                                    <i class="fas fa-user-plus mr-1"></i>
-                                </button>
+                    <div class="pedido-client-row">
+                        <div class="pedido-select-shell">
+                            <span class="pedido-select-icon"><i class="fas fa-user-tie"></i></span>
+                            <div class="pedido-select-control">
+                                {!! Form::select('id_cliente', $clientes, $pedido->id_cliente ?? null, [
+                                    'class' => 'form-control select2',
+                                    'placeholder' => 'Seleccione un cliente',
+                                    'required' => true,
+                                    'style' => 'width:100%;',
+                                ]) !!}
+                            </div>
                         </div>
+
+                        <button type="button"
+                            id="btnNuevoClientePedido"
+                            class="btn btn-success pedido-client-add-btn"
+                            data-toggle="modal"
+                            data-target="#clienteRapidoModal"
+                            title="Nuevo cliente"
+                            aria-label="Nuevo cliente">
+                            <i class="fas fa-user-plus"></i>
+                        </button>
                     </div>
                     <small class="pedido-field-help">Busque por CI/RUC o nombre del cliente.</small>
                 </div>
@@ -200,7 +208,8 @@
 
 <style>
     .pedido-form-section {
-        width: 100% overflow:hidden;
+        width: 100%;
+        overflow: hidden;
         border: 1px solid #e4eaf1;
         border-radius: 14px;
         background: #fff;
@@ -302,10 +311,38 @@
         min-height: 64px
     }
 
+    .pedido-client-row {
+        width: 100%;
+        min-width: 0;
+        display: flex;
+        align-items: stretch;
+        gap: 8px
+    }
+
     .pedido-select-shell {
+        min-width: 0;
         min-height: 40px;
+        flex: 1 1 auto;
         display: flex;
         align-items: stretch
+    }
+
+    .pedido-client-add-btn {
+        width: 42px;
+        min-width: 42px;
+        height: 40px;
+        padding: 0;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 8px;
+        box-shadow: none !important
+    }
+
+    .pedido-client-add-btn:hover,
+    .pedido-client-add-btn:focus {
+        transform: translateY(-1px);
+        box-shadow: 0 4px 10px rgba(21, 128, 61, .18) !important
     }
 
     .pedido-select-icon {
@@ -374,8 +411,7 @@
     }
 
     .pedido-radio-option:hover {
-        border: color #ff0000;
-        ;
+        border-color: #80aaf8;
         background: #f8fbff
     }
 
