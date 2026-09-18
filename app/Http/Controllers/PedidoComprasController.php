@@ -288,6 +288,13 @@ class PedidoComprasController extends Controller
             ]);
         }
 
+        if (empty($cod_suc)) {
+            return view('pedido_compras.buscar_producto', [
+                'productos' => collect(),
+                'mensajeBusqueda' => 'No se pudo identificar la sucursal del pedido.',
+            ]);
+        }
+
         // Evita búsquedas excesivamente largas y normaliza para usar índices funcionales.
         $query = mb_substr($query, 0, 80);
         $queryNormalizada = mb_strtolower($query, 'UTF-8') . '%';
