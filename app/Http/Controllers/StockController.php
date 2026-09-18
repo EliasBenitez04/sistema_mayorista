@@ -42,15 +42,10 @@ class StockController extends Controller
              * y luego StockImport repone/actualiza en bloques lo que sí
              * viene en el archivo.
              */
-            DB::table('stock_sucursales')
-                ->where(function ($query) {
-                    $query->where('cantidad', '<>', 0)
-                        ->orWhereNull('cantidad');
-                })
-                ->update([
-                    'cantidad' => 0,
-                    'updated_at' => now(),
-                ]);
+            DB::table('stock_sucursales')->update([
+                'cantidad' => 0,
+                'updated_at' => now(),
+            ]);
 
             Excel::import(new StockImport(), $request->file('archivo'));
 
