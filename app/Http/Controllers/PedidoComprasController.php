@@ -278,71 +278,77 @@ class PedidoComprasController extends Controller
 
     public function buscarProductoPed(Request $request)
     {
-        $query = trim($request->get('query'));
+        $query = trim((string) $request->get('query', ''));
         $cod_suc = $request->get('cod_suc');
 
-        $productosQuery = DB::table('stock as s')
+        if (mb_strlen($query) < 4) {
+            return view('pedido_compras.buscar_producto', [
+                'productos' => collect(),
+                'mensajeBusqueda' => 'Escriba al menos 4 caracteres para buscar productos.',
+            ]);
+        }
+
+        // Evita búsquedas excesivamente largas y normaliza para usar índices funcionales.
+        $query = mb_substr($query, 0, 80);
+        $queryNormalizada = mb_strtolower($query, 'UTF-8') . '%';
+
+        /*
+         * Primero obtenemos como máximo 15 candidatos de la sucursal.
+         * Así el join con v_stock_sucursales y el cálculo de stock general
+         * se ejecutan únicamente sobre esos productos, no sobre todo el catálogo.
+         */
+        $candidatos = DB::table('stock as s')
             ->join('articulos as a', 'a.id_articulo', '=', 's.id_articulo')
-
-            // Vista que contiene el stock de todas las sucursales
-            ->leftJoin('v_stock_sucursales as v', function ($join) {
-                $join->on('v.codigo', '=', 'a.art_codigo');
-            })
-
             ->select(
-                'a.art_codigo',
-                'a.art_descripcion',
-                'a.prec_vent',
-                's.cantidad',
-                's.cod_suc',
-
-                // Stock total de todas las sucursales
-                DB::raw('COALESCE(MAX(v.stock_general), 0) as stock_general'),
-
-                // Stock disponible en OTRAS sucursales
-                DB::raw('
-                GREATEST(
-                    COALESCE(MAX(v.stock_general), 0) - COALESCE(s.cantidad, 0),
-                    0
-                ) as stock_disponible_pedir
-            ')
-            )
-
-            ->when($cod_suc, function ($q) use ($cod_suc) {
-                $q->where('s.cod_suc', $cod_suc);
-            })
-
-            ->when($query, function ($q) use ($query) {
-                $q->where(function ($q2) use ($query) {
-
-                    $q2->where(
-                        'a.art_codigo',
-                        'ILIKE',
-                        $query . '%'
-                    )
-
-                        ->orWhere(
-                            'a.art_descripcion',
-                            'ILIKE',
-                            $query . '%'
-                        );
-                });
-            })
-
-            ->groupBy(
+                'a.id_articulo',
                 'a.art_codigo',
                 'a.art_descripcion',
                 'a.prec_vent',
                 's.cantidad',
                 's.cod_suc'
             )
-
+            ->when($cod_suc, function ($q) use ($cod_suc) {
+                $q->where('s.cod_suc', $cod_suc);
+            })
+            ->where(function ($q) use ($queryNormalizada) {
+                $q->whereRaw('LOWER(a.art_codigo) LIKE ?', [$queryNormalizada])
+                    ->orWhereRaw('LOWER(a.art_descripcion) LIKE ?', [$queryNormalizada]);
+            })
             ->orderBy('a.art_codigo')
-            ->limit(15)
+            ->limit(15);
+
+        $productos = DB::query()
+            ->fromSub($candidatos, 'p')
+            ->leftJoin('v_stock_sucursales as v', 'v.codigo', '=', 'p.art_codigo')
+            ->select(
+                'p.art_codigo',
+                'p.art_descripcion',
+                'p.prec_vent',
+                'p.cantidad',
+                'p.cod_suc',
+                DB::raw('COALESCE(MAX(v.stock_general), 0) as stock_general'),
+                DB::raw('
+                    GREATEST(
+                        COALESCE(MAX(v.stock_general), 0) - COALESCE(p.cantidad, 0),
+                        0
+                    ) as stock_disponible_pedir
+                ')
+            )
+            ->groupBy(
+                'p.art_codigo',
+                'p.art_descripcion',
+                'p.prec_vent',
+                'p.cantidad',
+                'p.cod_suc'
+            )
+            ->orderBy('p.art_codigo')
             ->get();
 
         return view('pedido_compras.buscar_producto', [
-            'productos' => $productosQuery
+            'productos' => $productos,
+            'mensajeBusqueda' => $productos->isEmpty()
+                ? 'No se encontraron productos con ese código o descripción.'
+                : null,
         ]);
     }
 
