@@ -1678,14 +1678,36 @@
            SELECCIONAR PRODUCTO
         ========================================================= */
 
+        function normalizarNumeroPedido(valor) {
+            if (valor === null || valor === undefined) return 0;
+
+            let texto = String(valor).trim();
+
+            if (texto === '') return 0;
+
+            // 75.000,00 -> 75000.00
+            if (texto.includes(',') && texto.includes('.')) {
+                texto = texto.replace(/\./g, '').replace(',', '.');
+            } else if (texto.includes(',')) {
+                // 75000,00 -> 75000.00
+                texto = texto.replace(',', '.');
+            } else if (/^\d{1,3}(\.\d{3})+$/.test(texto)) {
+                // 75.000 -> 75000
+                texto = texto.replace(/\./g, '');
+            }
+
+            const numero = Number(texto);
+            return Number.isFinite(numero) ? numero : 0;
+        }
+
         function seleccionarProductoPedDesdeFila(fila) {
             if (!fila) return;
 
             seleccionarProductoPed(
                 fila.dataset.codigo || '',
                 fila.dataset.producto || '',
-                parseFloat(fila.dataset.stock) || 0,
-                parseFloat(fila.dataset.precio) || 0
+                normalizarNumeroPedido(fila.dataset.stock),
+                normalizarNumeroPedido(fila.dataset.precio)
             );
         }
 
@@ -1696,6 +1718,8 @@
             stock,
             precio
         ) {
+            stock = normalizarNumeroPedido(stock);
+            precio = normalizarNumeroPedido(precio);
 
             let tabla = document.getElementById(
                 'selectedProducts'
@@ -1751,6 +1775,9 @@
             /* -----------------------------------------------------
                CALCULAR SUBTOTAL
             ----------------------------------------------------- */
+
+            // Los precios del sistema están expresados en guaraníes enteros.
+            precio = Math.round(precio);
 
             let subtotal =
                 precio * cantidadMultiplicador;
