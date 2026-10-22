@@ -34,7 +34,7 @@ class LineaController extends Controller
     public function store(Request $request)
     {
         $request->validate([
-            'linea_desc' => 'required|string|max:255'
+            'linea_desc' => 'required|string|max:255|regex:/\\S/u'
         ]);
 
         $lineaDesc = strtoupper(trim($request->linea_desc));
@@ -73,7 +73,7 @@ class LineaController extends Controller
     public function update(Request $request, $id)
     {
         $request->validate([
-            'linea_desc' => 'required|string|max:255'
+            'linea_desc' => 'required|string|max:255|regex:/\\S/u'
         ]);
 
         $linea = DB::table('linea')
