@@ -1,8 +1,8 @@
-<div class="card-body p-0">
+<div class="card border-0 shadow-sm" style="border-radius:14px;overflow:hidden"><div class="card-body p-0">
 
     <div class="table-responsive">
-        <table class="table table-striped table-bordered table-hover text-center" id="carga_fotos-table">
-            <thead class="bg-dark text-white">
+        <table class="table table-striped table-hover text-center mb-0" id="carga_fotos-table">
+            <thead class="thead-dark">
                 <tr>
                     <th style="width: 10%">Fecha</th>
                     <th style="width: 10%">N° OT</th>
@@ -41,12 +41,18 @@
                         </td>
                         <!-- Imagen -->
                         <td class="align-middle text-center">
-                            @if ($value->fot_img)
-                                <img src="{{ Storage::url('fotos/' . $value->fot_img) }}" alt="Imagen"
-                                    style="max-width: 80px; height: auto; border-radius: 4px; border: 1px solid #ccc;">
-                            @else
-                                <span class="text-muted">Sin Imagen</span>
-                            @endif
+                            @php
+                            $imagePath = $value->fot_img ? 'fotos/' . basename($value->fot_img) : null;
+                            $imageExists = $imagePath && Storage::disk('public')->exists($imagePath);
+                        @endphp
+                        @if ($imageExists)
+                            <a href="{{ route('carga_fotos.show', $value->fot_cod) }}" title="Ver fotografía en detalle">
+                                <img src="{{ Storage::disk('public')->url($imagePath) }}" alt="Foto de OT {{ $value->fot_ot }}"
+                                     loading="lazy" style="width:96px;height:72px;object-fit:contain;background:#f5f8fc;border-radius:8px;border:1px solid #dce6ef;padding:3px">
+                            </a>
+                        @else
+                            <span class="text-muted small"><i class="far fa-image mr-1"></i>Sin imagen disponible</span>
+                        @endif
                         </td>
 
                         <!-- Usuario -->
@@ -100,12 +106,14 @@
 
     <div class="card-footer clearfix bg-light">
         <div class="float-left text-muted">
-            Mostrando {{ $fotos->firstItem() }} -
-            {{ $fotos->lastItem() }} de
+            Mostrando {{ $fotos->firstItem() ?? 0 }} -
+            {{ $fotos->lastItem() ?? 0 }} de
             {{ $fotos->total() }} registros
         </div>
         <div class="float-right">
             {{ $fotos->links() }}
         </div>
     </div>
+</div>
+
 </div>
