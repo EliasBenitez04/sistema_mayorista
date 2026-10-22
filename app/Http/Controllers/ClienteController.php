@@ -55,6 +55,14 @@ class ClienteController extends AppBaseController
 
     public function store(Request $request)
     {
+        $request->validate([
+            'cli_ci' => 'required|string|max:20|regex:/\\S/u',
+            'cli_nombre' => 'required|string|max:255|regex:/\\S/u',
+            'cli_direccion' => 'required|string|max:255|regex:/\\S/u',
+            'cli_telefono' => 'required|string|max:50|regex:/\\S/u',
+            'id_departamento' => 'required|integer|exists:departamento,id_departamento',
+            'id_ciudad' => 'required|integer|exists:ciudad,id_ciudad',
+        ]);
         $input = $request->all();
 
         $camposObligatorios = [
