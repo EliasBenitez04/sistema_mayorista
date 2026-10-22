@@ -137,6 +137,37 @@
             border: 1px solid #7ba9f5 !important;
             box-shadow: 0 0 0 1px rgba(64,125,225,.10);
         }
+
+        /* Pedidos: resaltar sólo campos que requieren interacción.
+           Los valores automáticos o no editables se muestran neutros. */
+        .content-wrapper .pedido-form-section input[readonly],
+        .content-wrapper .pedido-form-section select:disabled,
+        .content-wrapper .pedido-form-section #ped_fecha,
+        .content-wrapper .pedido-detail-table input[readonly],
+        .content-wrapper .pedido-detail-table input:disabled,
+        .content-wrapper .pedido-total-panel input[readonly] {
+            border-color: #dce3eb !important;
+            background-color: #f7f9fc !important;
+            box-shadow: none !important;
+        }
+        .content-wrapper .pedido-form-section #ped_fecha:not(:focus) {
+            background-color: #fff !important;
+        }
+        .content-wrapper .pedido-form-section input[readonly]:focus,
+        .content-wrapper .pedido-form-section select:disabled:focus,
+        .content-wrapper .pedido-detail-table input[readonly]:focus,
+        .content-wrapper .pedido-total-panel input[readonly]:focus {
+            border-color: #dce3eb !important;
+            box-shadow: none !important;
+        }
+        .content-wrapper .pedido-form-section #ped_fecha:focus {
+            border-color: #4385ff !important;
+            box-shadow: 0 0 0 3px rgba(67,133,255,.16) !important;
+        }
+        .content-wrapper .pedido-detail-table input:not([readonly]):not(:disabled) {
+            border-color: #7ba9f5 !important;
+            box-shadow: 0 0 0 1px rgba(64,125,225,.10);
+        }
     </style>
 </head>
 
