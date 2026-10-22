@@ -6,7 +6,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Auth;
 use RealRashid\SweetAlert\Facades\Alert;
-use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\File;
 use Illuminate\Validation\Rule;
 use App\Models\CargaFotos;
 
@@ -104,7 +104,8 @@ class CargaFotosController extends Controller
 
                 $filename = time() . '_' . uniqid() . '.' . $file->extension();
 
-                $file->storeAs('fotos', $filename, 'public');
+                File::ensureDirectoryExists(public_path('storage/fotos'));
+                $file->move(public_path('storage/fotos'), $filename);
             } else {
 
                 Alert::error('Error', 'No se pudo cargar la imagen.');
@@ -205,7 +206,8 @@ class CargaFotosController extends Controller
 
                 $filename = time() . '_' . uniqid() . '.' . $file->extension();
 
-                $file->storeAs('fotos', $filename, 'public');
+                File::ensureDirectoryExists(public_path('storage/fotos'));
+                $file->move(public_path('storage/fotos'), $filename);
 
                 $foto->fot_img = $filename;
             }
@@ -213,7 +215,7 @@ class CargaFotosController extends Controller
             $foto->save();
 
             if (isset($imagenAnterior) && $imagenAnterior && $imagenAnterior !== $foto->fot_img) {
-                Storage::disk('public')->delete('fotos/' . $imagenAnterior);
+                File::delete(public_path('storage/fotos/' . basename($imagenAnterior)));
             }
 
             Alert::success('Éxito', 'Imagen Actualizada Correctamente!');
