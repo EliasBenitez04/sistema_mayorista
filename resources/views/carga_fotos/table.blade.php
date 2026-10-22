@@ -41,13 +41,9 @@
                         </td>
                         <!-- Imagen -->
                         <td class="align-middle text-center">
-                            @php
-                            $imagePath = $value->fot_img ? 'fotos/' . basename($value->fot_img) : null;
-                            $imageExists = $imagePath && Storage::disk('public')->exists($imagePath);
-                        @endphp
-                        @if ($imageExists)
+                            @if ($value->foto_disponible)
                             <a href="{{ route('carga_fotos.show', $value->fot_cod) }}" title="Ver fotografía en detalle">
-                                <img src="{{ Storage::disk('public')->url($imagePath) }}" alt="Foto de OT {{ $value->fot_ot }}"
+                                <img src="{{ $value->foto_url }}" alt="Foto de OT {{ $value->fot_ot }}"
                                      loading="lazy" style="width:96px;height:72px;object-fit:contain;background:#f5f8fc;border-radius:8px;border:1px solid #dce6ef;padding:3px">
                             </a>
                         @else
