@@ -37,7 +37,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
         const mark = function (field, invalid) {
             if (!field || !field.classList || field.type === 'hidden') return;
-            field.classList.toggle('is-invalid', invalid);
+            field.classList.remove('is-invalid');
             field.setAttribute('aria-invalid', invalid ? 'true' : 'false');
         };
 
@@ -74,7 +74,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 await Swal.fire({
                     icon: 'info',
                     title: 'Verificá los datos',
-                    text: 'Completá los campos obligatorios y corregí los datos señalados antes de guardar.',
+                    text: 'Completá los datos correctamente para poder guardar.',
                     confirmButtonText: 'Revisar',
                     confirmButtonColor: '#2563eb'
                 });
@@ -103,10 +103,10 @@ document.addEventListener('DOMContentLoaded', function () {
 
     @if ($errors->any())
         Swal.fire({
-            icon: 'error',
+            icon: 'info',
             title: 'Verificá los datos',
-            text: @json(implode(' ', $errors->all())),
-            confirmButtonText: 'Corregir datos',
+            text: 'Completá los datos correctamente para poder guardar.',
+            confirmButtonText: 'Entendido',
             confirmButtonColor: '#2563eb'
         });
     @endif
