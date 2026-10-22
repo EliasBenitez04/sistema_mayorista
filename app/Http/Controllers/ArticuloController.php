@@ -137,6 +137,13 @@ class ArticuloController extends Controller
 
     public function store(Request $request)
     {
+        $request->validate([
+            'art_codigo' => 'required|string|max:255|regex:/\\S/u',
+            'art_descripcion' => 'required|string|max:255|regex:/\\S/u',
+            'art_precio' => 'required|numeric|min:0',
+            'prec_vent' => 'required|numeric|min:0',
+            'art_iva' => 'required|numeric|in:0,5,10',
+        ]);
         $input = $request->all();
 
         // VALIDACIÓN
