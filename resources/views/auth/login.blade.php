@@ -119,6 +119,30 @@
         .gts-login-secure { display:flex;align-items:center;justify-content:center;gap:7px;font-size:11px;color:#7b8da3;margin-top:15px; }
         .gts-login-secure i { color:#23865d; }
         @media(max-width:480px){.gts-login-wrap{max-width:100%}.gts-login-header{padding:28px 22px 25px}.gts-login-body{padding:27px 23px 22px}.gts-login-card{border-radius:18px}}
+
+        /* Ajuste compacto: proporciones equilibradas para escritorio y móvil */
+        .gts-login-wrap { max-width: 390px; }
+        .gts-login-card { border-radius: 17px; box-shadow: 0 20px 55px rgba(0,9,31,.32); }
+        .gts-login-header { padding: 22px 25px 20px; }
+        .gts-login-brand { width: 55px; height: 55px; border-radius: 15px; margin-bottom: 11px; transform: none; }
+        .gts-login-brand img { width: 49px; height: 49px; transform: none; }
+        .gts-login-small-label { font-size: 9px; margin-bottom: 6px; letter-spacing: 1.1px; }
+        .gts-login-header h1 { font-size: 21px; letter-spacing: -.3px; }
+        .gts-login-header p { font-size: 11px; margin-top: 5px; }
+        .gts-login-body { padding: 22px 26px 19px; }
+        .gts-login-welcome { font-size: 17px; margin-bottom: 3px; }
+        .gts-login-subtitle { font-size: 11px; margin-bottom: 19px; }
+        .gts-login-field { margin-bottom: 15px; }
+        .gts-login-field label { font-size: 12px; margin-bottom: 6px; }
+        .gts-login-input input { height: 43px; border-radius: 9px; font-size: 13px; }
+        .gts-login-submit { height: 44px; min-height: 44px; margin-top: 20px; border-radius: 9px; font-size: 13px; }
+        .gts-login-secure { margin-top: 11px; font-size: 10px; text-align: center; }
+        .gts-login-footer { margin-top: 17px; padding-top: 13px; font-size: 10px; }
+        @media(max-width:480px) {
+            .gts-login-wrap { max-width: 390px; }
+            .gts-login-header { padding: 20px 20px 18px; }
+            .gts-login-body { padding: 21px 20px 17px; }
+        }
     </style>
 </head>
 <body class="login-page-gts">
