@@ -8,8 +8,6 @@
                 <span class="ref-create-icon"><i class="fas fa-camera"></i></span>
                 <div><h1>Nueva carga de fotos</h1><p>Completá los datos de la carga</p></div>
             </div>
-            @include('adminlte-templates::common.errors')
-            @include('sweetalert::alert')
             <div class="card ref-create-card">
                 {!! Form::open([
                 'route' => 'carga_fotos.store',
