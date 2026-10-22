@@ -13,7 +13,7 @@
             <div class="card ref-create-card">
                 {!! Form::open([
                 'route' => 'carga_fotos.store',
-                'class' => 'confirm-submit',
+                'class' => 'ref-validated-form',
                 'files' => true,
             ]) !!}
                 <div class="ref-create-card-header"><span class="ref-create-section-icon"><i class="fas fa-camera mr-2"></i></span><div><h2>Información de registro</h2><small>Completá los campos solicitados para guardar el registro.</small></div></div>
@@ -25,4 +25,5 @@
             </div>
         </div>
     </div>
+    @include('partials.ref_create_validation')
 @endsection
