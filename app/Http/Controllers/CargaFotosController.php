@@ -23,7 +23,7 @@ class CargaFotosController extends Controller
 
     public function index(Request $request)
     {
-        $buscar = trim($request->get('search'));
+        $buscar = trim((string) $request->get('search', ''));
 
         $fotos = CargaFotos::with(['linea', 'user'])
             ->when($buscar, function ($query, $buscar) {
@@ -48,7 +48,7 @@ class CargaFotosController extends Controller
                 });
             })
             ->orderBy('fot_fecha', 'desc')
-            ->paginate(5);
+            ->paginate(10);
 
         $fotos->appends($request->all());
 
@@ -104,7 +104,7 @@ class CargaFotosController extends Controller
 
                 $filename = time() . '_' . uniqid() . '.' . $file->extension();
 
-                $file->storeAs('public/fotos', $filename);
+                $file->storeAs('fotos', $filename, 'public');
             } else {
 
                 Alert::error('Error', 'No se pudo cargar la imagen.');
@@ -197,11 +197,9 @@ class CargaFotosController extends Controller
             $foto->linea_cod = $request->linea_cod;
 
             if ($request->hasFile('fot_img')) {
+                $imagenAnterior = $foto->fot_img;
 
-                if ($foto->fot_img && Storage::exists('public/fotos/' . $foto->fot_img)) {
-
-                    Storage::delete('public/fotos/' . $foto->fot_img);
-                }
+                // La foto anterior se elimina sólo después de guardar el registro.
 
                 $file = $request->file('fot_img');
 
@@ -213,6 +211,10 @@ class CargaFotosController extends Controller
             }
 
             $foto->save();
+
+            if (isset($imagenAnterior) && $imagenAnterior && $imagenAnterior !== $foto->fot_img) {
+                Storage::disk('public')->delete('fotos/' . $imagenAnterior);
+            }
 
             Alert::success('Éxito', 'Imagen Actualizada Correctamente!');
 
