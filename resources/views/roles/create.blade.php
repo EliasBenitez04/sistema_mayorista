@@ -13,7 +13,6 @@
                 </div>
             </div>
 
-            @include('adminlte-templates::common.errors')
             
 
             <div class="card ref-create-card">
