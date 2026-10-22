@@ -357,30 +357,6 @@
             });
         });
     </script>
-    {{-- BUSCADOR AJAX FOTOS --}}
-    <script>
-        $(document).ready(function() {
-            $('#form-busqueda-fotos .buscar-fotos').on('keyup', function() {
-                let query = this.value;
-                let url = this.getAttribute('data-url');
-
-                // AJAX usando Fetch
-                fetch(url + '?search=' + encodeURIComponent(query), {
-                        headers: {
-                            'X-Requested-With': 'XMLHttpRequest'
-                        }
-                    })
-                    .then(res => res.text())
-                    .then(html => {
-                        // Reemplaza la tabla de fotos
-                        $('.tabla-fotos-container').html(html);
-                    })
-                    .catch(err => console.error(err));
-            });
-        });
-    </script>
-
-
     {{-- STACKS --}}
     @stack('third_party_scripts')
     @stack('page_scripts')
