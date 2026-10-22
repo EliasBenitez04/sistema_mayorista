@@ -39,4 +39,30 @@
 .ref-create .ref-create-card .card-footer .btn-primary:hover,.ref-create .ref-create-card .card-footer .btn-default:hover{background:#f1f5f9}
 .ref-create .ref-create-card input[type=checkbox]{accent-color:#2563eb}
 @media(max-width:767px){.ref-create{margin:6px auto 24px}.ref-create .ref-create-heading{gap:12px;margin-bottom:16px}.ref-create .ref-create-icon{width:46px;height:46px;font-size:19px}.ref-create .ref-create-heading h1{font-size:21px}.ref-create .ref-create-heading p{font-size:12px}.ref-create .ref-create-card-header{padding:18px;gap:11px}.ref-create .ref-create-card .card-body{padding:20px 18px 8px}.ref-create .ref-create-card .card-footer{padding:15px 18px}.ref-create .ref-create-footer-note{flex-basis:100%}.ref-create .ref-create-footer-actions{width:100%;margin-left:0}.ref-create .ref-create-footer-actions .btn{flex:1;min-width:0}}
+
+/* V3: formularios referenciales más compactos y visualmente equilibrados */
+.ref-create{max-width:1040px;margin-top:20px}
+.ref-create.ref-create--simple{max-width:570px}
+.ref-create .ref-create-heading{margin-bottom:17px}
+.ref-create .ref-create-heading h1{font-size:23px}
+.ref-create .ref-create-card{border-radius:14px;box-shadow:0 14px 36px rgba(31,48,71,.085);position:relative}
+.ref-create .ref-create-card:before{content:"";display:block;height:4px;background:linear-gradient(90deg,#2563eb,#38bdf8)}
+.ref-create .ref-create-card-header{padding:19px 24px 18px;background:linear-gradient(180deg,#fff,#fcfdff)}
+.ref-create .ref-create-card-header h2{font-size:15px}
+.ref-create .ref-create-card .card-body{padding:25px 24px 13px}
+.ref-create.ref-create--simple .ref-create-card .card-body>.row>.form-group,
+.ref-create.ref-create--simple .ref-create-card .card-body>.row>[class*="col-"]{flex:0 0 100%;max-width:100%}
+.ref-create.ref-create--simple .ref-create-card .card-body>.row>.row{width:100%;margin-left:0;margin-right:0}
+.ref-create.ref-create--simple .ref-create-card .card-body>.row>.row>.form-group,
+.ref-create.ref-create--simple .ref-create-card .card-body>.row>.row>[class*="col-"]{flex:0 0 100%;max-width:100%}
+.ref-create.ref-create--simple .ref-create-card .form-control{width:100%}
+.ref-create .ref-create-card .form-control{background-color:#fbfdff}
+.ref-create .ref-create-card .form-control:focus{background-color:#fff}
+.ref-create .ref-create-card .card-footer{padding:14px 24px;background:#f8fafc}
+.ref-create .ref-create-card .card-footer .btn{min-height:41px}
+.ref-create.ref-create--simple .ref-create-footer-note{display:none}
+.ref-create.ref-create--simple .ref-create-footer-actions{width:100%;justify-content:flex-end}
+.ref-create.ref-create--simple .ref-create-card .form-group{margin-bottom:16px}
+.ref-create.ref-create--simple .ref-create-icon{background:#eaf1ff}
+@media(max-width:767px){.ref-create{margin-top:8px}.ref-create .ref-create-card-header{padding:17px}.ref-create .ref-create-card .card-body{padding:20px 17px 9px}.ref-create .ref-create-card .card-footer{padding:14px 17px}}
 </style>
