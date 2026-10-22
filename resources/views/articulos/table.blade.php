@@ -1,3 +1,4 @@
+@include('partials.ref_table_style')
 <!DOCTYPE html>
 
 <html lang="es">
@@ -60,16 +61,9 @@
             width: 100%;
         }
 
-        #articulos-table th,
-        #articulos-table td {
-            padding: 4px 6px !important;
-            vertical-align: middle;
-        }
+        #articulos-table th, #articulos-table td { vertical-align:middle; }
 
-        #articulos-table .btn {
-            padding: 2px 6px;
-            font-size: 18px;
-        }
+        
 
         #articulos-table th {
             white-space: nowrap;
@@ -83,7 +77,7 @@
 
 <body>
 
-    <div class="card-body p-0">
+    <div class="card-body p-0 ref-table-card">
         <div class="table-responsive">
             <div class="card-header">
                 <div class="row align-items-center">
@@ -158,8 +152,8 @@
                 </div>
             </div>
 
-            <table class="table table-striped table-bordered table-hover" id="articulos-table">
-                <thead class="thead-dark">
+            <table class="table table-striped table-hover mb-0" id="articulos-table">
+                <thead class="text-center">
                     <tr>
                         <th class="producto text-center" style="width:5%;">#</th>
                         <th class="producto text-center" style="width:9%;">Código</th>
@@ -167,15 +161,15 @@
                         <th class="producto text-center" style="width:12%;">Costo</th>
                         <th class="producto text-center" style="width:12%;">Venta</th>
                         <th class="producto text-center" style="width:5%;">IVA</th>
-                        <th colspan="3" class="text-center" style="width:5%;">Operaciones</th>
+                        <th class="text-center" style="width:5%;">Operaciones</th>
                     </tr>
                 </thead>
                 <tbody>
                     @foreach ($articulos as $articulo)
                         <tr>
-                            <td class="producto">{{ $articulo->id_articulo }}</td>
+                            <td class="producto"><span class="ref-id">{{ $articulo->id_articulo }}</span></td>
                             <td class="producto_descri">{{ $articulo->art_codigo }}</td>
-                            <td class="producto_descri">{{ $articulo->art_descripcion }}</td>
+                            <td class="producto_descri ref-primary"><i class="fas fa-box text-muted mr-1"></i>{{ $articulo->art_descripcion }}</td>
                             <td class="producto">{{ number_format($articulo->art_precio, 0, ',', '.') }}</td>
                             <td class="producto">{{ number_format($articulo->prec_vent, 0, ',', '.') }}</td>
                             <td class="producto">{{ $articulo->art_iva }}%</td>
@@ -185,17 +179,17 @@
                                     'method' => 'delete',
                                     'class' => 'd-inline',
                                 ]) !!}
-                                <div class='btn-group'>
+                                <div class="ref-actions">
                                     @can('articulos edit')
                                         <a href="{{ route('articulos.edit', [$articulo->id_articulo]) }}"
-                                            class='btn btn-info btn-sx' title="Editar">
+                                            class="btn btn-primary" title="Editar">
                                             <i class="far fa-edit"></i>
                                         </a>
                                     @endcan
                                     @can('articulos destroy')
                                         {!! Form::button('<i class="far fa-trash-alt"></i>', [
                                             'type' => 'submit',
-                                            'class' => 'btn btn-danger btn-sx alert-delete',
+                                            'class' => 'btn btn-danger alert-delete',
                                             'title' => 'Eliminar',
                                         ]) !!}
                                     @endcan
@@ -208,16 +202,7 @@
             </table>
         </div>
 
-        <div class="card-footer clearfix bg-light">
-            <div class="float-left text-muted">
-                Mostrando {{ $articulos->firstItem() }} -
-                {{ $articulos->lastItem() }} de
-                {{ $articulos->total() }} registros
-            </div>
-            <div class="float-right">
-                {{ $articulos->links() }}
-            </div>
-        </div>
+        <div class="ref-footer"><div class="ref-footer-info">Mostrando <strong>{{ $articulos->firstItem() ?? 0 }}</strong> - <strong>{{ $articulos->lastItem() ?? 0 }}</strong> de <strong>{{ $articulos->total() }}</strong> registros</div><div>{{ $articulos->links() }}</div></div>
     </div>
 
     <div id="loadingOverlayArticulos">
@@ -281,11 +266,7 @@
             width: 100%;
         }
 
-        #articulos-table th,
-        #articulos-table td {
-            padding: 3px 5px !important;
-            white-space: nowrap;
-        }
+        #articulos-table th, #articulos-table td { vertical-align:middle; }
 
         /* ================= LOADER ================= */
         #loadingOverlayArticulos {
