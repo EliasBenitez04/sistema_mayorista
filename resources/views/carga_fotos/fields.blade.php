@@ -87,12 +87,12 @@
             'required' => !isset($foto),
             'accept' => 'image/*',
             'id' => 'fot_img_input',
-            'data-current' => isset($foto) ? Storage::url('fotos/' . $foto->fot_img) : '',
+            'data-current' => isset($foto) ? $foto->foto_url : '',
         ]) !!}
 
         <div class="mt-2 text-left" id="imagePreview">
-            @if (isset($foto) && $foto->fot_img)
-                <img src="{{ Storage::url('fotos/' . $foto->fot_img) }}" alt="Imagen"
+            @if (isset($foto) && $foto->foto_disponible)
+                <img src="{{ $foto->foto_url }}" alt="Imagen"
                     style="width: 120px; height: auto; border-radius: 8px; box-shadow: 0 4px 8px rgba(0,0,0,0.15); display:block; margin-bottom:5px;">
                 <small class="d-block text-muted">Imagen guardada. Seleccioná otra para reemplazarla.</small>
             @endif
