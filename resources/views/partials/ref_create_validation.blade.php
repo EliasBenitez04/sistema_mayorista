@@ -50,7 +50,7 @@
         return firstInvalid;
     }
 
-    // Capture evita que handlers anteriores envíen un formulario incompleto.
+    // Evita que la validación nativa bloquee el evento submit antes de mostrar SweetAlert.\n    document.querySelectorAll('.ref-create form.ref-validated-form').forEach(function (form) { form.noValidate = true; });\n\n    // Capture evita que handlers anteriores envíen un formulario incompleto.
     document.addEventListener('submit', async function (event) {
         const form = event.target;
         if (!(form instanceof HTMLFormElement) || !form.matches('.ref-create form.ref-validated-form')) return;
