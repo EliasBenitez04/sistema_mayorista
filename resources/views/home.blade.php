@@ -43,13 +43,34 @@
 @media(max-width:1150px){.gts-home .gts-stats{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:850px){.gts-home .gts-bottom{grid-template-columns:1fr}}
 @media(max-width:600px){.gts-home{padding:15px 12px 25px}.gts-home .gts-hero{padding:23px 20px;border-radius:16px}.gts-home .gts-hero h1{font-size:24px}.gts-home .gts-stats{gap:10px}.gts-home .gts-stat-body{padding:14px 12px}.gts-home .gts-stat-value{font-size:25px}.gts-home .gts-stat-icon{width:39px;height:39px;font-size:17px}.gts-home .gts-stat-link{padding:10px 12px}.gts-home .gts-panel{padding:17px}.gts-home .gts-quick-grid{grid-template-columns:1fr}}
+
+/* Cabecera equilibrada: utiliza ambos lados sin altura innecesaria */
+.gts-home .gts-hero{padding:22px 28px;margin-bottom:23px}
+.gts-home .gts-hero-content{position:relative;z-index:1;display:flex;align-items:center;justify-content:space-between;gap:25px}
+.gts-home .gts-hero h1{font-size:27px;margin-bottom:7px}
+.gts-home .gts-hero p{max-width:540px}
+.gts-home .gts-hero-user{margin-top:12px}
+.gts-home .gts-hero-aside{text-align:right;min-width:205px;padding:9px 0}
+.gts-home .gts-hero-aside-icon{font-size:22px;color:#d6eaff;margin-bottom:10px}
+.gts-home .gts-hero-aside-label{font-size:10px;letter-spacing:1.25px;color:#c6e0ff;font-weight:800}
+.gts-home .gts-hero-aside-date{font-size:14px;color:#fff;font-weight:700;margin-top:5px}
+@media(max-width:720px){.gts-home .gts-hero{padding:20px}.gts-home .gts-hero-content{display:block}.gts-home .gts-hero-aside{display:none}.gts-home .gts-hero h1{font-size:24px}}
 </style>
 <div class="gts-home">
     <section class="gts-hero">
-        <div class="gts-eyebrow">GTS Mayorista · Panel principal</div>
-        <h1>Bienvenido al sistema</h1>
-        <p>Accedé a tus herramientas de gestión y consultá la información más importante desde un solo lugar.</p>
-        <div class="gts-hero-user"><i class="far fa-user-circle"></i>{{ Auth::user()->name }}</div>
+        <div class="gts-hero-content">
+            <div>
+                <div class="gts-eyebrow">GTS Mayorista · Panel principal</div>
+                <h1>Bienvenido al sistema</h1>
+                <p>Gestioná tus módulos y consultá la información más importante desde un solo lugar.</p>
+                <div class="gts-hero-user"><i class="far fa-user-circle"></i>{{ Auth::user()->name }}</div>
+            </div>
+            <div class="gts-hero-aside">
+                <div class="gts-hero-aside-icon"><i class="fas fa-chart-line"></i></div>
+                <div class="gts-hero-aside-label">PANEL DE GESTIÓN</div>
+                <div class="gts-hero-aside-date">{{ now()->locale('es')->translatedFormat('d \\d\\e F \\d\\e Y') }}</div>
+            </div>
+        </div>
     </section>
 
     <div class="gts-section-heading">
