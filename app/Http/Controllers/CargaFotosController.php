@@ -264,9 +264,9 @@ class CargaFotosController extends Controller
             return redirect()->route('carga_fotos.index');
         }
 
-        if ($foto->fot_img && Storage::exists('public/fotos/' . $foto->fot_img)) {
+        if ($foto->fot_img && is_file(public_path('storage/fotos/' . basename($foto->fot_img)))) {
 
-            Storage::delete('public/fotos/' . $foto->fot_img);
+            File::delete(public_path('storage/fotos/' . basename($foto->fot_img)));
         }
 
         DB::table('carga_fotos')
