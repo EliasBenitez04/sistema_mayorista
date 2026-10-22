@@ -1,114 +1,95 @@
+@push('page_scripts')
 <script>
-document.addEventListener('DOMContentLoaded', function () {
-    // Sólo formularios create con la clase ref-create: no modifica Pedidos.
-    document.querySelectorAll('.ref-create form').forEach(function (form) {
-        form.classList.remove('confirm-submit');
-        form.noValidate = true;
-        let sending = false;
-        // Requisitos de cada pantalla. No afectamos los formularios de Pedidos.
-        const requiredByModule = {
-            clientes: ['cli_ci','cli_nombre','cli_direccion','cli_telefono','id_departamento','id_ciudad'],
-            ciudads: ['ciu_descripcion'],
-            sucursals: ['suc_descri','suc_direccion','suc_telefono'],
-            departamentos: ['dep_descripcion'],
-            lineas: ['linea_desc'],
-            articulos: ['art_codigo','art_descripcion','art_precio','art_iva','prec_vent'],
-            usuarios: ['name','email','ci','password'],
-            permissions: ['name'],
-            roles: ['name'],
-            stocks: ['sucursal','codigo','descripcion','cantidad'],
-            carga_fotos: ['fot_ot','fot_costo','fot_venta','fot_desc','linea_cod','fot_img']
-        };
-        const moduleName = Object.keys(requiredByModule).find(function (name) {
-            return form.closest('.ref-create') && document.querySelector('input[name="_token"]') &&
-                (form.action.includes('/' + ({
-                  ciudads:'ciudades',sucursals:'sucursal',departamentos:'Departamentos'
-                }[name] || name));
-        });
-        (requiredByModule[moduleName] || []).forEach(function (name) {
-            const field = Array.from(form.elements).find(function (element) { return element.name === name; });
-            if (field && !field.disabled) field.required = true;
-        });
-        if (moduleName === 'roles') {
-            // Un rol sin permisos no debe registrarse.
-            form.dataset.mustChoosePermission = '1';
-        }
+(function () {
+    'use strict';
+    // Delegación global: no depende del momento en que se renderice el formulario.
+    // Limitado a las pantallas create que utilizan ref-validated-form. Pedidos no se modifica.
+    const requiredByRoute = {
+        clientes: ['cli_ci', 'cli_nombre', 'cli_direccion', 'cli_telefono', 'id_departamento', 'id_ciudad'],
+        ciudades: ['ciu_descripcion'],
+        sucursal: ['suc_descri', 'suc_direccion', 'suc_telefono'],
+        Departamentos: ['dep_descripcion'],
+        lineas: ['linea_desc'],
+        articulos: ['art_codigo', 'art_descripcion', 'art_precio', 'art_iva', 'prec_vent'],
+        usuarios: ['name', 'email', 'ci', 'password'],
+        permissions: ['name'],
+        roles: ['name'],
+        stocks: ['sucursal', 'codigo', 'descripcion', 'cantidad'],
+        carga_fotos: ['fot_ot', 'fot_costo', 'fot_venta', 'fot_desc', 'linea_cod', 'fot_img']
+    };
 
-
-        const mark = function (field, invalid) {
-            if (!field || !field.classList || field.type === 'hidden') return;
-            field.classList.remove('is-invalid');
-            field.setAttribute('aria-invalid', invalid ? 'true' : 'false');
-        };
-
-        form.addEventListener('input', function (event) {
-            if (event.target.matches('input,select,textarea')) mark(event.target, false);
-        });
-        form.addEventListener('change', function (event) {
-            if (event.target.matches('input,select,textarea')) mark(event.target, false);
-        });
-
-        form.addEventListener('submit', async function (event) {
-            event.preventDefault();
-            event.stopImmediatePropagation();
-            if (sending) return;
-
-            const fields = Array.from(form.elements).filter(function (field) {
-                return field.willValidate && !field.disabled;
-            });
-            const invalid = fields.filter(function (field) {
-                // También rechazar texto compuesto sólo de espacios en campos obligatorios.
-                const blank = field.required && typeof field.value === 'string' &&
-                    !['checkbox', 'radio', 'file'].includes(field.type) &&
-                    !field.value.trim();
-                const fails = blank || !field.checkValidity();
-                mark(field, fails);
-                return fails;
-            });
-            if (form.dataset.mustChoosePermission === '1' && !form.querySelector('input[name="permission[]"]:checked')) {
-                await Swal.fire({icon:'info',title:'Verificá los datos',text:'Seleccioná al menos un permiso para el rol.',confirmButtonText:'Revisar'});
-                return;
-            }
-            if (invalid.length) {
-                const first = invalid[0];
-                await Swal.fire({
-                    icon: 'info',
-                    title: 'Verificá los datos',
-                    text: 'Completá los datos correctamente para poder guardar.',
-                    confirmButtonText: 'Revisar',
-                    confirmButtonColor: '#2563eb'
-                });
-                first.focus();
-                first.scrollIntoView({behavior: 'smooth', block: 'center'});
-                return;
-            }
-            const confirmation = await Swal.fire({
-                icon: 'question',
-                title: '¿Desea guardar el registro?',
-                text: 'Confirmá que los datos ingresados sean correctos.',
-                showCancelButton: true,
-                confirmButtonText: 'Sí, guardar',
-                cancelButtonText: 'Cancelar',
-                confirmButtonColor: '#21845a',
-                reverseButtons: true
-            });
-            if (!confirmation.isConfirmed) return;
-            sending = true;
-            const submitButton = form.querySelector('[type="submit"]');
-            if (submitButton) submitButton.disabled = true;
-            // Envío tradicional: el servidor sigue siendo responsable de la validación final.
-            HTMLFormElement.prototype.submit.call(form);
-        });
-    });
-
-    @if ($errors->any())
-        Swal.fire({
+    function showInfo() {
+        return Swal.fire({
             icon: 'info',
             title: 'Verificá los datos',
             text: 'Completá los datos correctamente para poder guardar.',
             confirmButtonText: 'Entendido',
             confirmButtonColor: '#2563eb'
         });
+    }
+
+    function validateForm(form) {
+        const routePath = new URL(form.action, window.location.href).pathname.split('/').filter(Boolean);
+        const route = routePath[routePath.length - 1] === 'store'
+            ? routePath[routePath.length - 2] : routePath[routePath.length - 1];
+        const required = requiredByRoute[route] || [];
+        let firstInvalid = null;
+
+        // HTML checkValidity() evalúa los atributos required, pattern, tipo y longitud.
+        Array.from(form.elements).forEach(function (field) {
+            if (!field.name || field.disabled || field.type === 'hidden' || field.type === 'submit') return;
+            const blank = required.includes(field.name) &&
+                (field.type === 'file' ? !field.files.length : !String(field.value || '').trim());
+            const invalid = blank || (field.willValidate && !field.checkValidity());
+            if (invalid && !firstInvalid) firstInvalid = field;
+        });
+
+        if (route === 'roles' && !form.querySelector('input[name="permission[]"]:checked')) {
+            if (!firstInvalid) firstInvalid = form.querySelector('input[name="permission[]"]');
+        }
+        return firstInvalid;
+    }
+
+    // Capture evita que handlers anteriores envíen un formulario incompleto.
+    document.addEventListener('submit', async function (event) {
+        const form = event.target;
+        if (!(form instanceof HTMLFormElement) || !form.matches('.ref-create form.ref-validated-form')) return;
+        event.preventDefault();
+        event.stopImmediatePropagation();
+        if (form.dataset.sending === 'true') return;
+        if (typeof Swal === 'undefined') {
+            window.alert('Completá los datos correctamente para poder guardar.');
+            return;
+        }
+
+        const invalid = validateForm(form);
+        if (invalid) {
+            await showInfo();
+            invalid.focus();
+            return;
+        }
+
+        const decision = await Swal.fire({
+            icon: 'question',
+            title: '¿Desea guardar el registro?',
+            text: 'Confirmá que los datos ingresados sean correctos.',
+            showCancelButton: true,
+            confirmButtonText: 'Sí, guardar',
+            cancelButtonText: 'Cancelar',
+            confirmButtonColor: '#21845a',
+            reverseButtons: true
+        });
+        if (!decision.isConfirmed) return;
+        form.dataset.sending = 'true';
+        const button = form.querySelector('[type="submit"]');
+        if (button) button.disabled = true;
+        HTMLFormElement.prototype.submit.call(form);
+    }, true);
+
+    // Si Laravel devuelve errores tras POST, mostrarlos sin un bloque rojo.
+    @if ($errors->any())
+        if (typeof Swal !== 'undefined') showInfo();
     @endif
-});
+})();
 </script>
+@endpush
