@@ -36,6 +36,7 @@ class Ciudadcontroller extends Controller
 
     public function store(Request $request)
     {
+        $request->validate(['ciu_descripcion' => 'required|string|max:45|regex:/\\S/u']);
         $input = $request->all();
         $descripcion = strtoupper(trim($input['ciu_descripcion']));
 
