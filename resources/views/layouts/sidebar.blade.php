@@ -138,5 +138,69 @@
         @media (prefers-reduced-motion: reduce) {
             .sidebar-dark-darkest .nav-sidebar .nav-link { transition: none; }
         }
+
+        /* Ajuste de orden visual: bloques y subniveles consistentes */
+        .sidebar-dark-darkest .sidebar { padding: 15px 10px 22px; }
+        .sidebar-dark-darkest .nav-sidebar > .nav-item { margin-bottom: 5px; }
+        .sidebar-dark-darkest .nav-sidebar > .nav-item:first-child {
+            margin-bottom: 18px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid rgba(162,185,215,.13);
+        }
+        .sidebar-dark-darkest .nav-sidebar > .nav-item > .nav-link {
+            min-height: 44px;
+            padding: 11px 12px;
+            border-radius: 9px;
+            font-size: 13px;
+            letter-spacing: .05px;
+        }
+        .sidebar-dark-darkest .nav-sidebar > .nav-item > .nav-link .nav-icon {
+            width: 20px;
+            flex-basis: 20px;
+            margin-right: 12px;
+        }
+        .sidebar-dark-darkest .nav-sidebar > .nav-item > .nav-link p {
+            flex: 1;
+            position: relative;
+            padding-right: 15px;
+        }
+        .sidebar-dark-darkest .nav-sidebar > .nav-item > .nav-link p > .right {
+            right: 1px;
+            font-size: 11px;
+        }
+        .sidebar-dark-darkest .nav-sidebar > .nav-item.menu-open > .nav-link:not(.active) {
+            background: rgba(255,255,255,.06);
+            color: #fff;
+        }
+        .sidebar-dark-darkest .nav-treeview {
+            margin: 6px 0 12px 18px;
+            padding: 3px 0 3px 11px;
+            border-left: 1px solid rgba(151,184,222,.22);
+        }
+        .sidebar-dark-darkest .nav-treeview > .nav-item { margin-bottom: 3px; }
+        .sidebar-dark-darkest .nav-treeview > .nav-item > .nav-link {
+            min-height: 36px;
+            padding: 8px 10px;
+            font-size: 12px;
+            border-radius: 7px;
+            color: #b8c9df;
+        }
+        .sidebar-dark-darkest .nav-treeview > .nav-item > .nav-link .nav-icon {
+            width: 16px;
+            flex-basis: 16px;
+            margin-right: 10px;
+            font-size: 12px;
+        }
+        .sidebar-dark-darkest .nav-treeview > .nav-item > .nav-link p {
+            flex: 1;
+            padding-right: 0;
+        }
+        .sidebar-dark-darkest .nav-sidebar > .nav-item > .nav-link.active {
+            box-shadow: inset 3px 0 0 #a8ceff,0 3px 12px rgba(10,90,202,.2);
+        }
+        .sidebar-dark-darkest .nav-sidebar .nav-link.active { color: #fff; }
+        .sidebar-dark-darkest .nav-sidebar .nav-link:hover { transform: none; }
+        .sidebar-dark-darkest .nav-sidebar .nav-link .right { transition: transform .2s ease; }
+        .sidebar-dark-darkest .nav-sidebar > .nav-item:last-child { margin-bottom: 0; }
     </style>
 </aside>
