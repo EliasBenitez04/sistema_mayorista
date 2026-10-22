@@ -1,7 +1,8 @@
-<div class="card-body p-0">
+@include('partials.ref_table_style')
+<div class="card-body p-0 ref-table-card">
     <div class="table-responsive">
-        <table class="table table-striped table-hover table-sg mb-0" id="permissions-table">
-            <thead class="thead-dark">
+        <table class="table table-striped table-hover mb-0" id="permissions-table">
+            <thead class="text-center">
                 <tr>
                     <th>Permiso</th>
                     <th>Guard</th>
@@ -12,8 +13,7 @@
             <tbody>
                 @forelse ($permissions as $permission)
                     <tr>
-                        <td>
-                            <i class="fas fa-key text-secondary mr-1"></i>
+                        <td class="ref-primary">\n                            <i class="fas fa-key text-secondary mr-1"></i>
                             {{ $permission->name }}
                         </td>
 
@@ -29,7 +29,7 @@
                                 'method' => 'delete',
                                 'class' => 'd-inline form-delete',
                             ]) !!}
-                            <div class="btn-group btn-group-sg">
+                            <div class="ref-actions">
 
                                 @can('permissions edit')
                                     <a href="{{ route('permissions.edit', $permission->id) }}"
@@ -63,8 +63,4 @@
     </div>
 </div>
 
-<div class="card-footer clearfix">
-    <div class="float-right">
-        @include('adminlte-templates::common.paginate', ['records' => $permissions])
-    </div>
-</div>
+<div class="ref-footer"><div class="ref-footer-info">Mostrando <strong>{{ $permissions->firstItem() ?? 0 }}</strong> - <strong>{{ $permissions->lastItem() ?? 0 }}</strong> de <strong>{{ $permissions->total() }}</strong> registros</div><div>@include('adminlte-templates::common.paginate', ['records' => $permissions])</div></div>
