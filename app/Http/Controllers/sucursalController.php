@@ -30,6 +30,11 @@ class sucursalController extends Controller
 
     public function store(Request $request)
     {
+        $request->validate([
+            'suc_descri' => 'required|string|max:255|regex:/\\S/u',
+            'suc_direccion' => 'required|string|max:255|regex:/\\S/u',
+            'suc_telefono' => 'required|string|max:50|regex:/\\S/u',
+        ]);
         $input = $request->all();
 
         ##validar que no exista el mismo nro de ci guardado..
