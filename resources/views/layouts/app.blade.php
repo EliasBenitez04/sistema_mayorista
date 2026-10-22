@@ -119,6 +119,24 @@
             box-shadow: 0 0 0 3px rgba(67,133,255,.16);
             outline: none;
         }
+
+        /* Campos visibles desde la carga del formulario, incluso sin foco. */
+        .content-wrapper .form-control:not(.is-invalid),
+        .content-wrapper .custom-select:not(.is-invalid),
+        .content-wrapper select.form-control:not(.is-invalid),
+        .content-wrapper textarea.form-control:not(.is-invalid) {
+            border: 1px solid #7ba9f5 !important;
+            background-color: #fff;
+            box-shadow: 0 0 0 1px rgba(64, 125, 225, .10);
+        }
+        .content-wrapper .input-group-text {
+            border-color: #7ba9f5;
+        }
+        .content-wrapper .select2-container--default .select2-selection--single,
+        .content-wrapper .select2-container--default .select2-selection--multiple {
+            border: 1px solid #7ba9f5 !important;
+            box-shadow: 0 0 0 1px rgba(64,125,225,.10);
+        }
     </style>
 </head>
 
