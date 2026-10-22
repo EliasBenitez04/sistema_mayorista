@@ -65,4 +65,26 @@
 .ref-create.ref-create--simple .ref-create-card .form-group{margin-bottom:16px}
 .ref-create.ref-create--simple .ref-create-icon{background:#eaf1ff}
 @media(max-width:767px){.ref-create{margin-top:8px}.ref-create .ref-create-card-header{padding:17px}.ref-create .ref-create-card .card-body{padding:20px 17px 9px}.ref-create .ref-create-card .card-footer{padding:14px 17px}}
+
+/* V4: ocupar el área de trabajo y organizar los formularios en columnas */
+.ref-create,.ref-create.ref-create--simple{width:100%;max-width:none;margin:12px 0 30px}
+.ref-create .ref-create-heading{margin-bottom:18px}
+.ref-create .ref-create-card{width:100%;max-width:none}
+.ref-create .ref-create-card .card-body{padding:28px 32px 20px}
+.ref-create.ref-create--simple .ref-create-card .card-body>.row>.form-group,
+.ref-create.ref-create--simple .ref-create-card .card-body>.row>[class*="col-"]{flex:0 0 50%;max-width:50%}
+.ref-create.ref-create--simple .ref-create-card .card-body>.row>.row{width:100%;display:flex;flex-wrap:wrap;margin:0}
+.ref-create.ref-create--simple .ref-create-card .card-body>.row>.row>.form-group,
+.ref-create.ref-create--simple .ref-create-card .card-body>.row>.row>[class*="col-"]{flex:0 0 50%;max-width:50%}
+.ref-create.ref-create--simple .ref-create-footer-note{display:flex}
+.ref-create .ref-create-card .card-footer{padding:18px 32px}
+@media(max-width:767px){
+ .ref-create,.ref-create.ref-create--simple{margin:10px 0 24px}
+ .ref-create.ref-create--simple .ref-create-card .card-body>.row>.form-group,
+ .ref-create.ref-create--simple .ref-create-card .card-body>.row>[class*="col-"],
+ .ref-create.ref-create--simple .ref-create-card .card-body>.row>.row>.form-group,
+ .ref-create.ref-create--simple .ref-create-card .card-body>.row>.row>[class*="col-"]{flex:0 0 100%;max-width:100%}
+ .ref-create .ref-create-card .card-body{padding:20px 18px}
+ .ref-create .ref-create-card .card-footer{padding:16px 18px}
+}
 </style>
