@@ -42,6 +42,7 @@ class DepartamentoController extends Controller
 
     public function store(Request $request)
     {
+        $request->validate(['dep_descripcion' => 'required|string|max:255|regex:/\\S/u']);
         $input = $request->all();
 
         $Departamento = DB::table('departamento')
