@@ -19,7 +19,7 @@
             <div class="card ref-create-card">
                 {!! Form::open([
                 'route' => 'clientes.store',
-                'class' => 'confirm-submit',
+                'class' => 'ref-validated-form',
                 'files' => true,
             ]) !!}
                 <div class="ref-create-card-header">
@@ -44,4 +44,5 @@
             </div>
         </div>
     </div>
+    @include('partials.ref_create_validation')
 @endsection
