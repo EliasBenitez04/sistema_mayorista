@@ -72,6 +72,30 @@
         .select2-selection__arrow {
             height: 42px !important;
         }
+
+        /* Menú de usuario GTS: estilos limitados al desplegable de la barra superior */
+        .gts-user-trigger { gap: 7px; padding-left: 12px !important; padding-right: 12px !important; border-radius: 9px; transition: background .18s ease; }
+        .gts-user-trigger:hover, .gts-user-trigger[aria-expanded="true"] { background: rgba(255,255,255,.13); }
+        .gts-user-trigger-avatar { width: 32px; height: 32px; border-radius: 50%; object-fit: cover; border: 2px solid rgba(255,255,255,.8); }
+        .gts-user-trigger-name { font-size: 13px; font-weight: 700; max-width: 145px; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+        .gts-user-chevron { font-size: 10px; opacity: .75; transition: transform .2s; }
+        .gts-user-trigger[aria-expanded="true"] .gts-user-chevron { transform: rotate(180deg); }
+        .gts-user-dropdown { width: min(340px, calc(100vw - 24px)); border: 1px solid #e6ebf2; border-radius: 15px; background: #fff; overflow: hidden; box-shadow: 0 14px 36px rgba(18,37,63,.22); margin-top: 9px; }
+        .gts-user-dropdown-header { display: flex; gap: 13px; align-items: center; padding: 21px 18px; background: linear-gradient(120deg,#f1f6ff,#fff); border-bottom: 1px solid #e7edf5; min-width: 0; }
+        .gts-user-avatar { width: 62px; height: 62px; flex-shrink: 0; border-radius: 50%; object-fit: cover; border: 3px solid #fff; box-shadow: 0 3px 11px rgba(39,70,114,.14); }
+        .gts-user-details { display: flex; flex-direction: column; min-width: 0; gap: 3px; }
+        .gts-user-caption { font-size: 10px; font-weight: 800; letter-spacing: .9px; color: #267452; }
+        .gts-user-fullname { font-size: 17px; line-height: 1.3; color: #1e2d43; overflow-wrap: anywhere; }
+        .gts-user-email { color: #687a90; font-size: 12px; overflow-wrap: anywhere; }
+        .gts-user-dropdown-actions { padding: 10px; display: flex; flex-direction: column; gap: 5px; }
+        .gts-user-action { display: flex; align-items: center; gap: 11px; width: 100%; padding: 11px 12px; background: transparent; border: 0; border-radius: 9px; font-weight: 650; font-size: 13px; text-decoration: none !important; text-align: left; cursor: pointer; color: #34465d; transition: background .18s ease, transform .18s ease; }
+        .gts-user-action:hover, .gts-user-action:focus { background: #eff5ff; color: #1e5bc4; outline: none; transform: translateX(2px); }
+        .gts-user-action-icon { width: 34px; height: 34px; display: inline-flex; justify-content: center; align-items: center; background: #eff5fc; border-radius: 9px; color: #3568ac; font-size: 15px; }
+        .gts-user-action-arrow { font-size: 10px; margin-left: auto; color: #94a3b8; }
+        .gts-user-logout { color: #b53642; }
+        .gts-user-logout .gts-user-action-icon { color: #cc3a46; background: #fff0f1; }
+        .gts-user-logout:hover, .gts-user-logout:focus { color: #aa2834; background: #fff1f2; }
+        @media(max-width: 575px) { .gts-user-dropdown { margin-right: 2px; } .gts-user-dropdown-header { padding: 17px 14px; } }
     </style>
 </head>
 
@@ -125,30 +149,41 @@
 
             <ul class="navbar-nav ml-auto">
                 <li class="nav-item dropdown user-menu">
-                    <a href="#" class="nav-link dropdown-toggle" data-toggle="dropdown">
-                        <img src="{{ asset('storage/logos/gts_logo.jpg') }}" class="img-circle elevation-2 mr-2"
-                            alt="Logo" style="width:30px; height:30px; opacity: .9;">
-                        <span class="d-none d-md-inline text-bold">{{ Auth::user()->name }}</span>
+                    <a href="#" class="nav-link dropdown-toggle gts-user-trigger d-flex align-items-center"
+                        data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                        <img src="{{ asset('storage/logos/gts_logo.jpg') }}" class="gts-user-trigger-avatar"
+                            alt="Avatar de usuario">
+                        <span class="d-none d-md-inline gts-user-trigger-name">{{ Auth::user()->name }}</span>
+                        <i class="fas fa-chevron-down gts-user-chevron ml-2"></i>
                     </a>
-                    <ul class="dropdown-menu dropdown-menu-lg dropdown-menu-right">
-                        <li class="user-header bg-primary text-center">
-                            <!-- Logo -->
-                            <img src="{{ asset('storage/logos/gts_logo.jpg') }}" class="img-circle elevation-2 mb-2"
-                                alt="Logo" style="width:60px; height:60px; opacity: .9;">
-                            <!-- Nombre del usuario -->
-                            <p>{{ Auth::user()->name }}</p>
-                        </li>
-                        <li class="user-footer">
-                            <a href="{!! url('users/detail/perfil') !!}" class="btn btn-success btn-flat">Perfil</a>
-                            <a href="#" class="btn btn-danger btn-flat float-right"
-                                onclick="event.preventDefault(); document.getElementById('logout-form').submit();">
-                                Salir
+                    <div class="dropdown-menu dropdown-menu-right gts-user-dropdown p-0">
+                        <div class="gts-user-dropdown-header">
+                            <img src="{{ asset('storage/logos/gts_logo.jpg') }}"
+                                alt="Avatar de usuario" class="gts-user-avatar">
+                            <div class="gts-user-details">
+                                <span class="gts-user-caption">CUENTA ACTIVA</span>
+                                <strong class="gts-user-fullname">{{ Auth::user()->name }}</strong>
+                                @if (Auth::user()->email)
+                                    <span class="gts-user-email">{{ Auth::user()->email }}</span>
+                                @endif
+                            </div>
+                        </div>
+                        <div class="gts-user-dropdown-actions">
+                            <a href="{{ url('users/detail/perfil') }}" class="gts-user-action gts-user-profile">
+                                <span class="gts-user-action-icon"><i class="far fa-user-circle"></i></span>
+                                <span>Mi perfil</span>
+                                <i class="fas fa-chevron-right gts-user-action-arrow"></i>
                             </a>
+                            <button type="submit" form="logout-form" class="gts-user-action gts-user-logout">
+                                <span class="gts-user-action-icon"><i class="fas fa-sign-out-alt"></i></span>
+                                <span>Cerrar sesión</span>
+                                <i class="fas fa-chevron-right gts-user-action-arrow"></i>
+                            </button>
                             <form id="logout-form" action="{{ route('logout') }}" method="POST" class="d-none">
                                 @csrf
                             </form>
-                        </li>
-                    </ul>
+                        </div>
+                    </div>
                 </li>
             </ul>
         </nav>
