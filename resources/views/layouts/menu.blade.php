@@ -5,7 +5,6 @@
     </a>
 </li>
 
-<br>
 @php
     $menuCargaDatos = request()->routeIs(
         'lineas.*',
@@ -31,21 +30,21 @@
                 <a href="{{ route('articulos.index') }}"
                     class="nav-link {{ request()->routeIs('articulos.*') ? 'active' : '' }}">
                     <i class="nav-icon fas fa-box-open"></i>
-                    <p>- Artículos</p>
+                    <p>Artículos</p>
                 </a>
             </li>
         @endcan
         <li class="nav-item">
             <a href="{{ route('stocks.index') }}" class="nav-link {{ request()->routeIs('stocks.*') ? 'active' : '' }}">
                 <i class="nav-icon fas fa-sync-alt"></i>
-                <p>- Importar Stock</p>
+                <p>Importar Stock</p>
             </a>
         </li>
         @can('lineas index')
             <li class="nav-item">
                 <a href="{{ route('lineas.index') }}" class="nav-link {{ request()->routeIs('lineas.*') ? 'active' : '' }}">
                     <i class="nav-icon fas fa-tshirt"></i>
-                    <p>- Lineas</p>
+                    <p>Líneas</p>
                 </a>
             </li>
         @endcan
@@ -54,7 +53,7 @@
                 <a href="{{ route('sucursal.index') }}"
                     class="nav-link {{ request()->routeIs('sucursal.*') ? 'active' : '' }}">
                     <i class="nav-icon fas fa-store"></i>
-                    <p>- Sucursales</p>
+                    <p>Sucursales</p>
                 </a>
             </li>
         @endcan
@@ -63,7 +62,7 @@
                 <a href="{{ route('clientes.index') }}"
                     class="nav-link {{ request()->routeIs('clientes.*') ? 'active' : '' }}">
                     <i class="nav-icon fas fa-user-friends"></i>
-                    <p>- Clientes</p>
+                    <p>Clientes</p>
                 </a>
             </li>
         @endcan
@@ -72,7 +71,7 @@
                 <a href="{{ route('Departamentos.index') }}"
                     class="nav-link {{ request()->routeIs('Departamentos.*') ? 'active' : '' }}">
                     <i class="nav-icon fas fa-map-marked-alt"></i>
-                    <p>- Departamentos</p>
+                    <p>Departamentos</p>
                 </a>
             </li>
         @endcan
@@ -82,15 +81,12 @@
                 <a href="{{ route('ciudades.index') }}"
                     class="nav-link {{ request()->routeIs('ciudades.*') ? 'active' : '' }}">
                     <i class="nav-icon fas fa-city"></i>
-                    <p>- Ciudades</p>
+                    <p>Ciudades</p>
                 </a>
             </li>
         @endcan
     </ul>
 </li>
-
-
-<br>
 
 <li class="nav-item {{ request()->routeIs('pedido_compras.*') ? 'menu-open' : '' }}">
     <a href="#" class="nav-link {{ request()->routeIs('pedido_compras.*') ? 'active' : '' }}">
@@ -113,7 +109,6 @@
         @endcan
     </ul>
 </li>
-<br>
 
 @can('carga_fotos index')
     <li class="nav-item {{ request()->routeIs('carga_fotos.*') ? 'menu-open' : '' }}">
@@ -130,12 +125,12 @@
                 <a href="{{ route('carga_fotos.index') }}"
                     class="nav-link {{ request()->routeIs('carga_fotos.*') ? 'active' : '' }}">
                     <i class="nav-icon fas fa-camera"></i>
-                    <p>- Carga De Fotos</p>
+                    <p>Carga de Fotos</p>
                 </a>
             </li>
         </ul>
     </li>
-    <br>
+
 @endcan
 <!-- Configuraciones -->
 <li class="nav-item {{ Request::is('usuarios*', 'roles*', 'permissions*', 'auditoria*') ? 'menu-open' : '' }}">
@@ -153,7 +148,7 @@
         <li class="nav-item">
             <a href="{{ route('usuarios.index') }}" class="nav-link {{ Request::is('usuarios*') ? 'active' : '' }}">
                 <i class="nav-icon fas fa-users"></i>
-                <p>- Usuarios</p>
+                <p>Usuarios</p>
             </a>
         </li>
 
@@ -161,14 +156,14 @@
             <a href="{{ route('permissions.index') }}"
                 class="nav-link {{ Request::is('permissions*') ? 'active' : '' }}">
                 <i class="nav-icon fas fa-key"></i>
-                <p>- Permisos</p>
+                <p>Permisos</p>
             </a>
         </li>
 
         <li class="nav-item">
             <a href="{{ route('roles.index') }}" class="nav-link {{ Request::is('roles*') ? 'active' : '' }}">
                 <i class="nav-icon fas fa-user-shield"></i>
-                <p>- Roles</p>
+                <p>Roles</p>
             </a>
         </li>
     </ul>
