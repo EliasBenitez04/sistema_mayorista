@@ -3,7 +3,7 @@
     <!-- Fecha de Recepción -->
     <div class="form-group col-md-6">
         {!! Form::label('fot_fecha', 'Fecha de Recepción', ['class' => 'form-label fw-semibold']) !!}
-        {!! Form::date('fot_fecha', $fechaActual ?? now()->format('Y-m-d'), [
+        {!! Form::date('fot_fecha', old('fot_fecha', isset($foto) && $foto->fot_fecha ? \Carbon\Carbon::parse($foto->fot_fecha)->format('Y-m-d') : now()->format('Y-m-d')), [
             'class' => 'form-control',
             'required',
             'disabled' => true,
@@ -84,7 +84,7 @@
         {!! Form::label('fot_img', 'Imagen', ['class' => 'form-label fw-semibold']) !!}
         {!! Form::file('fot_img', [
             'class' => 'form-control',
-            isset($foto) ? '' : 'required',
+            'required' => !isset($foto),
             'accept' => 'image/*',
             'id' => 'fot_img_input',
             'data-current' => isset($foto) ? Storage::url('fotos/' . $foto->fot_img) : '',
@@ -94,9 +94,7 @@
             @if (isset($foto) && $foto->fot_img)
                 <img src="{{ Storage::url('fotos/' . $foto->fot_img) }}" alt="Imagen"
                     style="width: 120px; height: auto; border-radius: 8px; box-shadow: 0 4px 8px rgba(0,0,0,0.15); display:block; margin-bottom:5px;">
-                <button type="button" class="btn btn-sm btn-danger mt-2" id="removeImageBtn">
-                    <i class="fas fa-trash-alt"></i> Eliminar
-                </button>
+                <small class="d-block text-muted">Imagen guardada. Seleccioná otra para reemplazarla.</small>
             @endif
         </div>
     </div>
@@ -104,114 +102,27 @@
 </div>
 
 <script>
-    document.addEventListener('DOMContentLoaded', () => {
-
-        const form = document.querySelector('form');
-        const persistFields = document.querySelectorAll('.persist');
-        const fileInput = document.getElementById('fot_img_input');
-        const preview = document.getElementById('imagePreview');
-
-        if (!form) return;
-
-        // Detectar si es edición
-        const isEdit = form.dataset.edit === "true";
-
-        /* ===============================
-           PERSISTENCIA DE CAMPOS
-        =============================== */
-        persistFields.forEach(field => {
-            const key = field.dataset.key;
-            if (!key) return;
-
-            // Solo cargar valores de localStorage si NO es edición
-            if (!isEdit) {
-                const savedValue = localStorage.getItem(key);
-                if (savedValue) {
-                    if ($(field).hasClass('select2-hidden-accessible')) {
-                        $(field).val(savedValue).trigger('change');
-                    } else {
-                        field.value = savedValue;
-                    }
-                }
-            }
-
-            // Guardar cambios solo si NO es edición
-            const saveValue = () => {
-                if (!isEdit) {
-                    localStorage.setItem(key, field.value);
-                }
-            };
-            field.addEventListener('input', saveValue);
-            field.addEventListener('change', saveValue);
-        });
-
-        /* ===============================
-           IMAGEN
-        =============================== */
-        function renderImagePreview(imgData) {
-            if (!preview) return;
-            preview.innerHTML = '';
-
-            const img = document.createElement('img');
-            img.src = imgData;
-            img.style.width = '120px';
-            img.style.borderRadius = '8px';
-            img.style.boxShadow = '0 4px 8px rgba(0,0,0,0.15)';
-            img.style.display = 'block';
-            img.style.marginBottom = '8px';
-
-            const removeBtn = document.createElement('button');
-            removeBtn.type = 'button';
-            removeBtn.className = 'btn btn-sm btn-danger';
-            removeBtn.innerHTML = '<i class="fas fa-trash-alt"></i> Eliminar';
-
-            removeBtn.addEventListener('click', () => {
-                if (fileInput) fileInput.value = '';
-                preview.innerHTML = '';
-                if (!isEdit) localStorage.removeItem('fot_img');
-            });
-
-            preview.appendChild(img);
-            preview.appendChild(removeBtn);
-        }
-
-        // Imagen inicial
-        if (fileInput) {
-            const existingImg = fileInput.dataset.current;
-            if (isEdit && existingImg) {
-                renderImagePreview(existingImg);
-            } else {
-                const savedImg = localStorage.getItem('fot_img');
-                if (savedImg) renderImagePreview(savedImg);
-            }
-        }
-
-        // Cambiar imagen
-        if (fileInput) {
-            fileInput.addEventListener('change', (e) => {
-                const file = e.target.files[0];
-                if (!file) return;
-
-                const reader = new FileReader();
-                reader.onload = function(ev) {
-                    const imgData = ev.target.result;
-                    if (!isEdit) localStorage.setItem('fot_img', imgData);
-                    renderImagePreview(imgData);
-                };
-                reader.readAsDataURL(file);
-            });
-        }
-
-        // Limpiar storage al guardar
-        form.addEventListener('submit', () => {
-            if (!isEdit) {
-                persistFields.forEach(field => {
-                    const key = field.dataset.key;
-                    if (key) localStorage.removeItem(key);
-                });
-                localStorage.removeItem('fot_img');
-            }
-        });
-
+document.addEventListener('DOMContentLoaded', function () {
+    const fileInput = document.getElementById('fot_img_input');
+    const preview = document.getElementById('imagePreview');
+    if (!fileInput || !preview) return;
+    const initialHtml = preview.innerHTML;
+    fileInput.addEventListener('change', function () {
+        const file = this.files && this.files[0];
+        if (!file) { preview.innerHTML = initialHtml; return; }
+        if (!file.type.startsWith('image/')) { preview.innerHTML = ''; return; }
+        const objectUrl = URL.createObjectURL(file);
+        preview.innerHTML = '';
+        const img = document.createElement('img');
+        img.src = objectUrl;
+        img.alt = 'Vista previa de la nueva fotografía';
+        img.style.cssText = 'width:180px;max-height:200px;object-fit:contain;border-radius:10px;border:1px solid #dce5ef';
+        img.onload = function () { URL.revokeObjectURL(objectUrl); };
+        preview.appendChild(img);
+        const message = document.createElement('small');
+        message.className = 'd-block text-muted mt-1';
+        message.textContent = 'Vista previa de la imagen seleccionada';
+        preview.appendChild(message);
     });
+});
 </script>
