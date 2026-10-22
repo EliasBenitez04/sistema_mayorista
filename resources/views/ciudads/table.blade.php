@@ -1,8 +1,9 @@
-<div class="card shadow-sm">
-    <div class="card-body p-0">
+@include('partials.ref_table_style')
+
+    <div class="card-body p-0 ref-table-card">
         <div class="table-responsive">
-            <table class="table table-hover table-striped table-bordered mb-0" id="ciudades-table">
-                <thead class="thead-dark text-center">
+            <table class="table table-hover table-striped mb-0" id="ciudades-table">
+                <thead class="text-center">
                     <tr>
                         <th style="width: 80px;">#</th>
                         <th class="text-left">Descripción</th>
@@ -14,16 +15,16 @@
                 <tbody>
                     @forelse ($ciudad as $value)
                         <tr class="text-center align-middle">
-                            <td>{{ $value->id_ciudad }}</td>
-                            <td class="text-left">{{ $value->ciu_descripcion }}</td>
+                            <td><span class="ref-id">{{ $value->id_ciudad }}</span></td>
+                            <td class="text-left ref-primary"><i class="fas fa-city text-muted mr-1"></i>{{ $value->ciu_descripcion }}</td>
 
                             @canany(['ciudades edit', 'ciudades destroy'])
                                 <td>
                                     {!! Form::open(['route' => ['ciudades.destroy', $value->id_ciudad], 'method' => 'delete']) !!}
-                                    <div class="btn-group btn-group-sg" role="group">
+                                    <div class="ref-actions" role="group">
                                         @can('ciudades edit')
                                             <a href="{{ route('ciudades.edit', [$value->id_ciudad]) }}"
-                                                class="btn btn-primary btn-sg" title="Editar">
+                                                class="btn btn-primary" title="Editar">
                                                 <i class="far fa-edit"></i>
                                             </a>
                                         @endcan
@@ -31,7 +32,7 @@
                                         @can('ciudades destroy')
                                             {!! Form::button('<i class="fas fa-trash"></i>', [
                                                 'type' => 'button',
-                                                'class' => 'btn btn-danger btn-sg alert-delete',
+                                                'class' => 'btn btn-danger alert-delete',
                                                 'data-mensaje' => $value->ciu_descripcion,
                                                 'title' => 'Inactivar',
                                             ]) !!}
@@ -55,14 +56,4 @@
         </div>
     </div>
 
-    <div class="card-footer clearfix bg-light">
-        <div class="float-left text-muted">
-            Mostrando {{ $ciudad->firstItem() }} -
-            {{ $ciudad->lastItem() }} de
-            {{ $ciudad->total() }} registros
-        </div>
-        <div class="float-right">
-            {{ $ciudad->links() }}
-        </div>
-    </div>
-</div>
+    <div class="ref-footer"><div class="ref-footer-info">Mostrando <strong>{{ $ciudad->firstItem() ?? 0 }}</strong> - <strong>{{ $ciudad->lastItem() ?? 0 }}</strong> de <strong>{{ $ciudad->total() }}</strong> registros</div><div>{{ $ciudad->links() }}</div></div>
