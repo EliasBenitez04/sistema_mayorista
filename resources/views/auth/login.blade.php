@@ -195,7 +195,7 @@
                         <i class="fas fa-sign-in-alt"></i> Ingresar al sistema
                     </button>
                 </form>
-                <div class="gts-login-secure"><i class="fas fa-lock"></i> Tus credenciales se envían de forma segura cuando utilizás HTTPS.</div>
+                {{-- <div class="gts-login-secure"><i class="fas fa-lock"></i> Tus credenciales se envían de forma segura cuando utilizás HTTPS.</div> --}}
                 <div class="gts-login-footer">
                     <i class="fas fa-shield-alt"></i> Acceso exclusivo para usuarios autorizados
                     <div>© {{ date('Y') }} GTS MAYORISTA</div>
