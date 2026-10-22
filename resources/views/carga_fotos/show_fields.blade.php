@@ -1,7 +1,6 @@
 @php
-    $rutaFoto = $foto->fot_img ? 'fotos/' . basename($foto->fot_img) : null;
-    $fotoDisponible = $rutaFoto && \Illuminate\Support\Facades\Storage::disk('public')->exists($rutaFoto);
-    $fotoUrl = $fotoDisponible ? \Illuminate\Support\Facades\Storage::disk('public')->url($rutaFoto) : null;
+    $fotoDisponible = $foto->foto_disponible;
+    $fotoUrl = $foto->foto_url;
 @endphp
 <div class="row">
     <div class="col-lg-5 mb-4">
@@ -35,7 +34,7 @@
                     <div class="text-center text-muted p-4">
                         <i class="far fa-image fa-3x mb-3"></i>
                         <p class="mb-1">No se encontró la imagen de este registro.</p>
-                        <small>Verificá que el archivo exista en storage/app/public/fotos y que storage esté enlazado.</small>
+                        <small>Verificá que el archivo exista en public/storage/fotos.</small>
                     </div>
                 @endif
             </div>
