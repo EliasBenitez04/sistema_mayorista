@@ -5,6 +5,35 @@ document.addEventListener('DOMContentLoaded', function () {
         form.classList.remove('confirm-submit');
         form.noValidate = true;
         let sending = false;
+        // Requisitos de cada pantalla. No afectamos los formularios de Pedidos.
+        const requiredByModule = {
+            clientes: ['cli_ci','cli_nombre','cli_direccion','cli_telefono','id_departamento','id_ciudad'],
+            ciudads: ['ciu_descripcion'],
+            sucursals: ['suc_descri','suc_direccion','suc_telefono'],
+            departamentos: ['dep_descripcion'],
+            lineas: ['linea_desc'],
+            articulos: ['art_codigo','art_descripcion','art_precio','art_iva','prec_vent'],
+            usuarios: ['name','email','ci','password'],
+            permissions: ['name'],
+            roles: ['name'],
+            stocks: ['sucursal','codigo','descripcion','cantidad'],
+            carga_fotos: ['fot_ot','fot_costo','fot_venta','fot_desc','linea_cod','fot_img']
+        };
+        const moduleName = Object.keys(requiredByModule).find(function (name) {
+            return form.closest('.ref-create') && document.querySelector('input[name="_token"]') &&
+                (form.action.includes('/' + ({
+                  ciudads:'ciudades',sucursals:'sucursal',departamentos:'Departamentos'
+                }[name] || name));
+        });
+        (requiredByModule[moduleName] || []).forEach(function (name) {
+            const field = Array.from(form.elements).find(function (element) { return element.name === name; });
+            if (field && !field.disabled) field.required = true;
+        });
+        if (moduleName === 'roles') {
+            // Un rol sin permisos no debe registrarse.
+            form.dataset.mustChoosePermission = '1';
+        }
+
 
         const mark = function (field, invalid) {
             if (!field || !field.classList || field.type === 'hidden') return;
@@ -36,6 +65,10 @@ document.addEventListener('DOMContentLoaded', function () {
                 mark(field, fails);
                 return fails;
             });
+            if (form.dataset.mustChoosePermission === '1' && !form.querySelector('input[name="permission[]"]:checked')) {
+                await Swal.fire({icon:'info',title:'Verificá los datos',text:'Seleccioná al menos un permiso para el rol.',confirmButtonText:'Revisar'});
+                return;
+            }
             if (invalid.length) {
                 const first = invalid[0];
                 await Swal.fire({
