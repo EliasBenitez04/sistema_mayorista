@@ -38,6 +38,11 @@ class RoleController extends Controller
 
     public function store(Request $request)
     {
+        $request->validate([
+            'name' => 'required|string|max:255|regex:/\\S/u|unique:roles,name',
+            'permission' => 'required|array|min:1',
+            'permission.*' => 'integer|exists:permissions,id',
+        ]);
         $input = $request->all();
 
         $input['guard_name'] = 'web';
