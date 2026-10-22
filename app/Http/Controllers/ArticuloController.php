@@ -137,6 +137,15 @@ class ArticuloController extends Controller
 
     public function store(Request $request)
     {
+        // Los precios del formulario se muestran con separador de miles (ej. 150.000).
+        // Normalizar antes de validar y guardar para conservar el valor real.
+        foreach (['art_precio', 'prec_vent'] as $campoPrecio) {
+            if ($request->filled($campoPrecio)) {
+                $request->merge([
+                    $campoPrecio => str_replace('.', '', trim((string) $request->input($campoPrecio)))
+                ]);
+            }
+        }
         $request->validate([
             'art_codigo' => 'required|string|max:255|regex:/\\S/u',
             'art_descripcion' => 'required|string|max:255|regex:/\\S/u',
