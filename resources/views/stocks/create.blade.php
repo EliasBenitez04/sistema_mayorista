@@ -40,4 +40,5 @@
             </div>
         </div>
     </div>
+    @include('partials.ref_create_validation')
 @endsection
