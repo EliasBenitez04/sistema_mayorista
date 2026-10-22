@@ -1,214 +1,174 @@
 <!DOCTYPE html>
 <html lang="es">
-
 <head>
     <meta charset="utf-8">
-    <title>{{ config('app.name') }}</title>
+    <title>Ingresar | {{ config('app.name') }}</title>
     <meta name="viewport" content="width=device-width, initial-scale=1">
-
-    <!-- Font Awesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
-
-    <!-- App CSS -->
     <link href="{{ mix('css/app.css') }}" rel="stylesheet">
-
-    <!-- Fuente moderna -->
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
-
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <style>
-        body {
-            font-family: 'Inter', sans-serif;
-
-            /* 🔥 Fondo imagen + degradado */
+        * { box-sizing: border-box; }
+        body.login-page-gts {
+            margin: 0; min-height: 100vh; min-height: 100dvh; padding: 28px 16px;
+            display: flex; align-items: center; justify-content: center;
+            font-family: 'Inter', sans-serif; color: #24344c;
             background:
-                linear-gradient(135deg, rgba(0, 0, 0, 0.75), rgba(9, 94, 179, 0.877), rgba(0, 0, 0, 0.75)),
-                url("{{ asset('img/articulos/bg_sistema.png') }}");
-                
-
-            background-size: cover;
-            background-position: center;
-            background-repeat: no-repeat;
-
-            height: 100vh;
-            display: flex;
-            align-items: center;
-            justify-content: center;
+                linear-gradient(120deg,rgba(2,14,34,.85),rgba(7,55,112,.72) 51%,rgba(2,17,36,.85)),
+                url("{{ asset('img/articulos/bg_sistema.png') }}") center/cover no-repeat fixed;
+            position: relative; overflow-x: hidden;
+        }
+        body.login-page-gts::before {
+            content: ""; position: fixed; inset: 0; pointer-events: none;
+            background: radial-gradient(ellipse at 52% 20%,rgba(64,154,255,.20),transparent 48%);
+        }
+        .gts-login-wrap { width: 100%; max-width: 450px; position: relative; z-index: 1; }
+        .gts-login-card {
+            background: #fff; border-radius: 20px; overflow: hidden;
+            box-shadow: 0 24px 70px rgba(0,10,32,.35);
+            border: 1px solid rgba(255,255,255,.35);
+        }
+        .gts-login-header {
+            background: linear-gradient(125deg,#1761db,#163e94);
+            color: #fff; text-align: center; padding: 30px 28px 28px;
+        }
+        .gts-login-brand {
+            width: 70px; height: 70px; margin: 0 auto 16px; border-radius: 20px;
+            display: flex; align-items: center; justify-content: center;
+            background: rgba(255,255,255,.97); box-shadow: 0 8px 20px rgba(0,20,70,.17);
             overflow: hidden;
         }
-
-        .login-box {
-            width: 400px;
-            animation: fadeIn 1s ease;
+        .gts-login-brand img { width: 61px; height: 61px; object-fit: contain; }
+        .gts-login-header h1 { font-size: 23px; font-weight: 800; letter-spacing: -.5px; margin: 0; color: #fff; }
+        .gts-login-header p { font-size: 13px; color: rgba(255,255,255,.84); margin: 8px 0 0; }
+        .gts-login-body { padding: 30px 32px 24px; }
+        .gts-login-welcome { font-size: 17px; font-weight: 750; letter-spacing: -.3px; color: #21314b; margin: 0 0 5px; }
+        .gts-login-subtitle { margin: 0 0 24px; color: #76859b; font-size: 12px; line-height: 1.6; }
+        .gts-login-field { margin-bottom: 20px; }
+        .gts-login-field label { font-size: 13px; font-weight: 700; color: #34445b; margin-bottom: 8px; display: block; }
+        .gts-login-input { position: relative; }
+        .gts-login-input .field-icon {
+            position: absolute; left: 15px; top: 50%; transform: translateY(-50%);
+            color: #7186a1; z-index: 1; font-size: 15px; pointer-events: none;
         }
-
-        .login-card {
-            border-radius: 15px;
-            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.35);
-            overflow: hidden;
-            background: #ffffff;
+        .gts-login-input input {
+            height: 48px; width: 100%; padding: 0 49px 0 43px;
+            background: #f7f9fd; border: 1px solid #dce5f1; border-radius: 10px;
+            font-size: 14px; color: #24344c; box-shadow: none !important;
+            transition: border-color .18s,background .18s,box-shadow .18s;
         }
-
-        .login-header {
-            background: linear-gradient(135deg, #2563eb, #1e40af);
-            color: #fff;
-            padding: 30px 20px;
-            text-align: center;
+        .gts-login-input input::placeholder { color: #97a4b6; }
+        .gts-login-input input:focus { background: #fff; border-color: #4383e7; outline: none; box-shadow: 0 0 0 3px rgba(45,116,228,.12) !important; }
+        .gts-password-toggle {
+            position: absolute; right: 5px; top: 5px; bottom: 5px;
+            border: 0; border-radius: 8px; padding: 0; width: 39px;
+            background: transparent; color: #5477ae; cursor: pointer; font-size: 15px;
         }
-
-        .login-header h1 {
-            font-size: 26px;
-            font-weight: 700;
-            margin: 0;
+        .gts-password-toggle:hover,.gts-password-toggle:focus { background: #e7efff; outline: none; }
+        .gts-login-submit {
+            display: flex; align-items: center; justify-content: center; gap: 9px;
+            background: #2463e6; color: #fff; font-size: 14px; font-weight: 700;
+            border: 0; border-radius: 10px; min-height: 48px; width: 100%;
+            margin-top: 26px; transition: background .2s,transform .2s,box-shadow .2s;
+            box-shadow: 0 6px 15px rgba(36,99,230,.18); cursor: pointer;
         }
-
-        .login-header p {
-            font-size: 14px;
-            opacity: 0.85;
-            margin-top: 5px;
+        .gts-login-submit:hover { background: #174cbc; box-shadow: 0 8px 19px rgba(36,99,230,.24); transform: translateY(-1px); color: #fff; }
+        .gts-login-submit:disabled { opacity: .7; cursor: wait; transform: none; }
+        .gts-login-alert {
+            margin: 0 0 18px; background: #fff5f4; border: 1px solid #ffdcd8;
+            border-radius: 9px; padding: 11px 13px; color: #a5332b; font-size: 12px; line-height: 1.5;
         }
-
-        .login-body {
-            padding: 35px 30px;
+        .gts-login-footer {
+            border-top: 1px solid #edf0f5; padding-top: 19px; margin-top: 26px;
+            color: #8a97a8; text-align: center; font-size: 11px; line-height: 1.7;
         }
-
-        .form-control {
-            height: 50px;
-            border-radius: 10px;
-            border: 1px solid #d1d5db;
-            transition: all 0.3s ease;
+        .gts-login-footer i { color: #4d8b69; margin-right: 5px; }
+        @media(max-width: 480px) {
+            body.login-page-gts { padding: 16px 12px; align-items: center; }
+            .gts-login-header { padding: 25px 22px 23px; }
+            .gts-login-body { padding: 25px 22px 20px; }
+            .gts-login-header h1 { font-size: 21px; }
         }
-
-        .form-control:focus {
-            box-shadow: 0 0 10px rgba(37, 99, 235, 0.5);
-            border-color: #2563eb;
-        }
-
-        .btn-login {
-            height: 50px;
-            border-radius: 12px;
-            font-weight: 600;
-            background: #2563eb;
-            border: none;
-            transition: background 0.3s ease, transform 0.2s ease;
-        }
-
-        .btn-login:hover {
-            background: #1e40af;
-            transform: translateY(-2px);
-        }
-
-        .input-group-text {
-            background: transparent;
-            border-left: 0;
-            cursor: pointer;
-        }
-
-        .footer-text {
-            font-size: 12px;
-            color: #6b7280;
-            text-align: center;
-            margin-top: 25px;
-        }
-
-        @keyframes fadeIn {
-            0% {
-                opacity: 0;
-                transform: translateY(-20px);
-            }
-            100% {
-                opacity: 1;
-                transform: translateY(0);
-            }
-        }
-
-        .input-group .fas {
-            color: #2563eb;
-        }
+        @media(prefers-reduced-motion:reduce) { .gts-login-submit,.gts-login-input input { transition: none; } }
     </style>
 </head>
+<body class="login-page-gts">
+    <main class="gts-login-wrap">
+        <div class="gts-login-card">
+            <header class="gts-login-header">
+                <div class="gts-login-brand">
+                    <img src="{{ asset('storage/logos/gts_logo.jpg') }}" alt="Logo GTS Mayorista">
+                </div>
+                <h1>GTS MAYORISTA</h1>
+                <p>Sistema de gestión mayorista</p>
+            </header>
+            <div class="gts-login-body">
+                <h2 class="gts-login-welcome">Bienvenido de nuevo</h2>
+                <p class="gts-login-subtitle">Ingresá tus credenciales para acceder al sistema.</p>
 
-<body>
+                @if ($errors->any())
+                    <div class="gts-login-alert" role="alert">
+                        <i class="fas fa-exclamation-circle mr-1"></i>
+                        No pudimos iniciar sesión. Verificá tu usuario y contraseña.
+                    </div>
+                @endif
 
-    <div class="login-box">
-        <div class="login-card">
-
-            <div class="login-header">
-                <h1>{{ config('app.name') }}</h1>
-                <p>Acceso seguro al sistema</p>
-            </div>
-
-            <div class="login-body">
-
-                <form method="POST" action="{{ url('/login') }}">
+                <form method="POST" action="{{ url('/login') }}" id="gtsLoginForm">
                     @csrf
-
-                    <div class="form-group mb-4">
-                        <label class="mb-2 font-weight-bold">Usuario</label>
-                        <div class="input-group">
-                            <input type="text" name="name" value="{{ old('name') }}"
-                                class="form-control text-uppercase @error('name') is-invalid @enderror"
-                                placeholder="USUARIO" required oninput="this.value = this.value.toUpperCase();">
-                            <div class="input-group-append">
-                                <span class="input-group-text">
-                                    <i class="fas fa-user"></i>
-                                </span>
-                            </div>
+                    <div class="gts-login-field">
+                        <label for="name">Usuario</label>
+                        <div class="gts-login-input">
+                            <i class="far fa-user field-icon"></i>
+                            <input id="name" type="text" name="name" value="{{ old('name') }}"
+                                placeholder="Ingresá tu usuario" autocomplete="username"
+                                autocapitalize="characters" required maxlength="255"
+                                oninput="this.value = this.value.toUpperCase();">
                         </div>
-                        @error('name')
-                            <span class="invalid-feedback d-block">{{ $message }}</span>
-                        @enderror
                     </div>
-
-                    <div class="form-group mb-4">
-                        <label class="mb-2 font-weight-bold">Contraseña</label>
-                        <div class="input-group">
-                            <input type="password" id="password" name="password"
-                                class="form-control @error('password') is-invalid @enderror"
-                                placeholder="••••••••" required>
-                            <div class="input-group-append">
-                                <span class="input-group-text" onclick="togglePassword()">
-                                    <i class="fas fa-eye" id="toggleIcon"></i>
-                                </span>
-                            </div>
+                    <div class="gts-login-field">
+                        <label for="password">Contraseña</label>
+                        <div class="gts-login-input">
+                            <i class="fas fa-lock field-icon"></i>
+                            <input id="password" type="password" name="password"
+                                placeholder="Ingresá tu contraseña" autocomplete="current-password" required>
+                            <button id="gtsPasswordToggle" class="gts-password-toggle" type="button"
+                                aria-label="Mostrar contraseña" aria-pressed="false">
+                                <i class="far fa-eye" aria-hidden="true"></i>
+                            </button>
                         </div>
-                        @error('password')
-                            <span class="invalid-feedback d-block">{{ $message }}</span>
-                        @enderror
                     </div>
-
-                    <button type="submit" class="btn btn-primary btn-login btn-block">
-                        <i class="fas fa-sign-in-alt mr-1"></i> Ingresar
+                    <button class="gts-login-submit" type="submit" id="gtsLoginSubmit">
+                        <i class="fas fa-sign-in-alt"></i> Ingresar al sistema
                     </button>
                 </form>
-
-                <div class="footer-text">
-                    © {{ date('Y') }} {{ config('app.name') }} · Todos los derechos reservados
+                <div class="gts-login-footer">
+                    <i class="fas fa-shield-alt"></i> Acceso exclusivo para usuarios autorizados
+                    <div>© {{ date('Y') }} GTS MAYORISTA</div>
                 </div>
-
             </div>
         </div>
-    </div>
-
+    </main>
     <script src="{{ mix('js/app.js') }}"></script>
     @include('sweetalert::alert')
-
     <script>
-        function togglePassword() {
+        (function () {
             const password = document.getElementById('password');
-            const icon = document.getElementById('toggleIcon');
-
-            if (password.type === 'password') {
-                password.type = 'text';
-                icon.classList.remove('fa-eye');
-                icon.classList.add('fa-eye-slash');
-            } else {
-                password.type = 'password';
-                icon.classList.remove('fa-eye-slash');
-                icon.classList.add('fa-eye');
-            }
-        }
+            const toggle = document.getElementById('gtsPasswordToggle');
+            const submit = document.getElementById('gtsLoginSubmit');
+            const form = document.getElementById('gtsLoginForm');
+            toggle.addEventListener('click', function () {
+                const visible = password.type === 'password';
+                password.type = visible ? 'text' : 'password';
+                toggle.setAttribute('aria-label', visible ? 'Ocultar contraseña' : 'Mostrar contraseña');
+                toggle.setAttribute('aria-pressed', visible ? 'true' : 'false');
+                toggle.querySelector('i').className = visible ? 'far fa-eye-slash' : 'far fa-eye';
+            });
+            form.addEventListener('submit', function () {
+                if (!form.checkValidity()) return;
+                submit.disabled = true;
+                submit.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Ingresando...';
+            });
+        })();
     </script>
-
 </body>
-
 </html>
