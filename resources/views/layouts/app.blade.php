@@ -96,6 +96,29 @@
         .gts-user-logout .gts-user-action-icon { color: #cc3a46; background: #fff0f1; }
         .gts-user-logout:hover, .gts-user-logout:focus { color: #aa2834; background: #fff1f2; }
         @media(max-width: 575px) { .gts-user-dropdown { margin-right: 2px; } .gts-user-dropdown-header { padding: 17px 14px; } }
+
+        /* Foco de campos coherente en todos los formularios del sistema. */
+        .content-wrapper .form-control:focus,
+        .content-wrapper .custom-select:focus,
+        .content-wrapper input.form-control:focus,
+        .content-wrapper textarea.form-control:focus,
+        .content-wrapper select.form-control:focus {
+            border-color: #4385ff !important;
+            outline: 0;
+            background-color: #fff;
+            box-shadow: 0 0 0 3px rgba(67, 133, 255, .16) !important;
+            transition: border-color .16s ease, box-shadow .16s ease;
+        }
+        .content-wrapper .input-group:focus-within .input-group-text {
+            border-color: #4385ff;
+            color: #2868d5;
+        }
+        .content-wrapper .select2-container--default.select2-container--focus .select2-selection,
+        .content-wrapper .select2-container--default.select2-container--open .select2-selection {
+            border-color: #4385ff !important;
+            box-shadow: 0 0 0 3px rgba(67,133,255,.16);
+            outline: none;
+        }
     </style>
 </head>
 
