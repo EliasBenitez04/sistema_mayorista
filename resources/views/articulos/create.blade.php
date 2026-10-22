@@ -13,8 +13,6 @@
                 </div>
             </div>
 
-            @include('adminlte-templates::common.errors')
-            @include('sweetalert::alert')
 
             <div class="card ref-create-card">
                 {!! Form::open(['route' => 'articulos.store','class' => 'ref-validated-form' ]) !!}
