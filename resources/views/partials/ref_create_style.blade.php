@@ -33,10 +33,10 @@
 .ref-create .ref-create-footer-note{font-size:12px;color:#758399;display:flex;align-items:center;gap:7px;margin-right:auto}
 .ref-create .ref-create-footer-actions{display:flex;align-items:center;gap:10px;margin-left:auto}
 .ref-create .ref-create-card .card-footer .btn{display:inline-flex;align-items:center;justify-content:center;gap:7px;font-size:13px;font-weight:700;min-height:42px;min-width:125px;padding:9px 19px;border-radius:9px;box-shadow:none}
-.ref-create .ref-create-card .card-footer .btn-success{background:#21845a;border-color:#21845a;color:#fff}
-.ref-create .ref-create-card .card-footer .btn-success:hover{background:#196d49;border-color:#196d49}
-.ref-create .ref-create-card .card-footer .btn-primary,.ref-create .ref-create-card .card-footer .btn-default{background:#fff;color:#475569;border:1px solid #d5dfe9}
-.ref-create .ref-create-card .card-footer .btn-primary:hover,.ref-create .ref-create-card .card-footer .btn-default:hover{background:#f1f5f9}
+.ref-create .ref-create-card .card-footer .btn-success{background:#0d8335;border-color:#0d8335;color:#ffffff}
+.ref-create .ref-create-card .card-footer .btn-success:hover{background:#0d8335;border-color:#0d8335}
+.ref-create .ref-create-card .card-footer .btn-primary,.ref-create .ref-create-card .card-footer .btn-default{background:#1900ff;color:#ffffff;border:1px solid #d5dfe9}
+.ref-create .ref-create-card .card-footer .btn-primary:hover,.ref-create .ref-create-card .card-footer .btn-default:hover{background:#1900ff fixed;color:#ffffff;border:1px solid #d5dfe9}
 .ref-create .ref-create-card input[type=checkbox]{accent-color:#2563eb}
 @media(max-width:767px){.ref-create{margin:6px auto 24px}.ref-create .ref-create-heading{gap:12px;margin-bottom:16px}.ref-create .ref-create-icon{width:46px;height:46px;font-size:19px}.ref-create .ref-create-heading h1{font-size:21px}.ref-create .ref-create-heading p{font-size:12px}.ref-create .ref-create-card-header{padding:18px;gap:11px}.ref-create .ref-create-card .card-body{padding:20px 18px 8px}.ref-create .ref-create-card .card-footer{padding:15px 18px}.ref-create .ref-create-footer-note{flex-basis:100%}.ref-create .ref-create-footer-actions{width:100%;margin-left:0}.ref-create .ref-create-footer-actions .btn{flex:1;min-width:0}}
 
