@@ -1,4 +1,34 @@
 @include('partials.ref_table_style')
+    <style>
+        /* Vista compacta: permite visualizar las 15 filas por página sin alterar datos. */
+        .ref-table-card #articulos-table { font-size:12px; table-layout:auto; }
+        .ref-table-card #articulos-table thead th {
+            padding:8px 7px !important;
+            font-size:11px;
+            line-height:1.2;
+        }
+        .ref-table-card #articulos-table tbody td {
+            padding:4px 7px !important;
+            line-height:1.2;
+            height:33px;
+        }
+        .ref-table-card #articulos-table .ref-id {
+            height:24px;
+            min-width:26px;
+            padding:0 6px;
+            font-size:11px;
+        }
+        .ref-table-card #articulos-table .ref-actions { gap:4px; }
+        .ref-table-card #articulos-table .ref-actions .btn {
+            width:27px;
+            height:27px;
+            font-size:12px;
+        }
+        .ref-table-card #articulos-table .ref-actions .btn i { font-size:12px; }
+        .ref-table-card #articulos-table th,
+        .ref-table-card #articulos-table td { white-space:nowrap; }
+        .ref-table-card #articulos-table td.producto_descri { text-align:left; }
+    </style>
 <!DOCTYPE html>
 
 <html lang="es">
