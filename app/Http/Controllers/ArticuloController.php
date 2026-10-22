@@ -283,76 +283,105 @@ class ArticuloController extends Controller
 
     public function update($id, Request $request)
     {
-        // Buscar artículo
-        $articulos = DB::table('articulos')
-            ->where('id_articulo', $id)
-            ->first();
-
-        // Validar existencia
-        if (empty($articulos)) {
-            alert()->error('Error', 'Registro No Encontrado!');
-            return redirect(route('articulos.index'));
+        $articulo = DB::table('articulos')->where('id_articulo', $id)->first();
+        if (!$articulo) {
+            alert()->error('Error', 'Artículo no encontrado.');
+            return redirect()->route('articulos.index');
         }
 
-        $input = $request->all();
+        // Formato utilizado por los artículos con variantes: 060611707 + GR + 02.
+        $codigoOriginal = strtoupper(trim((string) $articulo->art_codigo));
+        $codigoNuevo = strtoupper(trim((string) $request->input('art_codigo', '')));
+        $patron = '/^([0-9]{9})([A-Z]{2})([A-Z0-9]{2})$/';
+        $esFamilia = preg_match($patron, $codigoOriginal, $origen);
+        $esNuevoValido = preg_match($patron, $codigoNuevo, $destino);
+        $aplicarFamilia = $request->boolean('actualizar_familia');
 
-        $input = $request->all();
+        foreach (['art_precio', 'prec_vent'] as $campo) {
+            if ($request->filled($campo)) {
+                // Precios en guaraníes: el punto es separador de miles.
+                $request->merge([$campo => str_replace('.', '', trim((string) $request->input($campo)))]);
+            }
+        }
+        $request->validate([
+            'art_codigo' => ['required', 'string', 'max:255', 'regex:/\\S/u'],
+            'art_descripcion' => ['required', 'string', 'max:255', 'regex:/\\S/u'],
+            'art_precio' => 'required|numeric|min:0',
+            'prec_vent' => 'required|numeric|min:0',
+            'art_iva' => 'required|in:0,5,10',
+            'actualizar_familia' => 'nullable|boolean',
+        ]);
 
-        ##validar que el archivo sea una imagen
-        $validator = Validator::make(
-            $input,
-            [
-                'art_descripcion' => 'required',
-                'art_codigo' => 'required',
-                'art_precio' => 'required',
-                'art_iva' => 'required|numeric',
-                'prec_vent' => 'required|numeric'
-            ],
-            [
-                'art_codigo.required' => 'El código del artículo es requerido',
-                'art_codigo.unique' => 'El código del artículo ya existe',
-                'art_descripcion.required' => 'La descripción del articulo es requerido',
-                'art_precio.required' => 'El precio del articulo es requerido',
-                'art_iva.required' => 'El iva del articulo es requerido',
-                'art_iva.numeric' => 'El iva del articulo debe ser un número',
-                'prec_vent.required' => 'El precio de venta es requerido',
-                'prec_vent.numeric' => 'El precio de venta debe ser un número'
-            ]
-        );
-
-        ##imprimir el error
-        if ($validator->fails()) {
-            alert()->error('Error', 'Error al subir la imagen. Verifica los requisitos.');
-            return back()->withErrors($validator)->withInput();
+        if ($aplicarFamilia && (!$esFamilia || !$esNuevoValido || $origen[1] !== $destino[1] || $origen[3] !== $destino[3])) {
+            return back()->withErrors(['art_codigo' => 'Para actualizar la familia, conservá el código base y el talle. Solo podés cambiar el color.'])->withInput();
         }
 
-        ##quitar separador de miles a precio antes de grabar
-        $input['art_precio'] = str_replace(".", "", $input['art_precio']);
+        // Evita cambiar accidentalmente el código base o talle de una sola variante.
+        $cambios = [
+            'art_descripcion' => strtoupper(trim($request->input('art_descripcion'))),
+            'art_precio' => $request->input('art_precio'),
+            'prec_vent' => $request->input('prec_vent'),
+            'art_iva' => $request->input('art_iva'),
+        ];
 
-        // Limpiar el campo prec_vent
-        $input['prec_vent'] = str_replace(['.', ','], '', $input['prec_vent']);  // Limpiar el formato del precio de venta
+        try {
+            $cantidad = DB::transaction(function () use ($articulo, $codigoOriginal, $codigoNuevo, $patron, $esFamilia, $aplicarFamilia, $origen, $destino, $cambios) {
+                if (!$aplicarFamilia) {
+                    if (DB::table('articulos')->where('art_codigo', $codigoNuevo)
+                        ->where('id_articulo', '<>', $articulo->id_articulo)->exists()) {
+                        throw new \DomainException('El código ingresado ya pertenece a otro artículo.');
+                    }
+                    DB::table('articulos')->where('id_articulo', $articulo->id_articulo)
+                        ->update(array_merge($cambios, ['art_codigo' => $codigoNuevo]));
+                    return 1;
+                }
 
-        DB::update(
-            'UPDATE articulos SET
-        art_codigo = ?,
-        art_descripcion = ?,
-        art_precio = ?,
-        art_iva = ?,
-        prec_vent = ?
-        WHERE id_articulo = ?',
-            [
-                strtoupper($input['art_codigo']),
-                strtoupper($input['art_descripcion']),
-                $input['art_precio'],
-                $input['art_iva'],
-                $input['prec_vent'],
-                $id
-            ]
-        );
+                // Grupo exacto: misma base, mismo color original, distinto talle.
+                $prefijo = $origen[1] . $origen[2];
+                $candidatos = DB::table('articulos')
+                    ->where('art_codigo', 'like', $prefijo . '%')
+                    ->lockForUpdate()->get(['id_articulo', 'art_codigo']);
+                $familia = $candidatos->filter(function ($item) use ($patron, $origen) {
+                    return preg_match($patron, strtoupper($item->art_codigo), $partes)
+                        && $partes[1] === $origen[1] && $partes[2] === $origen[2];
+                });
+                if ($familia->isEmpty()) {
+                    throw new \DomainException('No se encontraron artículos de la familia indicada.');
+                }
 
-        alert()->success('Exíto', 'Registro Guardado correctamente.!');
+                $identificadores = $familia->pluck('id_articulo')->all();
+                $codigos = [];
+                foreach ($familia as $item) {
+                    preg_match($patron, strtoupper($item->art_codigo), $partes);
+                    $codigos[] = $destino[1] . $destino[2] . $partes[3];
+                }
+                if (count($codigos) !== count(array_unique($codigos))) {
+                    throw new \DomainException('Existen talles duplicados en la familia. No se realizaron cambios.');
+                }
+                if (DB::table('articulos')->whereIn('art_codigo', $codigos)
+                    ->whereNotIn('id_articulo', $identificadores)->exists()) {
+                    throw new \DomainException('El color de destino ya contiene artículos con esos talles. No se realizaron cambios.');
+                }
 
-        return redirect(route('articulos.index'));
+                foreach ($familia as $item) {
+                    preg_match($patron, strtoupper($item->art_codigo), $partes);
+                    DB::table('articulos')->where('id_articulo', $item->id_articulo)
+                        ->update(array_merge($cambios, [
+                            'art_codigo' => $destino[1] . $destino[2] . $partes[3],
+                        ]));
+                }
+                return $familia->count();
+            });
+            alert()->success('Actualización correcta', "Se actualizaron {$cantidad} artículo(s).");
+            return redirect()->route('articulos.index');
+        } catch (\DomainException $e) {
+            alert()->info('No se pudo actualizar', $e->getMessage());
+            return back()->withInput();
+        } catch (\Throwable $e) {
+            Log::error('Fallo actualizando familia de artículos', ['id' => $id, 'error' => $e->getMessage()]);
+            alert()->error('Error', 'No fue posible actualizar los artículos. No se realizaron cambios.');
+            return back()->withInput();
+        }
     }
 
     public function destroy($id)
