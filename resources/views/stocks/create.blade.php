@@ -15,7 +15,7 @@
 
 
             <div class="card ref-create-card">
-                {!! Form::open(['route' => 'stocks.store']) !!}
+                {!! Form::open(['route' => 'stocks.store', 'class' => 'ref-validated-form']) !!}
                 <div class="ref-create-card-header">
                     <span class="ref-create-section-icon"><i class="fas fa-boxes mr-2"></i></span>
                     <div><h2>Información de registro</h2><small>Completá los campos solicitados para guardar el registro.</small></div>
