@@ -205,7 +205,7 @@ class CargaFotosController extends Controller
 
                 $filename = time() . '_' . uniqid() . '.' . $file->extension();
 
-                $file->storeAs('public/fotos', $filename);
+                $file->storeAs('fotos', $filename, 'public');
 
                 $foto->fot_img = $filename;
             }
