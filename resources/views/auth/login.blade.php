@@ -90,6 +90,35 @@
             .gts-login-header h1 { font-size: 21px; }
         }
         @media(prefers-reduced-motion:reduce) { .gts-login-submit,.gts-login-input input { transition: none; } }
+
+        /* Versión premium: superficie luminosa, mayor jerarquía y microinteracciones */
+        body.login-page-gts {
+            background:
+                radial-gradient(circle at 18% 85%,rgba(21,121,225,.32),transparent 35%),
+                linear-gradient(120deg,rgba(2,12,31,.89),rgba(4,45,101,.66) 55%,rgba(2,13,34,.89)),
+                url("{{ asset('img/articulos/bg_sistema.png') }}") center/cover no-repeat fixed;
+        }
+        .gts-login-wrap { max-width: 475px; }
+        .gts-login-card { border-radius: 24px; box-shadow:0 30px 90px rgba(0,9,31,.43); }
+        .gts-login-header { padding:34px 34px 29px; background:linear-gradient(130deg,#1749b7,#235ee3 58%,#1884d5); position:relative; }
+        .gts-login-header:after { content:"";position:absolute;left:11%;right:11%;bottom:0;height:1px;background:rgba(255,255,255,.25); }
+        .gts-login-brand { border-radius:21px; width:76px;height:76px;margin-bottom:18px;transform:rotate(-3deg); }
+        .gts-login-brand img { width:67px;height:67px;transform:rotate(3deg); }
+        .gts-login-header h1 { font-size:25px;letter-spacing:-.65px; }
+        .gts-login-body { padding:34px 36px 28px; }
+        .gts-login-welcome { font-size:20px; }
+        .gts-login-subtitle { font-size:13px; margin-bottom:27px; }
+        .gts-login-field { margin-bottom:22px; }
+        .gts-login-input input { height:52px; border-radius:12px; background:#f8fafd; }
+        .gts-login-input .field-icon { left:17px; }
+        .gts-login-input input { padding-left:46px; }
+        .gts-login-input:focus-within .field-icon { color:#2362dc; }
+        .gts-login-submit { height:52px;border-radius:12px;margin-top:28px; }
+        .gts-login-footer { margin-top:28px; }
+        .gts-login-small-label { color:#9ec2ff;font-size:10px;font-weight:800;letter-spacing:1.5px;text-transform:uppercase;margin-bottom:10px;display:block; }
+        .gts-login-secure { display:flex;align-items:center;justify-content:center;gap:7px;font-size:11px;color:#7b8da3;margin-top:15px; }
+        .gts-login-secure i { color:#23865d; }
+        @media(max-width:480px){.gts-login-wrap{max-width:100%}.gts-login-header{padding:28px 22px 25px}.gts-login-body{padding:27px 23px 22px}.gts-login-card{border-radius:18px}}
     </style>
 </head>
 <body class="login-page-gts">
@@ -99,6 +128,7 @@
                 <div class="gts-login-brand">
                     <img src="{{ asset('storage/logos/gts_logo.jpg') }}" alt="Logo GTS Mayorista">
                 </div>
+                <span class="gts-login-small-label">Plataforma de gestión</span>
                 <h1>GTS MAYORISTA</h1>
                 <p>Sistema de gestión mayorista</p>
             </header>
@@ -141,6 +171,7 @@
                         <i class="fas fa-sign-in-alt"></i> Ingresar al sistema
                     </button>
                 </form>
+                <div class="gts-login-secure"><i class="fas fa-lock"></i> Tus credenciales se envían de forma segura cuando utilizás HTTPS.</div>
                 <div class="gts-login-footer">
                     <i class="fas fa-shield-alt"></i> Acceso exclusivo para usuarios autorizados
                     <div>© {{ date('Y') }} GTS MAYORISTA</div>
