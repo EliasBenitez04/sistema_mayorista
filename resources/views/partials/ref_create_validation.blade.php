@@ -2,8 +2,7 @@
 <script>
 (function () {
     'use strict';
-    // Delegación global: no depende del momento en que se renderice el formulario.
-    // Limitado a las pantallas create que utilizan ref-validated-form. Pedidos no se modifica.
+    // Validaciones compartidas por crear y editar. Pedidos se excluye.
     const requiredByRoute = {
         clientes: ['cli_ci', 'cli_nombre', 'cli_direccion', 'cli_telefono', 'id_departamento', 'id_ciudad'],
         ciudades: ['ciu_descripcion'],
@@ -30,9 +29,11 @@
 
     function validateForm(form) {
         const routePath = new URL(form.action, window.location.href).pathname.split('/').filter(Boolean);
-        const route = routePath[routePath.length - 1] === 'store'
-            ? routePath[routePath.length - 2] : routePath[routePath.length - 1];
-        const required = requiredByRoute[route] || [];
+        const method = (form.querySelector('input[name="_method"]')?.value || 'POST').toUpperCase();
+        const editing = method === 'PATCH' || method === 'PUT';
+        const last = routePath[routePath.length - 1];
+        const route = editing ? routePath[routePath.length - 2] : (last === 'store' ? routePath[routePath.length - 2] : last);
+        const required = (requiredByRoute[route] || []).filter(name => !(editing && ['password', 'fot_img'].includes(name)));
         let firstInvalid = null;
 
         // HTML checkValidity() evalúa los atributos required, pattern, tipo y longitud.
@@ -40,7 +41,8 @@
             if (!field.name || field.disabled || field.type === 'hidden' || field.type === 'submit') return;
             const blank = required.includes(field.name) &&
                 (field.type === 'file' ? !field.files.length : !String(field.value || '').trim());
-            const invalid = blank || (field.willValidate && !field.checkValidity());
+            const optionalOnEdit = editing && ['password', 'fot_img'].includes(field.name) && !String(field.value || '').trim();
+            const invalid = blank || (!optionalOnEdit && field.willValidate && !field.checkValidity());
             if (invalid && !firstInvalid) firstInvalid = field;
         });
 
@@ -50,12 +52,14 @@
         return firstInvalid;
     }
 
-    // Evita que la validación nativa bloquee el evento submit antes de mostrar SweetAlert.\n    document.querySelectorAll('.ref-create form.ref-validated-form').forEach(function (form) { form.noValidate = true; });\n\n    // Capture evita que handlers anteriores envíen un formulario incompleto.
+    // Validación de crear y editar antes de mostrar la confirmación.
+    document.querySelectorAll('.ref-create form.ref-validated-form').forEach(form => { form.noValidate = true; });
     document.addEventListener('submit', async function (event) {
         const form = event.target;
         if (!(form instanceof HTMLFormElement) || !form.matches('.ref-create form.ref-validated-form')) return;
         event.preventDefault();
         event.stopImmediatePropagation();
+        form.noValidate = true;
         if (form.dataset.sending === 'true') return;
         if (typeof Swal === 'undefined') {
             window.alert('Completá los datos correctamente para poder guardar.');
@@ -71,7 +75,7 @@
 
         const decision = await Swal.fire({
             icon: 'question',
-            title: '¿Desea guardar el registro?',
+            title: '¿Desea guardar los cambios?',
             text: 'Confirmá que los datos ingresados sean correctos.',
             showCancelButton: true,
             confirmButtonText: 'Sí, guardar',
