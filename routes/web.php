@@ -5,8 +5,6 @@ use App\Http\Controllers\Auth\ForgotPasswordController;
 use App\Http\Controllers\Auth\ResetPasswordController;
 use App\Http\Controllers\PedidoComprasController;
 use App\Http\Controllers\StockController;
-use App\Http\Controllers\ReporteController;
-use App\Http\Controllers\DashboardGerencialController;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Cache;
@@ -25,9 +23,7 @@ Route::get('/home', [App\Http\Controllers\HomeController::class, 'index'])->name
 
 Auth::routes();
 
-Route::get('/dashboard-gerencial', [DashboardGerencialController::class, 'index'])->name('dashboard-gerencial.index');
 
-Route::get('/reportes', [ReporteController::class, 'index'])->name('reportes.index');
 
 Route::post('/login', [App\Http\Controllers\Auth\Logincontroller::class, 'login']);
 
