@@ -5,6 +5,13 @@
     </a>
 </li>
 
+<li class="nav-item">
+    <a href="{{ route('dashboard-gerencial.index') }}" class="nav-link {{ request()->routeIs('dashboard-gerencial.*') ? 'active' : '' }}">
+        <i class="nav-icon fas fa-chart-line"></i>
+        <p>Dashboard Gerencial</p>
+    </a>
+</li>
+
 @php
     $menuCargaDatos = request()->routeIs(
         'lineas.*',
