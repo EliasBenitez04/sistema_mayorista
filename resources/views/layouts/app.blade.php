@@ -22,6 +22,7 @@
 
     @stack('third_party_stylesheets')
     @stack('page_css')
+    @include('partials.visual_refresh_style')
 
     <style>
         body {
@@ -206,7 +207,7 @@
     });
 </script>
 
-<body class="hold-transition sidebar-mini layout-navbar-not-fixed">
+<body class="hold-transition sidebar-mini layout-navbar-not-fixed {{ request()->is('pedido_compras*') || request()->is('pedido/*') || request()->is('buscar-productos-ped*') ? 'gts-pedidos-layout' : 'gts-refreshed-layout' }}">
     <div class="wrapper">
 
         {{-- NAVBAR --}}
