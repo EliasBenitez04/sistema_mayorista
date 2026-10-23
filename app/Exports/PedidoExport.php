@@ -13,14 +13,6 @@ class PedidoExport implements WithMultipleSheets
 {
     protected $id_pedido;
 
-    protected $sucursalesPrioritarias = [
-        14,
-        8,
-        2,
-        9,
-        5,
-    ];
-
     protected $sucursalesExcluidas = [
         1,   // Sucursal 01
         25,  // Sucursal 25
@@ -29,6 +21,9 @@ class PedidoExport implements WithMultipleSheets
     protected $maxSugerencias = 5;
 
     protected $pedidosPorSucursal = [];
+
+    // Saldo virtual por artículo/sucursal durante esta exportación.
+    protected $saldosExportacion = [];
 
     public function __construct($id_pedido)
     {
@@ -208,159 +203,82 @@ class PedidoExport implements WithMultipleSheets
                 continue;
             }
 
-            $prioritarias = $stocksProcesados
-                ->filter(function ($stock) {
+            /*
+            |--------------------------------------------------------------------------
+            | DISTRIBUCIÓN EQUILIBRADA SEGÚN STOCK REAL
+            |--------------------------------------------------------------------------
+            | No hay prioridad fija por número de sucursal.
+            | Se usan hasta cinco locales con más existencia por artículo.
+            | Cada unidad se asigna al local con mayor saldo restante;
+            | los empates mantienen el orden inicial por stock y código.
+            | En la primera pasada se conserva una unidad por local cuando
+            | es posible. La segunda permite usar esa última unidad si
+            | es necesaria para completar el pedido.
+            |--------------------------------------------------------------------------
+            */
+            $codigoArticulo = (string) $item->art_codigo;
+            if (!isset($this->saldosExportacion[$codigoArticulo])) {
+                $this->saldosExportacion[$codigoArticulo] = [];
+            }
 
-                    return in_array(
-                        $stock->codigo_sucursal,
-                        $this->sucursalesPrioritarias
-                    );
-                })
-                ->sortBy(function ($stock) {
+            foreach ($stocksProcesados as $stock) {
+                $codigoLocal = (int) $stock->codigo_sucursal;
+                if (!array_key_exists($codigoLocal, $this->saldosExportacion[$codigoArticulo])) {
+                    $this->saldosExportacion[$codigoArticulo][$codigoLocal] = (int) $stock->cantidad;
+                }
+            }
 
-                    return array_search(
-                        $stock->codigo_sucursal,
-                        $this->sucursalesPrioritarias
-                    );
+            $candidatas = $stocksProcesados
+                ->sort(function ($a, $b) use ($codigoArticulo) {
+                    $saldoA = $this->saldosExportacion[$codigoArticulo][$a->codigo_sucursal] ?? 0;
+                    $saldoB = $this->saldosExportacion[$codigoArticulo][$b->codigo_sucursal] ?? 0;
+                    return ($saldoB <=> $saldoA)
+                        ?: ($a->codigo_sucursal <=> $b->codigo_sucursal);
                 })
+                ->filter(function ($stock) use ($codigoArticulo) {
+                    return ($this->saldosExportacion[$codigoArticulo][$stock->codigo_sucursal] ?? 0) > 0;
+                })
+                ->take($this->maxSugerencias)
                 ->values();
 
-            $otrasSucursales = $stocksProcesados
-                ->filter(function ($stock) {
+            $cantidadesAsignadas = [];
+            $restante = $cantidadSolicitada;
 
-                    return !in_array(
-                        $stock->codigo_sucursal,
-                        $this->sucursalesPrioritarias
-                    );
-                })
-                ->sortByDesc('cantidad')
-                ->values();
+            foreach ([1, 0] as $minimoEnOrigen) {
+                while ($restante > 0) {
+                    $mejor = null;
+                    $mayorSaldo = $minimoEnOrigen;
 
-            $stocksOrdenados = $prioritarias
-                ->concat($otrasSucursales)
-                ->values();
-
-            $sucursalCompleta = null;
-
-            foreach (
-                $this->sucursalesPrioritarias
-                as $codigoPrioritario
-            ) {
-
-                $encontrada =
-                    $stocksProcesados->first(
-                        function ($stock) use (
-                            $codigoPrioritario,
-                            $cantidadSolicitada
-                        ) {
-
-                            return
-                                $stock->codigo_sucursal ==
-                                $codigoPrioritario &&
-                                $stock->cantidad >=
-                                $cantidadSolicitada;
+                    foreach ($candidatas as $stock) {
+                        $codigoLocal = (int) $stock->codigo_sucursal;
+                        $saldo = $this->saldosExportacion[$codigoArticulo][$codigoLocal] ?? 0;
+                        if ($saldo > $mayorSaldo) {
+                            $mayorSaldo = $saldo;
+                            $mejor = $stock;
                         }
-                    );
+                    }
 
-                if ($encontrada) {
+                    if ($mejor === null) {
+                        break;
+                    }
 
-                    $sucursalCompleta =
-                        $encontrada;
-
-                    break;
+                    $codigoLocal = (int) $mejor->codigo_sucursal;
+                    $cantidadesAsignadas[$codigoLocal] = ($cantidadesAsignadas[$codigoLocal] ?? 0) + 1;
+                    $this->saldosExportacion[$codigoArticulo][$codigoLocal]--;
+                    $restante--;
                 }
             }
 
             $asignaciones = [];
-
-            if ($sucursalCompleta) {
-
-                $asignaciones[] = [
-
-                    'sucursal' =>
-                    $sucursalCompleta->sucursal,
-
-                    'codigo_sucursal' =>
-                    $sucursalCompleta->codigo_sucursal,
-
-                    'cantidad' =>
-                    $cantidadSolicitada,
-                ];
-            }
-
-            /*
-            |--------------------------------------------------------------------------
-            | REPARTIR ENTRE VARIAS
-            |--------------------------------------------------------------------------
-            */ else {
-
-                $restante =
-                    $cantidadSolicitada;
-
-                foreach (
-                    $stocksOrdenados
-                    as $stock
-                ) {
-
-                    if ($restante <= 0) {
-                        break;
-                    }
-
-                    /*
-                    |--------------------------------------------------------------------------
-                    | CANTIDAD A TOMAR
-                    |--------------------------------------------------------------------------
-                    */
-
-                    $cantidadTomar =
-                        min(
-                            $stock->cantidad,
-                            $restante
-                        );
-
-                    if ($cantidadTomar <= 0) {
-                        continue;
-                    }
-
-                    /*
-                    |--------------------------------------------------------------------------
-                    | ASIGNACIÓN
-                    |--------------------------------------------------------------------------
-                    */
-
+            foreach ($candidatas as $stock) {
+                $codigoLocal = (int) $stock->codigo_sucursal;
+                $cantidad = $cantidadesAsignadas[$codigoLocal] ?? 0;
+                if ($cantidad > 0) {
                     $asignaciones[] = [
-
-                        'sucursal' =>
-                        $stock->sucursal,
-
-                        'codigo_sucursal' =>
-                        $stock->codigo_sucursal,
-
-                        'cantidad' =>
-                        $cantidadTomar,
+                        'sucursal' => $stock->sucursal,
+                        'codigo_sucursal' => $codigoLocal,
+                        'cantidad' => $cantidad,
                     ];
-
-                    /*
-                    |--------------------------------------------------------------------------
-                    | RESTANTE
-                    |--------------------------------------------------------------------------
-                    */
-
-                    $restante -=
-                        $cantidadTomar;
-
-                    /*
-                    |--------------------------------------------------------------------------
-                    | MÁXIMO
-                    |--------------------------------------------------------------------------
-                    */
-
-                    if (
-                        count($asignaciones)
-                        >= $this->maxSugerencias
-                    ) {
-                        break;
-                    }
                 }
             }
 
