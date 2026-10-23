@@ -1,39 +1,28 @@
 @extends('layouts.app')
 
 @section('content')
-    <section class="content-header">
-        <div class="container-fluid">
-            <div class="row mb-2">
-                <div class="col-sm-12">
-                    <h1>
-                        Editar Articulos
-                    </h1>
-                </div>
-            </div>
-        </div>
-    </section>
-
+    @include('partials.ref_create_style')
     <div class="content px-3">
-
-        @include('adminlte-templates::common.errors')
-
-        <div class="card">
-
-            {!! Form::model($articulo, [
+        <div class="ref-create">
+            <div class="ref-create-heading">
+                <span class="ref-create-icon"><i class="fas fa-box-open"></i></span>
+                <div><h1>Editar artículo</h1><p>Actualizá los datos del registro</p></div>
+            </div>
+            <div class="card ref-create-card">
+                {!! Form::model($articulo, [
                 'route' => ['articulos.update', $articulo->id_articulo],
                 'method' => 'patch',
                 'files' => true,
-                'class' => 'confirm-submit'
+                'class' => 'ref-validated-form'
             ]) !!}
-
-            <div class="card-body">
-
-                @include('sweetalert::alert')
-
-                <div class="row">
-
-                    @include('articulos.fields')
-
+                <div class="ref-create-card-header">
+                    <span class="ref-create-section-icon"><i class="fas fa-box-open mr-2"></i></span>
+                    <div><h2>Información del registro</h2><small>Revisá los campos antes de actualizar.</small></div>
+                </div>
+                <div class="card-body">
+                    @include('sweetalert::alert')
+                    <div class="row">
+                        @include('articulos.fields')
                     @php
                         $codigoEdicion = strtoupper(trim((string) $articulo->art_codigo));
                         $tieneFamilia = preg_match('/^([0-9]{9})([A-Z]{2})([A-Z0-9]{2})$/', $codigoEdicion, $componentesCodigo);
@@ -71,18 +60,18 @@
                             La edición afectará únicamente a este artículo.
                         </div></div>
                     @endif
-
-
+                    </div>
                 </div>
+                <div class="card-footer">
+                    <span class="ref-create-footer-note"><i class="fas fa-shield-alt"></i> Revisá los datos antes de guardar.</span>
+                    <div class="ref-create-footer-actions">
+                        <a href="{{ route('articulos.index') }}" class="btn btn-default"><i class="fas fa-arrow-left mr-1"></i>Cancelar</a>
+                        {!! Form::submit('Actualizar', ['class' => 'btn btn-success']) !!}
+                    </div>
+                </div>
+                {!! Form::close() !!}
             </div>
-
-            <div class="card-footer">
-                {!! Form::submit('Guardar', ['class' => 'btn btn-primary']) !!}
-                <a href="{{ route('articulos.index') }}" class="btn btn-default"> Cancelar </a>
-            </div>
-
-            {!! Form::close() !!}
-
         </div>
     </div>
+    @include('partials.ref_create_validation')
 @endsection
