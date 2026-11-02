@@ -13,7 +13,7 @@ En Windows/XAMPP verificar que public/storage apunte a storage/app/public.
 
 ## Pantallas
 - /ecommerce: catálogo agrupado por los primeros 11 caracteres (código base + color), con talles, stock total registrado, precio real desde artículos y filtro por línea, imagen, precio y texto.
-- /ecommerce/importar: carga simultánea de hasta 20 imágenes JPG/PNG/WEBP (máximo 8 MB cada una) o ZIP de hasta 100 MB y hasta 500 entradas.
+- /ecommerce/importar: carga simultánea de hasta 20 imágenes JPG/PNG/WEBP (máximo 30 MB cada una) o ZIP de hasta 200 MB y hasta 500 entradas.
 - La línea se puede elegir por lote o individualmente. Si no se indicó línea al importar, se conserva la clasificación anterior o se busca por la OT en carga_fotos.
 - Los productos sin foto y sin clasificación también figuran en el catálogo.
 - Una nueva imagen del mismo código base reemplaza la fotografía anterior.
@@ -33,6 +33,13 @@ Datos reconocidos:
 
 Alternativa simple:
     100613678CV.png
+
+También se aceptan códigos de 9 dígitos, con o sin color, fecha al comienzo/final de la descripción,
+OT/fecha/descripción opcionales, valor "V 89" separado y valor numérico sin prefijo V.
+Cuando la imagen lleva 9 dígitos y el ERP contiene variantes de color, la foto genérica se
+muestra en todos los colores que no tengan imagen específica. Se conservan las imágenes
+específicas de 11 dígitos como prioridad.
+Si la línea no se indicó, se busca en la OT y luego en el prefijo de la descripción.
 
 Los valores V y C se guardan textualmente. **No modifican** articulos.art_precio ni articulos.prec_vent.
 La fotografía es una por código base + color, compartida visualmente con las variantes de talle.

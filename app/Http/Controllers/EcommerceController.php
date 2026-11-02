@@ -46,31 +46,46 @@ class EcommerceController extends Controller
             ->selectRaw('MIN(a.art_descripcion) AS descripcion, MIN(a.prec_vent) AS precio_desde, MAX(a.prec_vent) AS precio_hasta, COUNT(*) AS variantes')
             ->groupByRaw($clave);
 
+        // Fotos específicas de color prevalecen sobre fotografías genéricas (9 dígitos).
+        $imagen = 'COALESCE(e.imagen, eg.imagen)';
+        $linea = 'COALESCE(e.linea_cod, eg.linea_cod)';
+        $ot = 'COALESCE(e.ot, eg.ot)';
+        $descripcionArchivo = 'COALESCE(e.descripcion_archivo, eg.descripcion_archivo)';
         $query = DB::query()->fromSub($base, 'p')
             ->leftJoin('ecommerce_catalogo as e', 'e.codigo_base', '=', 'p.codigo_base')
-            ->leftJoin('linea as l', 'l.linea_cod', '=', 'e.linea_cod')
-            ->select('p.*', 'e.imagen', 'e.linea_cod', 'e.ot', 'e.valor_v', 'e.valor_c',
-                'e.fecha_archivo', 'e.descripcion_archivo', 'l.linea_desc');
+            ->leftJoin('ecommerce_catalogo as eg', function ($join) {
+                $join->on('eg.codigo_base', '=', DB::raw(
+                    "CASE WHEN p.codigo_base ~ '^[0-9]{9}[A-Za-z]{2}$' "
+                    . "THEN SUBSTRING(p.codigo_base FROM 1 FOR 9) ELSE NULL END"
+                ));
+            })
+            ->leftJoin('linea as l', 'l.linea_cod', '=', DB::raw($linea))
+            ->select('p.*', 'l.linea_desc')
+            ->selectRaw($imagen . ' AS imagen, ' . $linea . ' AS linea_cod, '
+                . $ot . ' AS ot, COALESCE(e.valor_v, eg.valor_v) AS valor_v, '
+                . 'COALESCE(e.valor_c, eg.valor_c) AS valor_c, '
+                . 'COALESCE(e.fecha_archivo, eg.fecha_archivo) AS fecha_archivo, '
+                . $descripcionArchivo . ' AS descripcion_archivo');
 
         $buscar = trim((string) $request->input('buscar', ''));
         if ($buscar !== '') {
             $query->where(function ($q) use ($buscar) {
                 $q->where('p.codigo_base', 'ILIKE', '%' . $buscar . '%')
                     ->orWhere('p.descripcion', 'ILIKE', '%' . $buscar . '%')
-                    ->orWhere('e.ot', 'ILIKE', '%' . $buscar . '%')
-                    ->orWhere('e.descripcion_archivo', 'ILIKE', '%' . $buscar . '%');
+                    ->orWhereRaw($ot . ' ILIKE ?', ['%' . $buscar . '%'])
+                    ->orWhereRaw($descripcionArchivo . ' ILIKE ?', ['%' . $buscar . '%']);
             });
         }
 
         if ($request->input('linea') === 'sin-linea') {
-            $query->whereNull('e.linea_cod');
+            $query->whereRaw($linea . ' IS NULL');
         } elseif (ctype_digit((string) $request->input('linea'))) {
-            $query->where('e.linea_cod', (int) $request->input('linea'));
+            $query->whereRaw($linea . ' = ?', [(int) $request->input('linea')]);
         }
         if ($request->input('imagen') === 'si') {
-            $query->whereNotNull('e.imagen');
+            $query->whereRaw($imagen . ' IS NOT NULL');
         } elseif ($request->input('imagen') === 'no') {
-            $query->whereNull('e.imagen');
+            $query->whereRaw($imagen . ' IS NULL');
         }
         if ($request->filled('precio_min')) {
             $query->where('p.precio_desde', '>=', $request->input('precio_min'));
@@ -125,12 +140,12 @@ class EcommerceController extends Controller
         $request->validate([
             'linea_cod' => 'nullable|integer|exists:linea,linea_cod',
             'archivos' => 'nullable|array|max:20',
-            'archivos.*' => 'file|image|mimes:jpg,jpeg,png,webp|max:8192',
-            'paquete_zip' => 'nullable|file|mimes:zip|max:102400',
+            'archivos.*' => 'file|image|mimes:jpg,jpeg,png,webp|max:30720',
+            'paquete_zip' => 'nullable|file|mimes:zip|max:204800',
         ], [
             'archivos.max' => 'Seleccioná como máximo 20 imágenes por carga, o utilizá un ZIP.',
-            'archivos.*.max' => 'Cada imagen puede pesar hasta 8 MB.',
-            'paquete_zip.max' => 'El ZIP puede pesar hasta 100 MB.',
+            'archivos.*.max' => 'Cada imagen puede pesar hasta 30 MB.',
+            'paquete_zip.max' => 'El ZIP puede pesar hasta 200 MB.',
         ]);
 
         $archivos = $request->file('archivos', []);
@@ -175,9 +190,9 @@ class EcommerceController extends Controller
                     if (!preg_match('/\.(jpe?g|png|webp)$/i', $nombre)) {
                         continue;
                     }
-                    if (($stat['size'] ?? 0) > 8 * 1024 * 1024) {
+                    if (($stat['size'] ?? 0) > 30 * 1024 * 1024) {
                         $resultado['omitidas']++;
-                        $this->agregarError($errores, basename($nombre) . ': supera los 8 MB.');
+                        $this->agregarError($errores, basename($nombre) . ': supera los 30 MB.');
                         continue;
                     }
                     $contenido = $zip->getFromIndex($i);
@@ -199,14 +214,15 @@ class EcommerceController extends Controller
         try {
             $datos = $this->leerNombre($nombre);
             if (!$datos) {
-                throw new \DomainException('Nombre no reconocido. Usá CODIGO V35 C13.388 OT26697 DESCRIPCION DD-MM-AA.jpg');
+                throw new \DomainException('Nombre no reconocido. El archivo debe comenzar con un código de 9 dígitos, con color opcional. V, C, OT, descripción y fecha pueden faltar.');
             }
 
             $codigo = $datos['codigo_base'];
-            $existe = DB::table('articulos')->where(function ($q) use ($codigo) {
-                $q->where('art_codigo', $codigo)
-                    ->orWhere('art_codigo', 'LIKE', $codigo . '__');
-            })->exists();
+            $patronArticulo = strlen($codigo) === 9
+                ? '^' . $codigo . '(?:[A-Z]{2}(?:[A-Z0-9]{2})?)?$'
+                : '^' . $codigo . '(?:[A-Z0-9]{2})?$';
+            $existe = DB::table('articulos')
+                ->whereRaw('art_codigo ~* ?', [$patronArticulo])->exists();
             if (!$existe) {
                 throw new \DomainException('No se encontró ese código base en artículos.');
             }
@@ -220,8 +236,8 @@ class EcommerceController extends Controller
             if (!$info || !isset($extensiones[$info[2]])) {
                 throw new \DomainException('El archivo no contiene una imagen JPG, PNG o WEBP válida.');
             }
-            if (strlen($contenido) > 8 * 1024 * 1024) {
-                throw new \DomainException('La imagen supera los 8 MB.');
+            if (strlen($contenido) > 30 * 1024 * 1024) {
+                throw new \DomainException('La imagen supera los 30 MB.');
             }
 
             $anterior = DB::table('ecommerce_catalogo')->where('codigo_base', $codigo)->first();
@@ -232,6 +248,9 @@ class EcommerceController extends Controller
             if (!$lineaFinal && $datos['ot']) {
                 $lineaFinal = DB::table('carga_fotos')
                     ->where('fot_ot', $datos['ot'])->value('linea_cod');
+            }
+            if (!$lineaFinal && $datos['descripcion_archivo']) {
+                $lineaFinal = $this->lineaDesdeDescripcion($datos['descripcion_archivo']);
             }
 
             $ruta = 'ecommerce/' . $codigo . '_' . bin2hex(random_bytes(8)) . '.' . $extensiones[$info[2]];
@@ -282,44 +301,91 @@ class EcommerceController extends Controller
     }
 
     /**
-     * Ejemplo:
-     * 100613678CV V35 C13.388 OT26697 BERMUDA ECO VARÓN 08-10-26.jpg
-     * V y C se conservan textualmente, sin sobrescribir precios del ERP.
+     * Nombres flexibles: acepta 9, 11 y 13 caracteres de código.
+     * Los valores V/C, OT, fecha y descripción son opcionales y pueden cambiar de orden.
      */
     private function leerNombre(string $nombre): ?array
     {
         $base = trim(pathinfo($nombre, PATHINFO_FILENAME));
-        $patron = '/^([0-9]{9}[A-Z]{2})\s+'
-            . '(V[0-9]+(?:[.,][0-9]+)?)\s+'
-            . '(C[0-9]+(?:[.,][0-9]+)?)\s+'
-            . 'OT\s*([0-9]+)\s+'
-            . '(.+?)\s+'
-            . '([0-9]{2}-[0-9]{2}-[0-9]{2}(?:[0-9]{2})?)$/iu';
+        if (!preg_match('/^([0-9]{9}(?:[A-Z]{2}(?:[A-Z0-9]{2})?)?)(?:\s+|$)(.*)$/iu', $base, $m)) {
+            return null;
+        }
+        $codigo = strtoupper($m[1]);
+        if (strlen($codigo) === 13) {
+            $codigo = substr($codigo, 0, 11);
+        }
+        $resto = trim($m[2]);
+        $valorV = null;
+        $valorC = null;
+        $ot = null;
+        $fecha = null;
 
-        if (preg_match($patron, $base, $m)) {
-            $formato = strlen($m[6]) === 8 ? '!d-m-y' : '!d-m-Y';
-            $fecha = \DateTimeImmutable::createFromFormat($formato, $m[6]);
-            if (!$fecha || $fecha->format(substr($formato, 1)) !== $m[6]) {
+        // Puede aparecer delante de "NENA..." o al final; también es opcional.
+        if (preg_match('/(?<![0-9])([0-9]{2}[-\/.][0-9]{2}[-\/.](?:[0-9]{4}|[0-9]{2}))(?![0-9])/u', $resto, $d)) {
+            $fechaTexto = str_replace(['/', '.'], '-', $d[1]);
+            $formato = strlen($fechaTexto) === 8 ? '!d-m-y' : '!d-m-Y';
+            $fechaObj = \DateTimeImmutable::createFromFormat($formato, $fechaTexto);
+            if (!$fechaObj || $fechaObj->format(substr($formato, 1)) !== $fechaTexto) {
                 return null;
             }
-            return [
-                'codigo_base' => strtoupper($m[1]),
-                'valor_v' => strtoupper($m[2]),
-                'valor_c' => strtoupper($m[3]),
-                'ot' => $m[4],
-                'descripcion_archivo' => mb_substr(trim($m[5]), 0, 255),
-                'fecha_archivo' => $fecha->format('Y-m-d'),
-            ];
+            $fecha = $fechaObj->format('Y-m-d');
+            $resto = preg_replace('/(?<![0-9])[0-9]{2}[-\/.][0-9]{2}[-\/.](?:[0-9]{4}|[0-9]{2})(?![0-9])/u',
+                ' ', $resto, 1);
         }
-        // Permite cargar también una foto nombrada únicamente con el código base.
-        if (preg_match('/^([0-9]{9}[A-Z]{2})$/i', $base, $m)) {
-            return [
-                'codigo_base' => strtoupper($m[1]),
-                'valor_v' => null, 'valor_c' => null, 'ot' => null,
-                'descripcion_archivo' => null, 'fecha_archivo' => null,
-            ];
+
+        if (preg_match('/(?:^|\s)V\s*([0-9]+(?:[.,][0-9]+)?)(?=\s|$)/iu', $resto, $v)) {
+            $valorV = 'V' . $v[1];
+            $resto = preg_replace('/(?:^|\s)V\s*[0-9]+(?:[.,][0-9]+)?(?=\s|$)/iu', ' ', $resto, 1);
+        } elseif (preg_match('/^\s*([0-9]+(?:[.,][0-9]+)?)\s+(?=C\s*[0-9])/iu', $resto, $v)) {
+            // Archivos heredados con "79 C28062..." en vez de "V79 C28062...".
+            $valorV = 'V' . $v[1];
+            $resto = preg_replace('/^\s*[0-9]+(?:[.,][0-9]+)?\s+(?=C\s*[0-9])/iu', '', $resto, 1);
         }
-        return null;
+
+        if (preg_match('/(?:^|\s)C\s*([0-9]+(?:[.,][0-9]+)?)(?=\s|$)/iu', $resto, $c)) {
+            $valorC = 'C' . $c[1];
+            $resto = preg_replace('/(?:^|\s)C\s*[0-9]+(?:[.,][0-9]+)?(?=\s|$)/iu', ' ', $resto, 1);
+        }
+        if (preg_match('/(?:^|\s)OT\s*([0-9]+)(?=\s|$)/iu', $resto, $o)) {
+            $ot = $o[1];
+            $resto = preg_replace('/(?:^|\s)OT\s*[0-9]+(?=\s|$)/iu', ' ', $resto, 1);
+        }
+
+        $descripcion = trim(preg_replace('/\s+/u', ' ', $resto));
+        return [
+            'codigo_base' => $codigo,
+            'valor_v' => $valorV,
+            'valor_c' => $valorC,
+            'ot' => $ot,
+            'descripcion_archivo' => $descripcion === '' ? null : mb_substr($descripcion, 0, 255),
+            'fecha_archivo' => $fecha,
+        ];
+    }
+
+    /**
+     * Solo deduce líneas por coincidencia exacta con el prefijo del nombre.
+     * "NENA REMERA..." => NENA, "JUV NENA REMERA..." => JUV NENA.
+     */
+    private function lineaDesdeDescripcion(string $descripcion): ?int
+    {
+        $normalizar = function (string $texto): string {
+            return trim((string) preg_replace('/[^A-Z0-9]+/u', ' ', mb_strtoupper(\Illuminate\Support\Str::ascii($texto))));
+        };
+        $texto = $normalizar($descripcion);
+        if ($texto === '') {
+            return null;
+        }
+        $mejor = null;
+        $longitud = 0;
+        foreach (DB::table('linea')->get(['linea_cod', 'linea_desc']) as $linea) {
+            $etiqueta = $normalizar($linea->linea_desc);
+            if ($etiqueta !== '' && ($texto === $etiqueta || strpos($texto, $etiqueta . ' ') === 0)
+                && strlen($etiqueta) > $longitud) {
+                $mejor = (int) $linea->linea_cod;
+                $longitud = strlen($etiqueta);
+            }
+        }
+        return $mejor;
     }
 
     public function asignarLinea(Request $request, string $codigo)
@@ -329,9 +395,10 @@ class EcommerceController extends Controller
         if (!preg_match('/^[A-Z0-9]{1,32}$/', $codigo)) {
             abort(404);
         }
-        $existe = DB::table('articulos')->where(function ($q) use ($codigo) {
-            $q->where('art_codigo', $codigo)->orWhere('art_codigo', 'LIKE', $codigo . '__');
-        })->exists();
+        $patronArticulo = strlen($codigo) === 9
+            ? '^' . $codigo . '(?:[A-Z]{2}(?:[A-Z0-9]{2})?)?$'
+            : '^' . $codigo . '(?:[A-Z0-9]{2})?$';
+        $existe = DB::table('articulos')->whereRaw('art_codigo ~* ?', [$patronArticulo])->exists();
         if (!$existe) {
             abort(404);
         }

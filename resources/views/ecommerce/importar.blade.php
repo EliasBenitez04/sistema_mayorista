@@ -56,7 +56,7 @@
                                 <label class="ec-file-area" for="ec-archivos">
                                     <i class="fas fa-images"></i>
                                     <strong>Seleccionar imágenes JPG, PNG o WEBP</strong>
-                                    <span>Hasta 20 por carga · 8 MB por imagen</span>
+                                    <span>Hasta 20 por carga · 30 MB por imagen</span>
                                     <input id="ec-archivos" name="archivos[]" type="file" accept=".jpg,.jpeg,.png,.webp,image/jpeg,image/png,image/webp"
                                         multiple style="position:absolute;opacity:0;width:1px;height:1px">
                                 </label>
@@ -66,7 +66,7 @@
                             <div class="form-group">
                                 <label for="ec-zip">Paquete ZIP (importación masiva)</label>
                                 <input type="file" class="form-control-file" id="ec-zip" name="paquete_zip" accept=".zip,application/zip">
-                                <small class="text-muted">Hasta 500 archivos en un ZIP de 100 MB. No es necesario descomprimirlo.</small>
+                                <small class="text-muted">Hasta 500 archivos en un ZIP de 200 MB. No es necesario descomprimirlo.</small>
                             </div>
 
                             <div class="ec-step mt-4"><span>02</span> Clasificar las fotografías</div>
@@ -99,7 +99,10 @@
                 <div class="card ec-import-card ec-help">
                     <div class="card-body">
                         <div class="ec-step"><span><i class="fas fa-magic"></i></span> Lectura automática del nombre</div>
-                        <p>Ejemplo de nombre de fotografía:</p>
+                        <p>Ejemplos reales de nombres admitidos:</p>
+                        <div class="ec-example">060615677 V39 C18727 OT28696 25-07-25 NENA REMERA MC COLECCION.jpg</div>
+                        <div class="ec-example">060616168 V49 C23142 11-11-25.jpeg</div>
+                        <div class="ec-example">060616680 V39 C19959 OT29699 NENA REMERA MC COL.jpg</div>
                         <div class="ec-example">100613678CV V35 C13.388 OT26697 BERMUDA ECO VARÓN 08-10-26.jpg</div>
                         <div class="ec-parsed">
                             <div><span>Código base</span><strong>100613678CV</strong></div>
@@ -114,7 +117,9 @@
                             El código base identifica todas las variantes de talle del producto. Se muestra el precio real de la base de datos; V y C son referencias del nombre del archivo.
                         </div>
                         <h4 class="mt-4">Reglas de importación</h4>
-                        <p>Se aceptan el formato completo mostrado arriba y archivos nombrados únicamente con el código base, por ejemplo <strong>100613678CV.png</strong>.</p>
+                        <p>Se aceptan códigos de <strong>9 dígitos</strong> (ej. <strong>060615677</strong>) y códigos con color de <strong>11 caracteres</strong> (ej. <strong>100613678CV</strong>). También se aceptan códigos completos de 13 caracteres.</p>
+                        <p>La fecha puede estar antes o después de la descripción. OT, descripción y fecha son opcionales; también se admite <strong>V 89</strong> o un valor numérico sin V. Se puede importar <strong>060615677.png</strong>.</p>
+                        <p>Si no seleccionás línea, el importador intenta usar la OT y, en su defecto, el comienzo de la descripción (por ejemplo, NENA).</p>
                         <p>Si la imagen corresponde a un código que todavía no existe en Artículos, se omite y se informa el motivo. Una imagen nueva del mismo código sustituye la anterior sin duplicar el producto.</p>
                         <p class="mb-0">Para ver fotos en el navegador, el proyecto necesita tener habilitado el enlace público de almacenamiento con <code>php artisan storage:link</code>.</p>
                     </div>
@@ -149,8 +154,7 @@ document.addEventListener('DOMContentLoaded', function () {
     const form = document.getElementById('ec-import-form');
     function nombreValido(name) {
         const base = name.replace(/\.(jpg|jpeg|png|webp)$/i, '');
-        const completo = /^([0-9]{9}[A-Z]{2})\s+V[0-9]+(?:[.,][0-9]+)?\s+C[0-9]+(?:[.,][0-9]+)?\s+OT\s*[0-9]+\s+.+\s+[0-9]{2}-[0-9]{2}-[0-9]{2}(?:[0-9]{2})?$/i;
-        return completo.test(base) || /^[0-9]{9}[A-Z]{2}$/i.test(base);
+        return /^([0-9]{9}(?:[A-Z]{2}(?:[A-Z0-9]{2})?)?)(?:\s|$)/i.test(base);
     }
     function update() {
         const files = Array.from(input.files || []);
