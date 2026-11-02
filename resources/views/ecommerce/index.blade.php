@@ -1,240 +1,332 @@
 @extends('layouts.app')
 
 @section('content')
-<section class="content-header ecommerce-heading">
-    <div class="container-fluid">
-        <div class="d-flex flex-wrap justify-content-between align-items-center" style="gap:12px">
-            <div>
-                <div class="ec-eyebrow">CATÁLOGO DE PRODUCTOS</div>
-                <h1><i class="fas fa-shopping-bag mr-2"></i>E-commerce</h1>
-                <p class="text-muted mb-0">Fotos, talles, precios y artículos organizados por línea.</p>
-            </div>
+<div class="ec-storefront" id="ecommerce-storefront">
+    <div class="ec-service-bar">
+        <span><i class="fas fa-circle ec-service-dot"></i> CATÁLOGO DIGITAL GOTITAS</span>
+        <span class="ec-service-note">Explorá nuestros artículos, variantes y precios en guaraníes</span>
+        <a href="{{ route('home') }}" class="ec-back-admin"><i class="fas fa-arrow-left"></i> Volver al sistema</a>
+    </div>
+
+    <header class="ec-shop-header">
+        <a href="{{ route('ecommerce.index') }}" class="ec-brand" aria-label="Ir al inicio del catálogo">
+            <span class="ec-brand-mark">G<span>.</span></span>
+            <span class="ec-brand-word">GOTITAS<small>CATÁLOGO DE PRODUCTOS</small></span>
+        </a>
+        <form action="{{ route('ecommerce.index') }}" method="GET" class="ec-search-form" role="search">
+            @foreach(request()->except(['buscar', 'page']) as $nombre => $valor)
+                @if(is_scalar($valor))
+                    <input type="hidden" name="{{ $nombre }}" value="{{ $valor }}">
+                @endif
+            @endforeach
+            <label class="sr-only" for="ec-main-search">Buscar productos</label>
+            <input id="ec-main-search" type="search" name="buscar" value="{{ request('buscar') }}"
+                placeholder="Buscar productos, códigos, descripción u OT..." autocomplete="off">
+            <button type="submit" aria-label="Buscar"><i class="fas fa-search"></i><span>Buscar</span></button>
+        </form>
+        <div class="ec-header-actions">
             @can('articulos create')
-                <a href="{{ route('ecommerce.importar.form') }}" class="btn btn-primary ec-upload-btn">
-                    <i class="fas fa-cloud-upload-alt mr-2"></i>Importar imágenes
+                <a href="{{ route('ecommerce.importar.form') }}" class="ec-header-import">
+                    <i class="fas fa-cloud-upload-alt"></i><span>Importar fotos</span>
                 </a>
             @endcan
+            <button type="button" class="ec-header-screen" id="ec-screen-toggle" aria-pressed="false"
+                title="Mostrar catálogo como página completa">
+                <i class="fas fa-expand-arrows-alt"></i><span>Vista tienda</span>
+            </button>
         </div>
-    </div>
-</section>
+    </header>
 
-<section class="content px-3 ecommerce-content pb-4">
-    @if(session('ecommerce_mensaje'))
-        <div class="alert alert-success"><i class="fas fa-check-circle mr-2"></i>{{ session('ecommerce_mensaje') }}</div>
-    @endif
-    <div class="ec-line-wrap">
-        <div class="ec-nav-label"><i class="fas fa-layer-group mr-2"></i>Explorar líneas</div>
-        <nav class="ec-line-nav" aria-label="Líneas del catálogo">
-            <a href="{{ route('ecommerce.index', request()->except(['page', 'linea'])) }}"
-                class="ec-line-tab {{ !request('linea') ? 'selected' : '' }}">
-                <i class="fas fa-th-large mr-1"></i>Todas
+    <nav class="ec-category-bar" aria-label="Categorías del catálogo">
+        <span class="ec-category-label">LÍNEAS <i class="fas fa-angle-right"></i></span>
+        <div class="ec-category-scroll">
+            <a href="{{ route('ecommerce.index', request()->except(['page','linea'])) }}"
+                class="ec-category-link {{ !request('linea') ? 'is-current' : '' }}">
+                Todas las líneas
             </a>
-            @foreach($lineas as $linea)
-                <a href="{{ route('ecommerce.index', array_merge(request()->except(['page', 'linea']), ['linea' => $linea->linea_cod])) }}"
-                    class="ec-line-tab {{ (string)request('linea') === (string)$linea->linea_cod ? 'selected' : '' }}">
-                    {{ $linea->linea_desc }}
+            @foreach($lineas as $lineaItem)
+                <a href="{{ route('ecommerce.index', array_merge(request()->except(['page','linea']), ['linea' => $lineaItem->linea_cod])) }}"
+                    class="ec-category-link {{ (string)request('linea') === (string)$lineaItem->linea_cod ? 'is-current' : '' }}">
+                    {{ $lineaItem->linea_desc }}
                 </a>
             @endforeach
-            <a href="{{ route('ecommerce.index', array_merge(request()->except(['page', 'linea']), ['linea' => 'sin-linea'])) }}"
-                class="ec-line-tab {{ request('linea') === 'sin-linea' ? 'selected' : '' }}">Sin clasificar</a>
-        </nav>
-    </div>
-
-    <div class="ec-filter-box">
-        <form method="GET" action="{{ route('ecommerce.index') }}">
-            @if(request('linea'))
-                <input type="hidden" name="linea" value="{{ request('linea') }}">
-            @endif
-            <div class="row align-items-end">
-                <div class="col-xl-4 col-md-6 mb-3">
-                    <label for="ec-buscar">Buscar artículo, código u OT</label>
-                    <div class="input-group">
-                        <div class="input-group-prepend"><span class="input-group-text"><i class="fas fa-search"></i></span></div>
-                        <input type="search" id="ec-buscar" name="buscar" class="form-control"
-                            placeholder="Ej. bermuda, 100613678CV, OT26697" value="{{ request('buscar') }}">
-                    </div>
-                </div>
-                <div class="col-xl-2 col-md-3 col-6 mb-3">
-                    <label for="ec-imagen">Fotografía</label>
-                    <select id="ec-imagen" name="imagen" class="form-control">
-                        <option value="">Todas</option>
-                        <option value="si" {{ request('imagen') === 'si' ? 'selected' : '' }}>Con imagen</option>
-                        <option value="no" {{ request('imagen') === 'no' ? 'selected' : '' }}>Sin imagen</option>
-                    </select>
-                </div>
-                <div class="col-xl-2 col-md-3 col-6 mb-3">
-                    <label for="ec-orden">Ordenar por</label>
-                    <select id="ec-orden" name="orden" class="form-control">
-                        <option value="codigo" {{ request('orden', 'codigo') === 'codigo' ? 'selected' : '' }}>Código</option>
-                        <option value="descripcion" {{ request('orden') === 'descripcion' ? 'selected' : '' }}>Descripción</option>
-                        <option value="precio_asc" {{ request('orden') === 'precio_asc' ? 'selected' : '' }}>Menor precio</option>
-                        <option value="precio_desc" {{ request('orden') === 'precio_desc' ? 'selected' : '' }}>Mayor precio</option>
-                    </select>
-                </div>
-                <div class="col-xl-2 col-md-3 col-6 mb-3">
-                    <label for="ec-min">Precio mín. Gs.</label>
-                    <input id="ec-min" type="number" min="0" name="precio_min" class="form-control"
-                        placeholder="0" value="{{ request('precio_min') }}">
-                </div>
-                <div class="col-xl-2 col-md-3 col-6 mb-3">
-                    <label for="ec-max">Precio máx. Gs.</label>
-                    <input id="ec-max" type="number" min="0" name="precio_max" class="form-control"
-                        placeholder="Sin límite" value="{{ request('precio_max') }}">
-                </div>
-            </div>
-            <div class="d-flex justify-content-end align-items-center ec-filter-actions">
-                <a href="{{ route('ecommerce.index') }}" class="btn btn-light mr-2">
-                    <i class="fas fa-eraser mr-1"></i>Limpiar
-                </a>
-                <button type="submit" class="btn btn-primary"><i class="fas fa-filter mr-1"></i>Aplicar filtros</button>
-            </div>
-        </form>
-    </div>
-
-    <div class="ec-results-bar d-flex justify-content-between align-items-center flex-wrap">
-        <div><strong>{{ number_format($productos->total(), 0, ',', '.') }}</strong>
-            {{ $productos->total() === 1 ? 'producto' : 'productos' }} encontrados
-            <span class="text-muted ml-2">Agrupados por código base y color</span>
+            <a href="{{ route('ecommerce.index', array_merge(request()->except(['page','linea']), ['linea' => 'sin-linea'])) }}"
+                class="ec-category-link {{ request('linea') === 'sin-linea' ? 'is-current' : '' }}">Sin clasificar</a>
         </div>
-        <div class="ec-results-page">Página {{ $productos->currentPage() }} de {{ $productos->lastPage() }}</div>
+    </nav>
+
+    <section class="ec-hero" aria-labelledby="ec-hero-title">
+        <div class="ec-hero-copy">
+            <span class="ec-hero-eyebrow"><span></span> NUEVA EXPERIENCIA DE CATÁLOGO</span>
+            <h1 id="ec-hero-title">Encontrá lo que <em>buscás.</em></h1>
+            <p>Explorá la colección por línea, encontrá talles y consultá los precios de nuestros artículos.</p>
+            <a href="#ec-productos" class="ec-hero-btn">Explorar productos <i class="fas fa-arrow-right"></i></a>
+        </div>
+        <div class="ec-hero-aside" aria-hidden="true">
+            <div class="ec-hero-figure ec-figure-one"></div>
+            <div class="ec-hero-figure ec-figure-two"></div>
+            <div class="ec-hero-initial">G.</div>
+            <div class="ec-hero-tag">COLECCIÓN <strong>GOTITAS</strong></div>
+        </div>
+    </section>
+
+    <div class="ec-info-strip" aria-label="Características del catálogo">
+        <span><i class="fas fa-th-large"></i> Categorías por línea</span>
+        <span><i class="fas fa-ruler-horizontal"></i> Talles y variantes</span>
+        <span><i class="fas fa-tags"></i> Precios en guaraníes</span>
+        <span><i class="fas fa-search"></i> Búsqueda rápida</span>
     </div>
 
-    <div class="ec-grid">
-        @forelse($productos as $producto)
-            @php
-                $opciones = $variantes->get($producto->codigo_base, collect());
-                $stockTotal = $opciones->sum('disponible');
-                $imagenUrl = $producto->imagen ? asset('storage/' . $producto->imagen) : null;
-            @endphp
-            <article class="ec-card">
-                <div class="ec-photo-wrap">
-                    @if($imagenUrl)
-                        <img src="{{ $imagenUrl }}" alt="Imagen de {{ $producto->descripcion }}"
-                            class="ec-photo" loading="lazy">
-                    @else
-                        <div class="ec-no-photo">
-                            <i class="far fa-image"></i>
-                            <span>Sin fotografía</span>
+    <main id="ec-productos" class="ec-shop-body">
+        <div class="ec-breadcrumb"><a href="{{ route('ecommerce.index') }}">Catálogo</a><i class="fas fa-chevron-right"></i>
+            <span>
+                @if(request('linea') === 'sin-linea') Sin clasificar
+                @elseif(request('linea')) {{ optional($lineas->firstWhere('linea_cod', request('linea')))->linea_desc ?? 'Línea' }}
+                @else Todos los productos @endif
+            </span>
+        </div>
+
+        @if(session('ecommerce_mensaje'))
+            <div class="ec-success"><i class="fas fa-check-circle"></i> {{ session('ecommerce_mensaje') }}</div>
+        @endif
+
+        <div class="ec-shop-columns">
+            <aside class="ec-filters" id="ec-filters" aria-label="Filtros de productos">
+                <form method="GET" action="{{ route('ecommerce.index') }}" id="ec-filter-form">
+                    @if(request('buscar')) <input type="hidden" name="buscar" value="{{ request('buscar') }}"> @endif
+                    @if(request('linea')) <input type="hidden" name="linea" value="{{ request('linea') }}"> @endif
+                    <div class="ec-filters-heading">
+                        <strong>Filtrar productos</strong>
+                        <i class="fas fa-sliders-h"></i>
+                    </div>
+                    <div class="ec-filter-group">
+                        <label class="ec-filter-title" for="ec-sort">ORDENAR POR</label>
+                        <select id="ec-sort" name="orden" class="ec-filter-input" data-auto-submit>
+                            <option value="codigo" {{ request('orden','codigo') === 'codigo' ? 'selected' : '' }}>Código del producto</option>
+                            <option value="descripcion" {{ request('orden') === 'descripcion' ? 'selected' : '' }}>Nombre A–Z</option>
+                            <option value="precio_asc" {{ request('orden') === 'precio_asc' ? 'selected' : '' }}>Precio: menor a mayor</option>
+                            <option value="precio_desc" {{ request('orden') === 'precio_desc' ? 'selected' : '' }}>Precio: mayor a menor</option>
+                        </select>
+                    </div>
+                    <div class="ec-filter-group">
+                        <div class="ec-filter-title">FOTOGRAFÍAS</div>
+                        <label class="ec-radio"><input type="radio" name="imagen" value="" {{ !request('imagen') ? 'checked' : '' }}> Todas las imágenes</label>
+                        <label class="ec-radio"><input type="radio" name="imagen" value="si" {{ request('imagen') === 'si' ? 'checked' : '' }}> Solo con fotografía</label>
+                        <label class="ec-radio"><input type="radio" name="imagen" value="no" {{ request('imagen') === 'no' ? 'checked' : '' }}> Sin fotografía</label>
+                    </div>
+                    <div class="ec-filter-group">
+                        <div class="ec-filter-title">RANGO DE PRECIOS</div>
+                        <div class="ec-price-range">
+                            <div><label for="ec-precio-desde">Mínimo (Gs.)</label>
+                                <input type="number" id="ec-precio-desde" name="precio_min" min="0" inputmode="numeric"
+                                    value="{{ request('precio_min') }}" placeholder="0"></div>
+                            <div><label for="ec-precio-hasta">Máximo (Gs.)</label>
+                                <input type="number" id="ec-precio-hasta" name="precio_max" min="0" inputmode="numeric"
+                                    value="{{ request('precio_max') }}" placeholder="Sin límite"></div>
                         </div>
-                    @endif
-                    <span class="ec-status {{ $stockTotal > 0 ? 'is-available' : 'is-unavailable' }}">
-                        <span class="ec-status-dot"></span>
-                        {{ $stockTotal > 0 ? 'Con stock' : 'Sin stock registrado' }}
-                    </span>
+                    </div>
+                    <button type="submit" class="ec-apply-filters">Aplicar filtros <i class="fas fa-arrow-right"></i></button>
+                    <a class="ec-clear-filters" href="{{ route('ecommerce.index') }}"><i class="fas fa-undo-alt"></i> Limpiar filtros</a>
+                </form>
+                <div class="ec-side-note"><i class="fas fa-info-circle"></i>
+                    Disponibilidad basada en el stock registrado. Confirmá las existencias antes de vender.
                 </div>
-                <div class="ec-card-body">
-                    <div class="ec-line-badge">{{ $producto->linea_desc ?: 'Sin clasificar' }}</div>
-                    <h2 class="ec-product-name" title="{{ $producto->descripcion }}">{{ $producto->descripcion }}</h2>
-                    <div class="ec-product-code">Código base: <strong>{{ $producto->codigo_base }}</strong></div>
-                    <div class="ec-price">
-                        Gs. {{ number_format($producto->precio_desde, 0, ',', '.') }}
-                        @if((float)$producto->precio_hasta !== (float)$producto->precio_desde)
-                            <small>– {{ number_format($producto->precio_hasta, 0, ',', '.') }}</small>
-                        @endif
+            </aside>
+
+            <section class="ec-products-column" aria-label="Listado de productos">
+                <div class="ec-listing-head">
+                    <div>
+                        <span class="ec-listing-eyebrow">COLECCIÓN GOTITAS</span>
+                        <h2>{{ request('linea') === 'sin-linea' ? 'Sin clasificar' :
+                            (request('linea') ? (optional($lineas->firstWhere('linea_cod', request('linea')))->linea_desc ?? 'Productos') : 'Todos los productos') }}</h2>
+                        <p><strong>{{ number_format($productos->total(), 0, ',', '.') }}</strong> productos encontrados
+                            @if(request('buscar')) para <strong>“{{ request('buscar') }}”</strong> @endif
+                        </p>
                     </div>
-                    <div class="ec-size-title">Talles / variantes
-                        <span>{{ $producto->variantes }}</span>
+                    <button type="button" class="ec-mobile-filter-btn" id="ec-mobile-filters" aria-expanded="false">
+                        <i class="fas fa-filter"></i> Filtros
+                    </button>
+                </div>
+
+                @if(request('imagen') || request('precio_min') || request('precio_max') || request('buscar'))
+                    <div class="ec-active-filters">
+                        <span>Filtros activos</span>
+                        @if(request('buscar')) <span class="ec-active-chip">Búsqueda: {{ request('buscar') }}</span> @endif
+                        @if(request('imagen')) <span class="ec-active-chip">{{ request('imagen') === 'si' ? 'Con imagen' : 'Sin imagen' }}</span> @endif
+                        @if(request('precio_min')) <span class="ec-active-chip">Desde Gs. {{ number_format((float)request('precio_min'), 0, ',', '.') }}</span> @endif
+                        @if(request('precio_max')) <span class="ec-active-chip">Hasta Gs. {{ number_format((float)request('precio_max'), 0, ',', '.') }}</span> @endif
+                        <a href="{{ route('ecommerce.index', request()->only('linea')) }}">Quitar filtros <i class="fas fa-times"></i></a>
                     </div>
-                    <div class="ec-sizes">
-                        @foreach($opciones->take(12) as $opcion)
-                            @php
-                                $esVariante = preg_match('/^[0-9]{9}[A-Z]{2}[A-Z0-9]{2}$/i', $opcion->art_codigo);
-                                $talle = $esVariante ? substr($opcion->art_codigo, -2) : 'Único';
-                            @endphp
-                            <span class="ec-size {{ (float)$opcion->disponible > 0 ? '' : 'no-stock' }}"
-                                title="{{ $opcion->art_codigo }}: {{ number_format($opcion->disponible, 0, ',', '.') }} unidades">
-                                {{ $talle }}
-                            </span>
-                        @endforeach
-                        @if($opciones->count() > 12)
-                            <span class="ec-size">+{{ $opciones->count() - 12 }}</span>
-                        @endif
-                    </div>
-                    <div class="ec-meta">
-                        <span><i class="fas fa-boxes mr-1"></i>{{ number_format($stockTotal, 0, ',', '.') }} unidades en stock total</span>
-                        @if($producto->ot)
-                            <span><i class="fas fa-hashtag mr-1"></i>OT {{ $producto->ot }}</span>
-                        @endif
-                        @if($producto->valor_v || $producto->valor_c)
-                            <span title="Valores extraídos del nombre del archivo; no modifican precios del artículo">
-                                Archivo: {{ $producto->valor_v }} {{ $producto->valor_c }}
-                            </span>
-                        @endif
-                    </div>
-                    @can('articulos edit')
-                        <form method="POST" action="{{ route('ecommerce.linea', $producto->codigo_base) }}" class="ec-classify">
-                            @csrf
-                            @method('PATCH')
-                            <label for="linea-{{ $loop->index }}">Clasificar línea</label>
-                            <div class="d-flex">
-                                <select id="linea-{{ $loop->index }}" name="linea_cod" class="form-control form-control-sm">
-                                    <option value="">Sin clasificar</option>
-                                    @foreach($lineas as $linea)
-                                        <option value="{{ $linea->linea_cod }}" {{ (string)$producto->linea_cod === (string)$linea->linea_cod ? 'selected' : '' }}>
-                                            {{ $linea->linea_desc }}
-                                        </option>
-                                    @endforeach
-                                </select>
-                                <button type="submit" class="btn btn-outline-primary btn-sm ml-1" title="Guardar línea">
-                                    <i class="fas fa-save"></i>
+                @endif
+
+                <div class="ec-products-grid">
+                    @forelse($productos as $producto)
+                        @php
+                            $opciones = $variantes->get($producto->codigo_base, collect());
+                            $stockTotal = $opciones->sum('disponible');
+                            $fotoUrl = $producto->imagen ? route('ecommerce.foto', ['codigo' => $producto->codigo_base]) : null;
+                            $fotoCodigo = $producto->imagen_codigo ?: $producto->codigo_base;
+                        @endphp
+                        <article class="ec-product-card">
+                            <div class="ec-image-surface {{ $fotoUrl ? '' : 'ec-image-failed' }}">
+                                @if($fotoUrl)
+                                    <button type="button" class="ec-image-open js-ec-open" data-template="ec-tpl-{{ $loop->index }}"
+                                        aria-label="Ver detalles de {{ $producto->descripcion }}">
+                                        <img src="{{ $fotoUrl }}" class="ec-product-image"
+                                            alt="Fotografía de {{ $producto->descripcion }}" loading="lazy"
+                                            decoding="async" onerror="this.closest('.ec-image-surface').classList.add('ec-image-failed')">
+                                    </button>
+                                @endif
+                                <div class="ec-image-placeholder">
+                                    <i class="fas fa-tshirt"></i><span>Imagen no disponible</span>
+                                </div>
+                                <span class="ec-photo-label">{{ $producto->linea_desc ?: 'COLECCIÓN' }}</span>
+                                @if($stockTotal > 0)
+                                    <span class="ec-stock-badge"><i class="fas fa-circle"></i> Stock registrado</span>
+                                @else
+                                    <span class="ec-stock-badge ec-stock-empty"><i class="fas fa-circle"></i> Sin stock registrado</span>
+                                @endif
+                                <button type="button" class="ec-quick-icon js-ec-open" data-template="ec-tpl-{{ $loop->index }}"
+                                    aria-label="Vista rápida de {{ $producto->descripcion }}" title="Vista rápida">
+                                    <i class="far fa-eye"></i>
                                 </button>
                             </div>
-                        </form>
-                    @endcan
-                    @can('articulos destroy')
-                        @if($producto->imagen)
-                            <form method="POST" action="{{ route('ecommerce.imagen.eliminar', $producto->codigo_base) }}"
-                                class="ec-remove-photo" onsubmit="return confirm('¿Retirar la foto de este producto? El artículo no se eliminará.');">
-                                @csrf
-                                @method('DELETE')
-                                <button type="submit"><i class="far fa-trash-alt mr-1"></i>Retirar fotografía</button>
-                            </form>
-                        @endif
-                    @endcan
+                            <div class="ec-card-information">
+                                <span class="ec-card-category">{{ $producto->linea_desc ?: 'Sin clasificar' }}</span>
+                                <h3>{{ $producto->descripcion }}</h3>
+                                <div class="ec-product-sku">Código: {{ $producto->codigo_base }}</div>
+                                <div class="ec-card-price">
+                                    <strong>Gs. {{ number_format($producto->precio_desde, 0, ',', '.') }}</strong>
+                                    @if((float)$producto->precio_hasta != (float)$producto->precio_desde)
+                                        <small>hasta Gs. {{ number_format($producto->precio_hasta, 0, ',', '.') }}</small>
+                                    @endif
+                                </div>
+                                <div class="ec-card-sizes">
+                                    <span>Talles:</span>
+                                    @foreach($opciones->take(8) as $opcion)
+                                        @php($talle = preg_match('/^[0-9]{9}[A-Z]{2}[A-Z0-9]{2}$/i', $opcion->art_codigo) ? substr($opcion->art_codigo, -2) : 'Único')
+                                        <span class="{{ (float)$opcion->disponible <= 0 ? 'ec-size-disabled' : '' }}"
+                                            title="{{ $opcion->art_codigo }} · {{ number_format($opcion->disponible, 0, ',', '.') }} unidades registradas">{{ $talle }}</span>
+                                    @endforeach
+                                    @if($opciones->count() > 8)<span>+{{ $opciones->count()-8 }}</span>@endif
+                                </div>
+                                <button type="button" class="ec-view-product js-ec-open" data-template="ec-tpl-{{ $loop->index }}">
+                                    Ver producto <i class="fas fa-arrow-right"></i>
+                                </button>
+                            </div>
+                        </article>
+
+                        <template id="ec-tpl-{{ $loop->index }}">
+                            <div class="ec-detail-grid">
+                                <div class="ec-detail-image {{ $fotoUrl ? '' : 'ec-image-failed' }}">
+                                    @if($fotoUrl)
+                                        <img src="{{ $fotoUrl }}" alt="Fotografía de {{ $producto->descripcion }}"
+                                            onerror="this.parentElement.classList.add('ec-image-failed')">
+                                    @endif
+                                    <div class="ec-detail-fallback"><i class="fas fa-tshirt"></i><span>Imagen no disponible</span></div>
+                                </div>
+                                <div class="ec-detail-content">
+                                    <span class="ec-detail-kicker">{{ $producto->linea_desc ?: 'Colección Gotitas' }}</span>
+                                    <h2 id="ec-dialog-title">{{ $producto->descripcion }}</h2>
+                                    <div class="ec-detail-sku">Código base: <strong>{{ $producto->codigo_base }}</strong></div>
+                                    <div class="ec-detail-price">Gs. {{ number_format($producto->precio_desde, 0, ',', '.') }}
+                                        @if((float)$producto->precio_hasta != (float)$producto->precio_desde)
+                                            <small>– Gs. {{ number_format($producto->precio_hasta, 0, ',', '.') }}</small>
+                                        @endif
+                                    </div>
+                                    <div class="ec-detail-rule"></div>
+                                    <h3>Talles y stock registrado</h3>
+                                    <div class="ec-detail-variants">
+                                        @forelse($opciones as $opcion)
+                                            @php($talle = preg_match('/^[0-9]{9}[A-Z]{2}[A-Z0-9]{2}$/i', $opcion->art_codigo) ? substr($opcion->art_codigo, -2) : 'Único')
+                                            <div class="ec-detail-variant">
+                                                <b>{{ $talle }}</b>
+                                                <span>{{ $opcion->art_codigo }}</span>
+                                                <small>{{ number_format($opcion->disponible, 0, ',', '.') }} uds.</small>
+                                            </div>
+                                        @empty
+                                            <p>Sin variantes registradas.</p>
+                                        @endforelse
+                                    </div>
+                                    <div class="ec-detail-total"><span>Total registrado</span><strong>{{ number_format($stockTotal, 0, ',', '.') }} unidades</strong></div>
+                                    @if($producto->ot || $producto->fecha_archivo || $producto->valor_v || $producto->valor_c)
+                                        <div class="ec-detail-metadata">
+                                            @if($producto->ot) <span>OT <strong>{{ $producto->ot }}</strong></span> @endif
+                                            @if($producto->fecha_archivo) <span>Fecha de foto <strong>{{ \Carbon\Carbon::parse($producto->fecha_archivo)->format('d/m/Y') }}</strong></span> @endif
+                                            @if($producto->valor_v) <span>Archivo <strong>{{ $producto->valor_v }}</strong></span> @endif
+                                            @if($producto->valor_c) <span>Archivo <strong>{{ $producto->valor_c }}</strong></span> @endif
+                                        </div>
+                                    @endif
+                                    @can('articulos edit')
+                                        <div class="ec-detail-manage">
+                                            <h3><i class="fas fa-cog"></i> Administrar producto</h3>
+                                            <form method="POST" action="{{ route('ecommerce.linea', $producto->codigo_base) }}">
+                                                @csrf @method('PATCH')
+                                                <label for="ec-modal-linea-{{ $loop->index }}">Clasificar en línea</label>
+                                                <div class="ec-detail-inline">
+                                                    <select name="linea_cod" id="ec-modal-linea-{{ $loop->index }}">
+                                                        <option value="">Sin clasificar</option>
+                                                        @foreach($lineas as $lineaItem)
+                                                            <option value="{{ $lineaItem->linea_cod }}"
+                                                                {{ (string)$producto->linea_cod === (string)$lineaItem->linea_cod ? 'selected' : '' }}>
+                                                                {{ $lineaItem->linea_desc }}
+                                                            </option>
+                                                        @endforeach
+                                                    </select>
+                                                    <button type="submit">Guardar</button>
+                                                </div>
+                                            </form>
+                                            @can('articulos destroy')
+                                                @if($producto->imagen)
+                                                    <form method="POST" action="{{ route('ecommerce.imagen.eliminar', $fotoCodigo) }}"
+                                                        class="ec-detail-remove" onsubmit="return confirm('¿Retirar esta imagen? {{ strlen($fotoCodigo) === 9 ? 'Es una imagen general y afectará a todos los colores que la utilizan.' : 'No se eliminará el artículo.' }}');">
+                                                        @csrf @method('DELETE')
+                                                        <button type="submit"><i class="fas fa-trash-alt"></i>
+                                                            {{ strlen($fotoCodigo) === 9 ? 'Retirar fotografía general' : 'Retirar fotografía' }}
+                                                        </button>
+                                                    </form>
+                                                @endif
+                                            @endcan
+                                        </div>
+                                    @endcan
+                                </div>
+                            </div>
+                        </template>
+                    @empty
+                        <div class="ec-no-results">
+                            <i class="fas fa-search"></i>
+                            <h3>No encontramos productos</h3>
+                            <p>Probá con otras palabras, un código o quitá algunos filtros.</p>
+                            <a href="{{ route('ecommerce.index') }}">Ver todos los artículos</a>
+                        </div>
+                    @endforelse
                 </div>
-            </article>
-        @empty
-            <div class="ec-empty">
-                <i class="fas fa-search"></i>
-                <h3>No encontramos productos</h3>
-                <p>Probá con otro código, línea o filtro. También podés cargar imágenes desde el importador.</p>
-                <a href="{{ route('ecommerce.index') }}" class="btn btn-primary">Ver todos los artículos</a>
-            </div>
-        @endforelse
+
+                <div class="ec-pagination-bar">
+                    <span>Mostrando {{ $productos->firstItem() ?? 0 }} – {{ $productos->lastItem() ?? 0 }}
+                        de {{ number_format($productos->total(), 0, ',', '.') }} productos</span>
+                    @if($productos->hasPages()) <div>{{ $productos->links() }}</div> @endif
+                </div>
+            </section>
+        </div>
+    </main>
+    <footer class="ec-store-footer">
+        <div><span class="ec-footer-logo">G.</span><strong>GOTITAS</strong><small>Catálogo digital interno</small></div>
+        <span>Precios y stock según la información registrada en el sistema.</span>
+        <a href="{{ route('home') }}">Volver al panel <i class="fas fa-arrow-right"></i></a>
+    </footer>
+</div>
+
+<dialog id="ec-detail-dialog" class="ec-product-dialog" aria-labelledby="ec-dialog-title">
+    <div class="ec-dialog-header">
+        <span><i class="fas fa-shopping-bag"></i> DETALLE DEL PRODUCTO</span>
+        <button type="button" class="ec-dialog-close" id="ec-dialog-close" aria-label="Cerrar detalle">
+            <i class="fas fa-times"></i>
+        </button>
     </div>
+    <div id="ec-dialog-body"></div>
+</dialog>
 
-    @if($productos->hasPages())
-        <div class="ec-pagination d-flex justify-content-center mt-4">{{ $productos->links() }}</div>
-    @endif
-</section>
-
-<style>
-.ecommerce-heading{padding-bottom:14px!important}.ec-eyebrow{font-size:11px;font-weight:800;letter-spacing:1.5px;color:#3b72ce;margin-bottom:4px}
-.ecommerce-heading h1{font-size:27px!important;letter-spacing:-.7px}.ec-upload-btn{padding:11px 17px;font-weight:700}
-.ecommerce-content{max-width:1700px;margin:0 auto}.ec-line-wrap,.ec-filter-box{background:#fff;border:1px solid #e3eaf3;border-radius:17px;padding:17px 19px;box-shadow:0 8px 26px rgba(28,48,77,.04);margin-bottom:17px}
-.ec-nav-label{font-weight:800;color:#253d61;font-size:13px;margin-bottom:12px}.ec-line-nav{display:flex;align-items:center;gap:9px;overflow-x:auto;padding:1px 0 8px;scrollbar-width:thin}
-.ec-line-tab{display:inline-flex;align-items:center;white-space:nowrap;border:1px solid #dce5f2;background:#f8faff;color:#4b6280;border-radius:100px;padding:9px 15px;font-size:12px;font-weight:700;text-decoration:none!important;transition:.15s}
-.ec-line-tab:hover{background:#eaf2ff;color:#2359b6}.ec-line-tab.selected{background:#2465d3;border-color:#2465d3;color:#fff;box-shadow:0 4px 10px rgba(36,101,211,.18)}
-.ec-filter-box label{font-size:11px!important;font-weight:800!important;color:#61758f!important;letter-spacing:.2px}.ec-filter-box .form-control{height:41px!important}.ec-filter-actions{border-top:1px solid #eff3f8;padding-top:11px}
-.ec-results-bar{gap:8px;margin:21px 1px 15px;font-size:14px;color:#324a68}.ec-results-bar strong{font-size:19px;color:#1c375a}.ec-results-page{font-size:12px;color:#788ba3}
-.ec-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:17px}
-.ec-card{background:#fff;border:1px solid #e3eaf3;border-radius:17px;box-shadow:0 6px 20px rgba(24,44,76,.045);overflow:hidden;display:flex;flex-direction:column;min-width:0;transition:transform .18s ease,box-shadow .18s ease}
-.ec-card:hover{transform:translateY(-3px);box-shadow:0 15px 30px rgba(27,47,79,.10)}.ec-photo-wrap{height:220px;position:relative;background:linear-gradient(145deg,#fff,#f5f8fc);display:flex;align-items:center;justify-content:center;padding:14px;border-bottom:1px solid #f0f3f7}
-.ec-photo{width:100%;height:100%;object-fit:contain;mix-blend-mode:multiply}.ec-no-photo{display:flex;flex-direction:column;align-items:center;gap:11px;color:#a4b3c8;font-size:12px;font-weight:650}
-.ec-no-photo i{font-size:47px;color:#d0dbe9}.ec-status{position:absolute;left:12px;bottom:12px;display:inline-flex;align-items:center;gap:7px;font-size:10px;font-weight:800;padding:6px 10px;background:#fff;border:1px solid #e8edf5;border-radius:100px;box-shadow:0 2px 8px rgba(0,0,0,.06)}
-.ec-status-dot{width:7px;height:7px;border-radius:50%;background:#c6cbd4}.ec-status.is-available{color:#287e56}.ec-status.is-available .ec-status-dot{background:#29a76b}.ec-status.is-unavailable{color:#78859a}
-.ec-card-body{padding:17px;display:flex;flex-direction:column;flex:1}.ec-line-badge{font-size:10px;letter-spacing:.3px;text-transform:uppercase;color:#3170bf;font-weight:800;margin-bottom:7px}
-.ec-product-name{font-size:15px!important;line-height:1.35;font-weight:800;color:#223a5a;min-height:41px;margin:0 0 5px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
-.ec-product-code{font-size:11px;color:#7889a0;margin-bottom:9px}.ec-product-code strong{color:#3c536f}.ec-price{color:#172f50;font-size:20px;font-weight:900;line-height:1.3;margin-bottom:15px;letter-spacing:-.5px}.ec-price small{font-size:12px;color:#70839b;font-weight:650}
-.ec-size-title{font-size:11px;font-weight:800;color:#687d97;display:flex;justify-content:space-between;margin-bottom:8px}.ec-size-title span{color:#98a9bd}
-.ec-sizes{display:flex;gap:5px;flex-wrap:wrap;margin-bottom:13px;min-height:30px}.ec-size{display:inline-flex;align-items:center;justify-content:center;min-width:34px;height:27px;border:1px solid #dce6f3;background:#f7faff;border-radius:6px;font-size:10px;font-weight:800;color:#355b87;padding:0 7px}
-.ec-size.no-stock{background:#f8f9fc;color:#aab6c6;border-color:#edf1f7;text-decoration:line-through}
-.ec-meta{border-top:1px solid #eef2f7;padding-top:11px;font-size:11px;color:#72849d;display:flex;flex-direction:column;gap:5px;margin-top:auto}
-.ec-classify{margin-top:12px;padding-top:10px;border-top:1px solid #edf2f7}.ec-classify label{font-size:10px!important;color:#7a8da4!important;margin-bottom:4px}
-.ec-classify .form-control{min-width:0;height:32px!important;font-size:11px}.ec-classify button{width:38px;flex:0 0 38px}
-.ec-remove-photo{text-align:right;margin-top:7px}.ec-remove-photo button{background:none;border:0;color:#a66b72;font-size:10px;cursor:pointer;padding:4px}.ec-remove-photo button:hover{color:#bb2537}
-.ec-empty{grid-column:1/-1;text-align:center;padding:65px 15px;background:#fff;border:1px dashed #cad7e9;border-radius:16px}
-.ec-empty>i{font-size:38px;color:#a6b9d4;margin-bottom:12px}.ec-empty h3{font-size:19px;font-weight:800}.ec-empty p{color:#70829b}
-@media(max-width:1390px){.ec-grid{grid-template-columns:repeat(3,minmax(0,1fr))}}@media(max-width:1000px){.ec-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}@media(max-width:575px){.ec-grid{grid-template-columns:1fr}.ec-photo-wrap{height:250px}.ec-line-wrap,.ec-filter-box{padding:14px}.ec-results-bar{font-size:12px}}
-</style>
+@include('ecommerce.styles')
+@include('ecommerce.scripts')
 @endsection

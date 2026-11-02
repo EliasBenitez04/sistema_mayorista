@@ -53,3 +53,10 @@ La fotografía es una por código base + color, compartida visualmente con las v
 ## Nota de servidor
 Las fotos NO deben versionarse en Git. El almacenamiento es local al servidor que recibe la importación. Si se accede desde varias instalaciones, compartir el almacenamiento public o configurar un disco central.
 Si la carga no llega al servidor, revisar upload_max_filesize, post_max_size y max_file_uploads de PHP y habilitar extensión ZIP para paquetes.
+
+## Diseño tipo tienda
+El catálogo usa navegación horizontal por líneas, buscador, filtros laterales, tarjetas visuales
+y modal de detalle para cada familia/color. Los controles de clasificación y eliminación
+de fotografía se mantienen en el modal (sujetos a permisos).
+El botón "Vista tienda" oculta temporalmente el menú administrativo y permite volver al panel.
+No hay carrito ni checkout; el catálogo es interno y de consulta.

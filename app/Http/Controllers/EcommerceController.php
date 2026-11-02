@@ -12,7 +12,7 @@ class EcommerceController extends Controller
 {
     public function __construct()
     {
-        $this->middleware(['auth', 'permission:articulos index'])->only('index');
+        $this->middleware(['auth', 'permission:articulos index'])->only('index', 'foto');
         $this->middleware(['auth', 'permission:articulos create'])->only('importarForm', 'importar');
         $this->middleware(['auth', 'permission:articulos edit'])->only('asignarLinea');
         $this->middleware(['auth', 'permission:articulos destroy'])->only('eliminarImagen');
@@ -65,7 +65,8 @@ class EcommerceController extends Controller
                 . $ot . ' AS ot, COALESCE(e.valor_v, eg.valor_v) AS valor_v, '
                 . 'COALESCE(e.valor_c, eg.valor_c) AS valor_c, '
                 . 'COALESCE(e.fecha_archivo, eg.fecha_archivo) AS fecha_archivo, '
-                . $descripcionArchivo . ' AS descripcion_archivo');
+                . $descripcionArchivo . ' AS descripcion_archivo, '
+                . 'CASE WHEN e.imagen IS NOT NULL THEN e.codigo_base ELSE eg.codigo_base END AS imagen_codigo');
 
         $buscar = trim((string) $request->input('buscar', ''));
         if ($buscar !== '') {
@@ -127,6 +128,51 @@ class EcommerceController extends Controller
         // Stock: filtrar solamente sobre los productos recuperados cuando se solicita.
         // La paginación permanece por familias; se evita anunciar stock si no está registrado.
         return view('ecommerce.index', compact('productos', 'lineas', 'variantes'));
+    }
+
+
+    /**
+     * Entrega fotos desde storage/app/public sin depender de enlaces simbólicos
+     * public/storage (frecuente causa de imágenes rotas en XAMPP/Windows).
+     * No devuelve rutas del disco ni permite acceder a otros archivos.
+     */
+    public function foto(string $codigo)
+    {
+        $codigo = strtoupper(trim($codigo));
+        if (!preg_match('/^[0-9A-Z]{9,13}$/', $codigo)) {
+            abort(404);
+        }
+
+        $imagen = DB::table('ecommerce_catalogo')
+            ->where('codigo_base', $codigo)
+            ->value('imagen');
+        if (!$imagen && preg_match('/^[0-9]{9}[A-Z]{2}$/', $codigo)) {
+            $imagen = DB::table('ecommerce_catalogo')
+                ->where('codigo_base', substr($codigo, 0, 9))
+                ->value('imagen');
+        }
+
+        if (!$imagen || !preg_match('~^ecommerce/[A-Za-z0-9_-]+\.(?:jpe?g|png|webp)$~i', $imagen)) {
+            abort(404);
+        }
+
+        $disco = Storage::disk('public');
+        if (!$disco->exists($imagen)) {
+            Log::warning('Ecommerce: imagen registrada pero ausente del almacenamiento', [
+                'codigo' => $codigo, 'ruta' => $imagen
+            ]);
+            abort(404);
+        }
+
+        $extension = strtolower(pathinfo($imagen, PATHINFO_EXTENSION));
+        $mime = in_array($extension, ['jpg', 'jpeg'], true) ? 'image/jpeg'
+            : ($extension === 'png' ? 'image/png' : 'image/webp');
+
+        return $disco->response($imagen, null, [
+            'Content-Type' => $mime,
+            'Cache-Control' => 'private, max-age=3600',
+            'X-Content-Type-Options' => 'nosniff',
+        ]);
     }
 
     public function importarForm()

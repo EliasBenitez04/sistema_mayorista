@@ -158,6 +158,7 @@ Route::post('password/reset', [ResetPasswordController::class, 'reset'])
 |--------------------------------------------------------------------------
 */
 Route::get('/ecommerce', [App\Http\Controllers\EcommerceController::class, 'index'])->name('ecommerce.index');
+Route::get('/ecommerce/foto/{codigo}', [App\Http\Controllers\EcommerceController::class, 'foto'])->name('ecommerce.foto');
 Route::get('/ecommerce/importar', [App\Http\Controllers\EcommerceController::class, 'importarForm'])->name('ecommerce.importar.form');
 Route::post('/ecommerce/importar', [App\Http\Controllers\EcommerceController::class, 'importar'])->name('ecommerce.importar');
 Route::patch('/ecommerce/linea/{codigo}', [App\Http\Controllers\EcommerceController::class, 'asignarLinea'])->name('ecommerce.linea');
