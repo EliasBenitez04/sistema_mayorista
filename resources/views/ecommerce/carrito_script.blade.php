@@ -11,8 +11,21 @@ document.addEventListener('DOMContentLoaded', function () {
     const countBadges = () => document.querySelectorAll('.js-ec-cart-count');
     const feedback = document.getElementById('ec-cart-feedback');
     const continueButton = document.getElementById('ec-cart-continue');
-    let busy = false;
     let lastFocus = null;
+    let pendientes = 0;
+    let unidades = 0;
+    let cola = Promise.resolve();
+
+    function actualizarAcciones() {
+        const deshabilitado = unidades < 1 || pendientes > 0;
+        continueButton.disabled = deshabilitado;
+        document.querySelectorAll('.js-ec-cart-continue').forEach(function (boton) {
+            boton.disabled = deshabilitado;
+        });
+        document.dispatchEvent(new CustomEvent('ecommerce:carrito-pendiente', {
+            detail: { pendientes: pendientes }
+        }));
+    }
 
     function showError(message) {
         feedback.textContent = message || 'No se pudo actualizar el carrito.';
@@ -33,7 +46,9 @@ document.addEventListener('DOMContentLoaded', function () {
         countBadges().forEach(x => { x.textContent = String(data.unidades || 0); });
         document.getElementById('ec-cart-units').textContent = String(data.unidades || 0);
         document.getElementById('ec-cart-total').textContent = money(data.total || 0);
-        continueButton.disabled = !list.length;
+        unidades = Number(data.unidades || 0);
+        actualizarAcciones();
+        document.dispatchEvent(new CustomEvent('ecommerce:carrito-actualizado', { detail: data }));
         items.replaceChildren();
         if (!list.length) {
             const empty = el('div', 'ec-cart-empty');
@@ -72,8 +87,6 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 
     async function api(method, url, payload = null) {
-        if (busy) return null;
-        busy = true;
         try {
             const response = await fetch(url, {
                 method,
@@ -99,10 +112,32 @@ document.addEventListener('DOMContentLoaded', function () {
         } catch (err) {
             showError(err.message);
             return null;
-        } finally {
-            busy = false;
         }
     }
+
+    // Todas las inserciones se encolan; ningún clic rápido se pierde
+    // por otra petición que todavía está en curso.
+    function encolar(method, url, payload = null) {
+        const modifica = method !== 'GET';
+        if (modifica) {
+            pendientes++;
+            actualizarAcciones();
+        }
+        const tarea = cola.then(function () {
+            return api(method, url, payload);
+        });
+        cola = tarea.then(function () {}, function () {});
+        return tarea.finally(function () {
+            if (modifica) {
+                pendientes = Math.max(0, pendientes - 1);
+                actualizarAcciones();
+            }
+        });
+    }
+
+    window.ecommerceCarritoAgregar = function (codigo, cantidad) {
+        return encolar('POST', base, { codigo: codigo, cantidad: cantidad });
+    };
 
     function openCart() {
         const productModal = document.getElementById('ec-detail-dialog');
@@ -149,7 +184,7 @@ document.addEventListener('DOMContentLoaded', function () {
         }
         button.disabled = true;
         try {
-            const result = await api('POST', base, { codigo: button.dataset.codigo, cantidad: number });
+            const result = await encolar('POST', base, { codigo: button.dataset.codigo, cantidad: number });
             if (result) {
                 const original = button.innerHTML;
                 button.innerHTML = '<i class="fas fa-check"></i> Agregado';
@@ -164,12 +199,12 @@ document.addEventListener('DOMContentLoaded', function () {
 
     items.addEventListener('click', async function (event) {
         const button = event.target.closest('button[data-codigo]');
-        if (!button || busy) return;
+        if (!button) return;
         const code = button.dataset.codigo;
         const row = button.closest('.ec-cart-line');
         const input = row.querySelector('.js-cart-quantity');
         if (button.classList.contains('js-cart-remove')) {
-            await api('DELETE', base + '/' + encodeURIComponent(code));
+            await encolar('DELETE', base + '/' + encodeURIComponent(code));
             return;
         }
         const current = Number(input.value);
@@ -178,25 +213,25 @@ document.addEventListener('DOMContentLoaded', function () {
             showError('Para quitar un producto usá la opción "Quitar del carrito".');
             return;
         }
-        await api('PATCH', base + '/' + encodeURIComponent(code), { cantidad: next });
+        await encolar('PATCH', base + '/' + encodeURIComponent(code), { cantidad: next });
     });
     items.addEventListener('change', async function (event) {
         const input = event.target.closest('.js-cart-quantity');
-        if (!input || busy) return;
+        if (!input) return;
         const qty = Number(input.value);
         if (!Number.isInteger(qty) || qty < 1 || qty > 9999) {
             showError('Ingresá una cantidad entera entre 1 y 9.999.');
             input.focus();
             return;
         }
-        await api('PATCH', base + '/' + encodeURIComponent(input.dataset.codigo), { cantidad: qty });
+        await encolar('PATCH', base + '/' + encodeURIComponent(input.dataset.codigo), { cantidad: qty });
     });
     document.getElementById('ec-cart-clear').addEventListener('click', async function () {
         if (!confirm('¿Vaciar todos los productos del carrito?')) return;
-        await api('DELETE', base);
+        await encolar('DELETE', base);
     });
 
     // Se lee la sesión al entrar al catálogo, así los artículos persisten entre páginas.
-    api('GET', base);
+    encolar('GET', base);
 });
 </script>

@@ -154,6 +154,35 @@
                     </button>
                 </div>
 
+                @can('pedido_compras create')
+                    <div class="ec-fastbar" aria-label="Selector rápido de cantidades">
+                        <div class="ec-fastbar-title">
+                            <span class="ec-fastbar-icon"><i class="fas fa-bolt"></i></span>
+                            <div><strong>Pedido rápido</strong><small>Elegí la cantidad y tocá los talles para agregarlos.</small></div>
+                        </div>
+                        <div class="ec-fastbar-controls">
+                            <label for="ec-insert-qty">Cantidad por clic</label>
+                            <div class="ec-fastbar-stepper">
+                                <button type="button" data-ec-qty-step="-1" aria-label="Restar cantidad"><i class="fas fa-minus"></i></button>
+                                <input type="number" min="1" max="9999" value="1" id="ec-insert-qty"
+                                    inputmode="numeric" aria-label="Cantidad de inserción">
+                                <button type="button" data-ec-qty-step="1" aria-label="Sumar cantidad"><i class="fas fa-plus"></i></button>
+                            </div>
+                            <div class="ec-fastbar-presets" aria-label="Cantidades frecuentes">
+                                @foreach([1, 3, 6, 12] as $rapido)
+                                    <button type="button" class="js-ec-qty-preset {{ $rapido === 1 ? 'is-active' : '' }}"
+                                        data-qty="{{ $rapido }}">{{ $rapido }}</button>
+                                @endforeach
+                            </div>
+                        </div>
+                        <button type="button" class="ec-fastbar-cart js-ec-cart-open">
+                            <i class="fas fa-shopping-cart"></i>
+                            <span>Ver carrito</span>
+                            <strong class="js-ec-cart-count">0</strong>
+                        </button>
+                    </div>
+                @endcan
+
                 @if(request('imagen') || request('precio_min') || request('precio_max') || request('buscar'))
                     <div class="ec-active-filters">
                         <span>Filtros activos</span>
@@ -170,6 +199,7 @@
                         @php
                             $opciones = $variantes->get($producto->codigo_base, collect());
                             $stockTotal = $opciones->sum('disponible');
+                            $stockParaPedir = $opciones->sum('disponible_pedir');
                             $fotoUrl = $producto->imagen ? route('ecommerce.foto', ['codigo' => $producto->codigo_base]) : null;
                             $fotoCodigo = $producto->imagen_codigo ?: $producto->codigo_base;
                         @endphp
@@ -187,10 +217,10 @@
                                     <i class="fas fa-tshirt"></i><span>Imagen no disponible</span>
                                 </div>
                                 <span class="ec-photo-label">{{ $producto->linea_desc ?: 'COLECCIÓN' }}</span>
-                                @if($stockTotal > 0)
-                                    <span class="ec-stock-badge"><i class="fas fa-circle"></i> Stock registrado</span>
+                                @if($stockParaPedir > 0)
+                                    <span class="ec-stock-badge"><i class="fas fa-circle"></i> Disponible para pedir</span>
                                 @else
-                                    <span class="ec-stock-badge ec-stock-empty"><i class="fas fa-circle"></i> Sin stock registrado</span>
+                                    <span class="ec-stock-badge ec-stock-empty"><i class="fas fa-circle"></i> Sin disponible para pedir</span>
                                 @endif
                                 <button type="button" class="ec-quick-icon js-ec-open" data-template="ec-tpl-{{ $loop->index }}"
                                     aria-label="Vista rápida de {{ $producto->descripcion }}" title="Vista rápida">
@@ -207,26 +237,45 @@
                                         <small>hasta Gs. {{ number_format($producto->precio_hasta, 0, ',', '.') }}</small>
                                     @endif
                                 </div>
-                                <div class="ec-card-sizes">
-                                    <span>Talles:</span>
-                                    @foreach($opciones->take(8) as $opcion)
-                                        @php($talle = preg_match('/^[0-9]{9}[A-Z]{2}[A-Z0-9]{2}$/i', $opcion->art_codigo) ? substr($opcion->art_codigo, -2) : 'Único')
-                                        <span class="{{ (float)$opcion->disponible <= 0 ? 'ec-size-disabled' : '' }}"
-                                            title="{{ $opcion->art_codigo }} · {{ number_format($opcion->disponible, 0, ',', '.') }} unidades registradas">{{ $talle }}</span>
-                                    @endforeach
-                                    @if($opciones->count() > 8)<span>+{{ $opciones->count()-8 }}</span>@endif
+                                <div class="ec-card-sizes ec-card-sizes-quick">
+                                    <div class="ec-sizes-heading">
+                                        <strong>Talles</strong>
+                                        @can('pedido_compras create')
+                                            <span>Un clic para agregar <i class="fas fa-plus-circle"></i></span>
+                                        @endcan
+                                    </div>
+                                    <div class="ec-sizes-buttons">
+                                        @foreach($opciones->take(12) as $opcion)
+                                            @php($talle = preg_match('/^[0-9]{9}[A-Z]{2}[A-Z0-9]{2}$/i', $opcion->art_codigo) ? substr($opcion->art_codigo, -2) : 'Único')
+                                            @can('pedido_compras create')
+                                                <button type="button"
+                                                    class="ec-quick-size js-ec-quick-add {{ (float)$opcion->disponible_pedir > 0 ? '' : 'is-unavailable' }}"
+                                                    data-codigo="{{ $opcion->art_codigo }}"
+                                                    data-talle="{{ $talle }}"
+                                                    {{ (float)$opcion->disponible_pedir <= 0 ? 'disabled' : '' }}
+                                                    title="{{ $opcion->art_codigo }} · {{ number_format($opcion->disponible_pedir, 0, ',', '.') }} unidades disponibles para pedido">
+                                                    <span>{{ $talle }}</span>
+                                                    <small>{{ (float)$opcion->disponible_pedir > 0 ? number_format($opcion->disponible_pedir, 0, ',', '.') . ' disp.' : 'Sin disp.' }}</small>
+                                                    <em class="ec-size-in-cart" hidden></em>
+                                                </button>
+                                            @else
+                                                <span class="ec-quick-size {{ (float)$opcion->disponible_pedir > 0 ? '' : 'is-unavailable' }}">
+                                                    <span>{{ $talle }}</span>
+                                                    <small>{{ number_format($opcion->disponible_pedir, 0, ',', '.') }} disp.</small>
+                                                </span>
+                                            @endcan
+                                        @endforeach
+                                        @if($opciones->count() > 12)
+                                            <button type="button" class="ec-quick-more js-ec-open"
+                                                data-template="ec-tpl-{{ $loop->index }}" title="Ver los demás talles">
+                                                +{{ $opciones->count()-12 }}
+                                            </button>
+                                        @endif
+                                    </div>
                                 </div>
-                                <div class="ec-card-actions">
-                                    <button type="button" class="ec-view-product js-ec-open" data-template="ec-tpl-{{ $loop->index }}">
-                                        Ver producto <i class="fas fa-arrow-right"></i>
-                                    </button>
-                                    @can('pedido_compras create')
-                                        <button type="button" class="ec-add-cart-card js-ec-open" data-template="ec-tpl-{{ $loop->index }}"
-                                            title="Seleccionar talle y cantidad">
-                                            <i class="fas fa-cart-plus"></i> Agregar al carrito
-                                        </button>
-                                    @endcan
-                                </div>
+                                <button type="button" class="ec-view-product js-ec-open" data-template="ec-tpl-{{ $loop->index }}">
+                                    <i class="far fa-eye"></i> Ver información y más talles
+                                </button>
                             </div>
                         </article>
 
@@ -249,7 +298,7 @@
                                         @endif
                                     </div>
                                     <div class="ec-detail-rule"></div>
-                                    <h3>Talles y stock registrado</h3>
+                                    <h3>Talles y disponibilidad para pedidos</h3>
                                     <div class="ec-detail-variants">
                                         @forelse($opciones as $opcion)
                                             @php($talle = preg_match('/^[0-9]{9}[A-Z]{2}[A-Z0-9]{2}$/i', $opcion->art_codigo) ? substr($opcion->art_codigo, -2) : 'Único')
@@ -257,16 +306,18 @@
                                                 <div class="ec-variant-main">
                                                     <b>Talle {{ $talle }}</b>
                                                     <span>{{ $opcion->art_codigo }}</span>
-                                                    <small>{{ number_format($opcion->disponible, 0, ',', '.') }} unidades registradas</small>
+                                                    <small>{{ number_format($opcion->disponible_pedir, 0, ',', '.') }} disponibles para pedido</small>
                                                 </div>
                                                 @can('pedido_compras create')
                                                     <div class="ec-variant-order">
                                                         <label for="ec-qty-{{ $producto->codigo_base }}-{{ $loop->index }}">Cantidad</label>
                                                         <input id="ec-qty-{{ $producto->codigo_base }}-{{ $loop->index }}"
                                                             class="ec-variant-quantity" type="number" min="1" max="9999"
-                                                            value="1" inputmode="numeric" aria-label="Cantidad para el talle {{ $talle }}">
+                                                            value="1" inputmode="numeric" aria-label="Cantidad para el talle {{ $talle }}"
+                                                            {{ (float)$opcion->disponible_pedir <= 0 ? 'disabled' : '' }}>
                                                         <button type="button" class="js-ec-cart-add"
                                                             data-codigo="{{ $opcion->art_codigo }}"
+                                                            {{ (float)$opcion->disponible_pedir <= 0 ? 'disabled' : '' }}
                                                             aria-label="Agregar talle {{ $talle }} al carrito">
                                                             <i class="fas fa-plus"></i> Agregar
                                                         </button>
@@ -348,6 +399,24 @@
             </section>
         </div>
     </main>
+    @can('pedido_compras create')
+        <div class="ec-quick-dock" id="ec-quick-dock" aria-live="polite">
+            <div class="ec-quick-dock-info">
+                <i class="fas fa-shopping-cart"></i>
+                <div><strong><span class="js-ec-cart-count">0</span> unidades</strong>
+                    <small id="ec-quick-dock-total">Gs. 0</small>
+                </div>
+            </div>
+            <button type="button" class="js-ec-cart-open ec-quick-review">Revisar</button>
+            <form method="POST" action="{{ route('ecommerce.carrito.continuar') }}" class="ec-quick-continue-form">
+                @csrf
+                <button type="submit" class="ec-quick-continue js-ec-cart-continue" disabled>
+                    Continuar al pedido <i class="fas fa-arrow-right"></i>
+                </button>
+            </form>
+        </div>
+        <div id="ec-quick-toast" class="ec-quick-toast" role="status" aria-live="polite" hidden></div>
+    @endcan
     <footer class="ec-store-footer">
         <div><span class="ec-footer-logo">G.</span><strong>GOTITAS</strong><small>Catálogo digital interno</small></div>
         <span>Precios y stock según la información registrada en el sistema.</span>
@@ -400,4 +469,6 @@
 @include('ecommerce.carrito_style')
 @include('ecommerce.scripts')
 @include('ecommerce.carrito_script')
+@include('ecommerce.carga_rapida_script')
+@include('ecommerce.carga_rapida_style')
 @endsection

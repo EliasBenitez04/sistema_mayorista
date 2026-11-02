@@ -110,7 +110,7 @@ class EcommerceController extends Controller
         }
 
         // La consulta de stock/talles se limita a los productos de la página actual.
-        $productos = $query->paginate(18)->withQueryString();
+        $productos = $query->paginate(36)->withQueryString();
         $codigos = $productos->pluck('codigo_base')->all();
         $variantes = collect();
         if ($codigos) {
@@ -123,6 +123,31 @@ class EcommerceController extends Controller
                 ->orderBy('a.art_codigo')
                 ->get()
                 ->groupBy('codigo_base');
+
+            // Misma regla de disponibilidad del buscador de pedido:
+            // stock general menos stock de la sucursal del usuario.
+            // La consulta se limita a las variantes de esta página.
+            $codigosVariantes = $variantes->flatten(1)->pluck('art_codigo')->all();
+            $disponibilidad = collect();
+            $codSucursal = auth()->user()->cod_suc;
+            if ($codSucursal !== null && $codigosVariantes) {
+                $disponibilidad = DB::table('stock as s')
+                    ->join('articulos as a', 'a.id_articulo', '=', 's.id_articulo')
+                    ->leftJoin('v_stock_sucursales as v', 'v.codigo', '=', 'a.art_codigo')
+                    ->where('s.cod_suc', $codSucursal)
+                    ->whereIn('a.art_codigo', $codigosVariantes)
+                    ->select('a.art_codigo')
+                    ->selectRaw('GREATEST(COALESCE(MAX(v.stock_general), 0) - COALESCE(MAX(s.cantidad), 0), 0) AS disponible_pedir')
+                    ->groupBy('a.art_codigo')
+                    ->get()
+                    ->keyBy('art_codigo');
+            }
+
+            foreach ($variantes as $grupo) {
+                foreach ($grupo as $item) {
+                    $item->disponible_pedir = (float) ($disponibilidad->get($item->art_codigo)->disponible_pedir ?? 0);
+                }
+            }
         }
 
         // Stock: filtrar solamente sobre los productos recuperados cuando se solicita.

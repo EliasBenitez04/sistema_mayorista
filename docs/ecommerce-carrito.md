@@ -31,3 +31,18 @@ El índice de pedidos ya limpia el borrador pendiente al regresar del flujo exit
 ## Alcance
 No crea pedidos al agregar al carrito. No gestiona pago, compra web pública ni reserva stock.
 El precio/stock mostrado es informativo; el pedido se guarda por la lógica original.
+
+
+## Carga rápida (02/11/2026)
+El catálogo ahora replica el patrón de selección rápida del buscador de Pedidos:
+- Un selector global de **Cantidad por clic** (con −/+, valores 1, 3, 6, 12 y valor manual).
+- Un solo clic sobre el talle de cualquier tarjeta agrega esa cantidad al carrito; no hace falta abrir el detalle.
+- Las cantidades del mismo código se acumulan en sesión Laravel.
+- El número verde sobre cada talle indica cuántas unidades ya están cargadas en el carrito.
+- La barra inferior fija muestra unidades/subtotal y permite revisar o ir directamente al formulario de cliente.
+- En la lista de productos se muestran solo talles con disponibilidad positiva para pedidos, calculada con la misma lógica que el buscador de pedido: stock general - stock de sucursal del usuario. Los demás se identifican como «Sin disp.».
+- Se amplió la paginación a 36 familias por página para reducir la navegación.
+
+**Concurrencia del navegador:** las solicitudes AJAX se encolan de forma serial para no perder clics rápidos. El botón «Continuar al pedido» queda deshabilitado mientras haya cambios pendientes de guardar. La transición al pedido continúa usando POST con CSRF y la sesión actual; los precios finales se leen desde la BD.
+
+La vista ampliada y la edición tradicional del carrito siguen disponibles. No se cambia la lógica de guardado del pedido.
