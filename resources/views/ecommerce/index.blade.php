@@ -25,6 +25,12 @@
             <button type="submit" aria-label="Buscar"><i class="fas fa-search"></i><span>Buscar</span></button>
         </form>
         <div class="ec-header-actions">
+            @can('pedido_compras create')
+                <button type="button" class="ec-header-cart js-ec-cart-open" aria-label="Abrir carrito de pedido">
+                    <i class="fas fa-shopping-cart"></i><span>Mi carrito</span>
+                    <b class="ec-cart-count js-ec-cart-count" aria-live="polite">0</b>
+                </button>
+            @endcan
             @can('articulos create')
                 <a href="{{ route('ecommerce.importar.form') }}" class="ec-header-import">
                     <i class="fas fa-cloud-upload-alt"></i><span>Importar fotos</span>
@@ -210,9 +216,17 @@
                                     @endforeach
                                     @if($opciones->count() > 8)<span>+{{ $opciones->count()-8 }}</span>@endif
                                 </div>
-                                <button type="button" class="ec-view-product js-ec-open" data-template="ec-tpl-{{ $loop->index }}">
-                                    Ver producto <i class="fas fa-arrow-right"></i>
-                                </button>
+                                <div class="ec-card-actions">
+                                    <button type="button" class="ec-view-product js-ec-open" data-template="ec-tpl-{{ $loop->index }}">
+                                        Ver producto <i class="fas fa-arrow-right"></i>
+                                    </button>
+                                    @can('pedido_compras create')
+                                        <button type="button" class="ec-add-cart-card js-ec-open" data-template="ec-tpl-{{ $loop->index }}"
+                                            title="Seleccionar talle y cantidad">
+                                            <i class="fas fa-cart-plus"></i> Agregar al carrito
+                                        </button>
+                                    @endcan
+                                </div>
                             </div>
                         </article>
 
@@ -240,14 +254,38 @@
                                         @forelse($opciones as $opcion)
                                             @php($talle = preg_match('/^[0-9]{9}[A-Z]{2}[A-Z0-9]{2}$/i', $opcion->art_codigo) ? substr($opcion->art_codigo, -2) : 'Único')
                                             <div class="ec-detail-variant">
-                                                <b>{{ $talle }}</b>
-                                                <span>{{ $opcion->art_codigo }}</span>
-                                                <small>{{ number_format($opcion->disponible, 0, ',', '.') }} uds.</small>
+                                                <div class="ec-variant-main">
+                                                    <b>Talle {{ $talle }}</b>
+                                                    <span>{{ $opcion->art_codigo }}</span>
+                                                    <small>{{ number_format($opcion->disponible, 0, ',', '.') }} unidades registradas</small>
+                                                </div>
+                                                @can('pedido_compras create')
+                                                    <div class="ec-variant-order">
+                                                        <label for="ec-qty-{{ $producto->codigo_base }}-{{ $loop->index }}">Cantidad</label>
+                                                        <input id="ec-qty-{{ $producto->codigo_base }}-{{ $loop->index }}"
+                                                            class="ec-variant-quantity" type="number" min="1" max="9999"
+                                                            value="1" inputmode="numeric" aria-label="Cantidad para el talle {{ $talle }}">
+                                                        <button type="button" class="js-ec-cart-add"
+                                                            data-codigo="{{ $opcion->art_codigo }}"
+                                                            aria-label="Agregar talle {{ $talle }} al carrito">
+                                                            <i class="fas fa-plus"></i> Agregar
+                                                        </button>
+                                                    </div>
+                                                @endcan
                                             </div>
                                         @empty
                                             <p>Sin variantes registradas.</p>
                                         @endforelse
                                     </div>
+                                    @can('pedido_compras create')
+                                        <div class="ec-detail-cart-actions">
+                                            <span>Podés agregar varios talles y luego continuar al pedido.</span>
+                                            <button type="button" class="js-ec-cart-open">
+                                                <i class="fas fa-shopping-cart"></i> Ver carrito
+                                                (<span class="js-ec-cart-count">0</span>)
+                                            </button>
+                                        </div>
+                                    @endcan
                                     <div class="ec-detail-total"><span>Total registrado</span><strong>{{ number_format($stockTotal, 0, ',', '.') }} unidades</strong></div>
                                     @if($producto->ot || $producto->fecha_archivo || $producto->valor_v || $producto->valor_c)
                                         <div class="ec-detail-metadata">
@@ -317,6 +355,37 @@
     </footer>
 </div>
 
+@can('pedido_compras create')
+<div id="ec-cart-overlay" class="ec-cart-overlay" hidden></div>
+<aside id="ec-cart-drawer" class="ec-cart-drawer" role="dialog" aria-modal="true"
+    aria-label="Carrito para el pedido" aria-hidden="true" tabindex="-1">
+    <div class="ec-cart-drawer-head">
+        <div><small>TU SELECCIÓN</small><h2><i class="fas fa-shopping-cart"></i> Carrito del pedido</h2></div>
+        <button type="button" class="ec-cart-close" id="ec-cart-close" aria-label="Cerrar carrito"><i class="fas fa-times"></i></button>
+    </div>
+    <div class="ec-cart-drawer-desc">Seleccioná productos y cantidades. El cliente y las condiciones se completan en el siguiente paso.</div>
+    <div id="ec-cart-feedback" class="ec-cart-feedback" role="alert" hidden></div>
+    <div id="ec-cart-items" class="ec-cart-items">
+        <p class="ec-cart-loading">Cargando carrito...</p>
+    </div>
+    <div class="ec-cart-drawer-foot">
+        <div class="ec-cart-total-row"><span>Unidades</span><strong id="ec-cart-units">0</strong></div>
+        <div class="ec-cart-total-row ec-cart-amount"><span>Subtotal estimado</span><strong id="ec-cart-total">Gs. 0</strong></div>
+        <p>El precio definitivo se calcula en el formulario del pedido, con los descuentos que correspondan.</p>
+        <form method="POST" action="{{ route('ecommerce.carrito.continuar') }}">
+            @csrf
+            <button type="submit" id="ec-cart-continue" class="ec-cart-continue" disabled>
+                Continuar y completar cliente <i class="fas fa-arrow-right"></i>
+            </button>
+        </form>
+        <div class="ec-cart-secondary-actions">
+            <button type="button" class="ec-cart-keep" id="ec-cart-keep">Seguir comprando</button>
+            <button type="button" class="ec-cart-clear" id="ec-cart-clear">Vaciar carrito</button>
+        </div>
+    </div>
+</aside>
+@endcan
+
 <dialog id="ec-detail-dialog" class="ec-product-dialog" aria-labelledby="ec-dialog-title">
     <div class="ec-dialog-header">
         <span><i class="fas fa-shopping-bag"></i> DETALLE DEL PRODUCTO</span>
@@ -328,5 +397,7 @@
 </dialog>
 
 @include('ecommerce.styles')
+@include('ecommerce.carrito_style')
 @include('ecommerce.scripts')
+@include('ecommerce.carrito_script')
 @endsection

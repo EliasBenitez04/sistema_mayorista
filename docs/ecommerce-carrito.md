@@ -1,0 +1,33 @@
+# Carrito E-commerce hacia Pedidos
+
+## Flujo
+1. Abrir /ecommerce y elegir "Agregar al carrito" sobre un producto.
+2. Elegir talle/variante (código de artículo exacto) y cantidad en la vista rápida.
+3. Repetir con otros talles y productos; el carrito se mantiene en la sesión del usuario.
+4. Pulsar "Mi carrito" para ver líneas, modificar cantidades, quitar variantes y consultar subtotal estimado.
+5. Pulsar "Continuar y completar cliente": POST /ecommerce/carrito/continuar redirige a /pedido_compras/create.
+6. El sistema pasa cada código completo y cantidad al detalle del pedido, fusionándolo con el borrador existente sin duplicarlo. El precio se lee de articulos.prec_vent, no del cliente ni de la imagen.
+7. Seleccionar cliente, condición, descuento y observación, y guardar por el flujo original.
+8. Tras guardar correctamente, se limpia la sesión del carrito.
+
+## API del carrito
+Las rutas autenticadas usan permisos existentes "pedido_compras create", CSRF y sesión Laravel:
+- GET /ecommerce/carrito
+- POST /ecommerce/carrito {codigo, cantidad}
+- PATCH /ecommerce/carrito/{codigo} {cantidad}
+- DELETE /ecommerce/carrito/{codigo}
+- DELETE /ecommerce/carrito
+- POST /ecommerce/carrito/continuar
+
+Todas las modificaciones consultan el código real en la base de datos y no aceptan precios desde el navegador.
+Límites: 100 variantes distintas y 9.999 unidades por variante.
+
+## Borrador
+La lógica de pedido_compras/borrador.blade.php sigue restaurando primero los campos del cliente y el detalle anterior.
+Luego emite pedido:borrador-restaurado para fusionar los artículos enviados desde el carrito.
+El traspaso es de un solo uso (session()->pull('ecommerce_transfer')), por lo que recargar la pantalla no vuelve a duplicar líneas.
+El índice de pedidos ya limpia el borrador pendiente al regresar del flujo exitoso.
+
+## Alcance
+No crea pedidos al agregar al carrito. No gestiona pago, compra web pública ni reserva stock.
+El precio/stock mostrado es informativo; el pedido se guarda por la lógica original.

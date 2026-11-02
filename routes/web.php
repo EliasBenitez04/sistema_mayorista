@@ -163,3 +163,11 @@ Route::get('/ecommerce/importar', [App\Http\Controllers\EcommerceController::cla
 Route::post('/ecommerce/importar', [App\Http\Controllers\EcommerceController::class, 'importar'])->name('ecommerce.importar');
 Route::patch('/ecommerce/linea/{codigo}', [App\Http\Controllers\EcommerceController::class, 'asignarLinea'])->name('ecommerce.linea');
 Route::delete('/ecommerce/imagen/{codigo}', [App\Http\Controllers\EcommerceController::class, 'eliminarImagen'])->name('ecommerce.imagen.eliminar');
+
+/* Carrito de e-commerce, persistente por sesión autenticada. */
+Route::get('/ecommerce/carrito', [App\Http\Controllers\EcommerceCarritoController::class, 'index'])->name('ecommerce.carrito.index');
+Route::post('/ecommerce/carrito', [App\Http\Controllers\EcommerceCarritoController::class, 'agregar'])->name('ecommerce.carrito.agregar');
+Route::patch('/ecommerce/carrito/{codigo}', [App\Http\Controllers\EcommerceCarritoController::class, 'actualizar'])->name('ecommerce.carrito.actualizar');
+Route::delete('/ecommerce/carrito/{codigo}', [App\Http\Controllers\EcommerceCarritoController::class, 'eliminar'])->name('ecommerce.carrito.eliminar');
+Route::delete('/ecommerce/carrito', [App\Http\Controllers\EcommerceCarritoController::class, 'vaciar'])->name('ecommerce.carrito.vaciar');
+Route::post('/ecommerce/carrito/continuar', [App\Http\Controllers\EcommerceCarritoController::class, 'continuar'])->name('ecommerce.carrito.continuar');

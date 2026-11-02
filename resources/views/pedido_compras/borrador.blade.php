@@ -233,6 +233,9 @@
 
         setTimeout(function () {
             restaurarBorrador();
+            // Permite incorporar los artículos traídos desde el catálogo después
+            // de restaurar el borrador, sin borrar datos del cliente ni duplicar filas.
+            document.dispatchEvent(new Event('pedido:borrador-restaurado'));
 
             const tabla = document.getElementById('selectedProducts');
             if (tabla && window.MutationObserver) {

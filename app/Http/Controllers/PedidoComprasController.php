@@ -86,6 +86,22 @@ class PedidoComprasController extends Controller
 
         $detalles = [];
 
+        // Traslado del carrito: una sola vez y solo si el usuario pasó por Continuar.
+        // El formulario siempre recibe precio y descripción actuales de artículos.
+        $transfer = session()->pull('ecommerce_transfer', []);
+        $carritoEcommerce = collect();
+        if (is_array($transfer) && $transfer) {
+            $carritoEcommerce = DB::table('articulos')
+                ->whereIn('art_codigo', array_keys($transfer))
+                ->get(['art_codigo as codigo', 'art_descripcion as producto', 'prec_vent as precio'])
+                ->map(function ($articulo) use ($transfer) {
+                    $articulo->cantidad = (int) ($transfer[$articulo->codigo] ?? 0);
+                    return $articulo;
+                })
+                ->filter(fn ($articulo) => $articulo->cantidad >= 1)
+                ->values();
+        }
+
         $usados = DB::table('pedido_compras')
             ->where('ped_estado', '!=', 'ANULADO')
             ->selectRaw("CAST(split_part(nro_pedido, '-', 2) AS INTEGER) as num")
@@ -107,6 +123,7 @@ class PedidoComprasController extends Controller
             ->with('productos', $productos)
             ->with('clientes', $clientes)
             ->with('detalles', $detalles)
+            ->with('carritoEcommerce', $carritoEcommerce)
             ->with('nroPedidoPreview', $nroPedidoPreview);
     }
 
@@ -257,6 +274,14 @@ class PedidoComprasController extends Controller
             ]);
 
             DB::commit();
+
+            // Se borra el carrito únicamente cuando el pedido ya se guardó con éxito.
+            if ($request->session()->get('ecommerce_pedido_pendiente')) {
+                $request->session()->forget([
+                    'ecommerce_carrito', 'ecommerce_transfer', 'ecommerce_pedido_pendiente'
+                ]);
+                $request->session()->flash('ecommerce_pedido_guardado', true);
+            }
 
             Log::info("==== FIN STORE OK ====");
 

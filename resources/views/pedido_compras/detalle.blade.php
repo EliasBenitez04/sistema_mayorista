@@ -10,14 +10,24 @@
             </div>
         </div>
 
-        <button type="button"
-            class="btn pedido-add-product-btn"
-            id="buscar"
-            data-toggle="modal"
-            data-target="#productSearchModalPed">
-            <i class="fas fa-search mr-2"></i>
-            Buscar productos
-        </button>
+        <div class="d-flex align-items-center flex-wrap" style="gap:9px">
+            @if(!isset($pedido))
+                @can('articulos index')
+                    <a class="btn btn-outline-primary" href="{{ route('ecommerce.index') }}"
+                        title="Elegir productos con imagen, talle y cantidad">
+                        <i class="fas fa-shopping-bag mr-1"></i> Catálogo E-commerce
+                    </a>
+                @endcan
+            @endif
+            <button type="button"
+                class="btn pedido-add-product-btn"
+                id="buscar"
+                data-toggle="modal"
+                data-target="#productSearchModalPed">
+                <i class="fas fa-search mr-2"></i>
+                Buscar productos
+            </button>
+        </div>
     </div>
 
     <div class="pedido-detail-body">
