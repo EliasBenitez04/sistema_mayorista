@@ -150,3 +150,15 @@ Route::get('password/reset/{token}', [ResetPasswordController::class, 'showReset
 
 Route::post('password/reset', [ResetPasswordController::class, 'reset'])
     ->name('password.update');
+
+
+/*
+|--------------------------------------------------------------------------
+| E-COMMERCE INTERNO: CATALOGO E IMPORTACION DE FOTOGRAFIAS
+|--------------------------------------------------------------------------
+*/
+Route::get('/ecommerce', [App\Http\Controllers\EcommerceController::class, 'index'])->name('ecommerce.index');
+Route::get('/ecommerce/importar', [App\Http\Controllers\EcommerceController::class, 'importarForm'])->name('ecommerce.importar.form');
+Route::post('/ecommerce/importar', [App\Http\Controllers\EcommerceController::class, 'importar'])->name('ecommerce.importar');
+Route::patch('/ecommerce/linea/{codigo}', [App\Http\Controllers\EcommerceController::class, 'asignarLinea'])->name('ecommerce.linea');
+Route::delete('/ecommerce/imagen/{codigo}', [App\Http\Controllers\EcommerceController::class, 'eliminarImagen'])->name('ecommerce.imagen.eliminar');

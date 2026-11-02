@@ -110,6 +110,32 @@
     </ul>
 </li>
 
+
+@can('articulos index')
+<li class="nav-item {{ request()->routeIs('ecommerce.*') ? 'menu-open' : '' }}">
+    <a href="#" class="nav-link {{ request()->routeIs('ecommerce.*') ? 'active' : '' }}">
+        <i class="nav-icon fas fa-shopping-bag"></i>
+        <p>E-commerce<i class="right fas fa-angle-left"></i></p>
+    </a>
+    <ul class="nav nav-treeview">
+        <li class="nav-item">
+            <a href="{{ route('ecommerce.index') }}"
+                class="nav-link {{ request()->routeIs('ecommerce.index') ? 'active' : '' }}">
+                <i class="nav-icon fas fa-th-large"></i><p>Catálogo</p>
+            </a>
+        </li>
+        @can('articulos create')
+            <li class="nav-item">
+                <a href="{{ route('ecommerce.importar.form') }}"
+                    class="nav-link {{ request()->routeIs('ecommerce.importar.*') ? 'active' : '' }}">
+                    <i class="nav-icon fas fa-images"></i><p>Importar imágenes</p>
+                </a>
+            </li>
+        @endcan
+    </ul>
+</li>
+@endcan
+
 @can('carga_fotos index')
     <li class="nav-item {{ request()->routeIs('carga_fotos.*') ? 'menu-open' : '' }}">
         <a href="#" class="nav-link {{ request()->routeIs('carga_fotos.*') ? 'active' : '' }}">
